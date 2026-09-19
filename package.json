@@ -1,0 +1,21 @@
+{
+  "name": "diagnostico-maturidade-digital",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ferramenta de diagnostico de maturidade digital (PROFNIT/UFSJ) -- coleta conversacional + interpretacao do resultado do DEXi.",
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "zod": "^4.6.5"
+  }
+}
