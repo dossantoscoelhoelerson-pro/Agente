@@ -1,5 +1,7 @@
 /* Paleta de cores oficial do produto (adendo_especificacao_rodada4.md,
-   seção 2). Estruturais: Off-white + Azul Profundo. Expressão (sempre com
+   seção 2, com o Off-white trocado por #DFECF2 a pedido do usuário --
+   mesma função de fundo estrutural principal, só o valor mudou).
+   Estruturais: fundo azul claro + Azul Profundo. Expressão (sempre com
    função semântica, nunca decorativas):
      --blue   Azul Digital     #3E9BC1  tecnologia/interação: elementos
               clicáveis, links, progresso.
@@ -16,7 +18,7 @@
    neutra" pedida para erros/avisos, propositalmente fora da família do
    vermelho de identidade. */
 :root{
-  --paper:#F5F3ED; --paper-raised:#FFFFFF;
+  --paper:#DFECF2; --paper-raised:#FFFFFF;
   --ink:#123F63; --ink-soft:#4D6F8A;
   --line:#D9E1E8;
 

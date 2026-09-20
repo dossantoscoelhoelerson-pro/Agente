@@ -63,6 +63,14 @@ function el(tag, attrs, children){
 let renderInProgress = false;
 let renderPending = false;
 
+// Chave da "página" atual, para saber quando rolar para o topo. Dentro da
+// tela de coleta cada atributo conta como uma página própria (idx muda),
+// nas demais telas a própria mudança de screen já basta.
+function currentPageKey(){
+  return state.screen === 'collect' ? 'collect:' + state.idx : state.screen;
+}
+let lastPageKey = null;
+
 function render(){
   if(renderInProgress){ renderPending = true; return; }
   renderInProgress = true;
@@ -85,6 +93,16 @@ function renderOnce(){
   else if(state.screen === 'manual') app.appendChild(screenManual());
   else if(state.screen === 'upload') app.appendChild(screenUpload());
   else if(state.screen === 'report') app.appendChild(screenReport());
+
+  // Rola para o topo só quando a "página" muda de verdade (nova
+  // tela, ou novo atributo dentro da coleta) -- nunca em re-renders da
+  // mesma página (digitar, respostas de chat chegando etc.), senão a
+  // rolagem "pula" enquanto o usuário está no meio de uma interação.
+  const key = currentPageKey();
+  if(key !== lastPageKey){
+    lastPageKey = key;
+    window.scrollTo(0, 0);
+  }
 }
 
 function stepsNav(activeIdx){
