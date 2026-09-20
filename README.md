@@ -4,7 +4,8 @@ Ferramenta de coleta conversacional e interpretação de resultado para o protó
 dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštnar e Pucihar
 (2021), com o **DEXi** como motor oficial de cálculo. A especificação completa está em
 `especificacao_experiencia_conversacional.md`, com correções e adições em
-`adendo_especificacao_rodada2.md` e `adendo_especificacao_rodada3.md`.
+`adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.md` e
+`adendo_especificacao_rodada4.md`.
 
 ## Arquitetura
 
@@ -22,9 +23,9 @@ dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštn
   literal, vinda de `perguntas_oficiais.json` (nunca de `attr.descricao`, que é uma anotação
   técnica interna do modelo -- bug corrigido na rodada 3), nunca gerada/parafraseada pela IA;
   (2) uma explicação adaptada ao contexto da empresa, gerada pela IA; (3) as 4 alternativas
-  oficiais, sempre visíveis como botões, rotuladas com o texto de exibição curado em
-  `mapeamento_exibicao_rascunho.json` (o valor técnico que vai para CSV/.dxi nunca muda);
-  (4) um campo de conversa livre para dúvida ou resposta em texto.
+  oficiais, sempre visíveis como botões, rotuladas com o texto de exibição final em
+  `mapeamento_exibicao.json` (adendo rodada 4 -- o valor técnico que vai para CSV/.dxi nunca
+  muda); (4) um campo de conversa livre para dúvida ou resposta em texto.
 - **Etapa 3 é um painel visual** (adendo rodada 3): status geral (nível final + posição na
   escala de 4 níveis), gráficos SVG (posição nas duas dimensões e radar dos 7 grupos
   intermediários -- sempre extraídos do resultado oficial do DEXi, nunca recalculados),
@@ -33,6 +34,12 @@ dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštn
   vinculados aos pontos de atenção, nunca livros/autores específicos). Aceita upload de PDF
   (o texto é extraído no backend com `pdf-parse`) além de `.txt/.json/.csv`. Tem exportação
   do painel inteiro como PDF (`pdfkit`, server-side).
+- **Paleta de cores oficial** (adendo rodada 4, seção 2) aplicada em toda a aplicação --
+  tela de coleta, painel, gráficos, botões e PDF exportado (`public/css/styles.css`, com a
+  correspondência de cada cor documentada no topo do arquivo). Erros/avisos usam uma cor de
+  estado neutra, nunca o Vermelho Identidade (regra explícita do adendo).
+- **Textos de abertura e de contextualização da organização**: cópia exata do adendo rodada
+  4 (seções 3 e 5), sem paráfrase.
 
 ```
 Usuário -> [Etapa 1: coleta conversacional] -> CSV + .dxi preenchido
@@ -100,7 +107,7 @@ server/
   routes.js               todos os endpoints /api/* (ver abaixo)
   attrs.js                 os 34 atributos básicos (fonte única de verdade)
   officialQuestions.js      carrega perguntas_oficiais.json (Bloco 1)
-  displayMap.js             carrega mapeamento_exibicao_rascunho.json (Bloco 3)
+  displayMap.js             carrega mapeamento_exibicao.json (Bloco 3)
   dexiModel.js              hierarquia raiz/dimensões/grupos e escalas (painel da Etapa 3),
                             extraídas de assets/template.dxi
   prompts.js                prompts dos agentes (explicação, coleta, extração,
@@ -116,7 +123,8 @@ public/
 assets/
   template.dxi            template original do modelo DEXi
 perguntas_oficiais.json                     pergunta oficial de cada atributo (Bloco 1)
-mapeamento_exibicao_rascunho.json           técnico -> exibição das 136 alternativas (Bloco 3)
+mapeamento_exibicao.json                    técnico -> exibição das 136 alternativas (Bloco 3),
+                                             versão final revisada (adendo rodada 4)
 ```
 
 Endpoints (`server/routes.js`):
@@ -137,12 +145,11 @@ Endpoints (`server/routes.js`):
 
 - Hospedagem definitiva e persistência entre sessões: decisões em aberto, não bloqueiam
   esta primeira versão (ver especificação, seção 12).
-- `mapeamento_exibicao_rascunho.json` já foi atualizado pelo pesquisador (ex. "BI" ->
-  "Business Intelligence"), mas ainda carrega o nome de rascunho -- vale confirmar se já é
-  a versão definitiva.
-- Seção 5 do adendo rodada 2 (identidade visual com a paleta de 6 cores oficiais) ainda não
-  foi aplicada -- fora do escopo pedido até agora.
-- Os rótulos legíveis dos 2 dimensões + 7 grupos do painel (`server/dexiModel.js`, campo
-  `label`) e a limpeza cosmética dos tokens de escala agregada (`DISPLAY_LEVELS`) foram
-  curados por mim a partir do `template.dxi` -- vale uma conferência humana, mesma lógica
-  do `mapeamento_exibicao_rascunho.json`.
+- Os rótulos legíveis das 2 dimensões + 7 grupos do painel (`server/dexiModel.js`, campo
+  `label`) e a limpeza cosmética dos tokens de escala agregada (`DISPLAY_LEVELS`, ex.
+  "Medio.Baixo" -> "Médio-baixo") foram curados por mim a partir do `template.dxi` -- ao
+  contrário de `mapeamento_exibicao.json` (revisado pelo pesquisador, rodada 4), esses ainda
+  não passaram por revisão humana.
+- A paleta de cores oficial não tem uma especificação de modo escuro -- o modo escuro deste
+  projeto é uma extensão minha, mantendo os mesmos matizes ajustados de luminosidade
+  (documentado no topo de `public/css/styles.css`), não uma decisão do pesquisador.

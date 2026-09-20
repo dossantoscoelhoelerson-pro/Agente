@@ -107,23 +107,39 @@ function screenLoading(){
 
 // ---------- Etapa 1: coleta conversacional ----------
 
+// Textos de abertura e de contextualização da organização: cópia exata do
+// adendo_especificacao_rodada4.md (seções 3 e 5) -- texto oficial do
+// pesquisador, nunca reescrito.
 function screenIntro(){
   const c = el('div');
-  c.appendChild(el('div', {class:'eyebrow', text:'Diagnóstico de Maturidade Digital'}));
-  c.appendChild(el('h1', {text:'Um retrato claro de onde a organização está — e o que priorizar a seguir.'}));
-  c.appendChild(el('p', {class:'lede', text:'34 perguntas objetivas, baseadas no modelo acadêmico de Kljajić Borštnar e Pucihar (2021), processado pelo DEXi. Leva cerca de 15 a 25 minutos.'}));
+  c.appendChild(el('div', {class:'eyebrow brand', text:'Diagnóstico de Maturidade Digital'}));
+  c.appendChild(el('h1', {text:'Onde sua organização está na jornada digital?'}));
+  c.appendChild(el('p', {class:'lede', text:'Responda 34 perguntas e descubra seu estágio de maturidade digital.'}));
+  c.appendChild(el('p', {text:'A avaliação considera tecnologia, processos, pessoas, gestão e inovação e, ao final, apresenta um diagnóstico estruturado para ajudar a entender os principais pontos de atenção e evolução.'}));
+  c.appendChild(el('p', {class:'caption-line', text:'34 perguntas · 15–25 min · diagnóstico estruturado'}));
+  c.appendChild(el('p', {class:'caption-line', text:'Pesquisa aplicada desenvolvida no âmbito do PROFNIT — UFSJ, por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho, com base em Kljajić Borštnar e Pucihar (2021) e processamento pelo DEXi.'}));
 
   const card = el('div', {class:'card'});
   card.appendChild(el('label', {text:'Nome da organização'}));
   const nameInput = el('input', {type:'text', placeholder:'ex.: MetalLamina Indústria Ltda.', id:'orgNameInput', value: state.orgName});
   card.appendChild(nameInput);
-  card.appendChild(el('label', {text:'Um resumo rápido — o que a empresa faz, setor, porte (opcional, mas ajuda a contextualizar as perguntas)'}));
-  const ctxInput = el('textarea', {placeholder:'ex.: Indústria metalúrgica de médio porte, região de Divinópolis-MG, fornece peças para o setor automotivo.', id:'orgCtxInput'});
+
+  card.appendChild(el('h2', {text:'Conte um pouco sobre sua organização', style:'margin-top:28px;'}));
+  card.appendChild(el('p', {text:'Antes de começarmos, queremos entender brevemente o contexto da organização que será avaliada. Conte, com suas próprias palavras, o que a organização faz, em qual setor ou mercado atua, quais são suas principais atividades, seu porte ou número aproximado de colaboradores.'}));
+  card.appendChild(el('p', {text:'Não precisa ser formal nem detalhado. Escreva como você explicaria sua empresa para alguém que acabou de conhecê-la.'}));
+  card.appendChild(el('p', {text:'Essas informações serão utilizadas apenas para contextualizar a conversa e tornar as perguntas mais adequadas à realidade da organização. Não é necessário fornecer informações confidenciais, dados financeiros detalhados ou uma descrição formal da empresa.'}));
+
+  const example = el('div', {class:'example-box'});
+  example.appendChild(el('div', {class:'example-label', text:'Exemplo'}));
+  example.appendChild(el('div', {class:'example-text', text:'A MetalNova é uma indústria de médio porte localizada em São João del Rei-MG, que atua no setor metalúrgico. A empresa fabrica componentes metálicos para outras indústrias e possui aproximadamente 150 colaboradores. Atualmente, possui uma estrutura de produção tradicional e vem buscando ampliar o uso de tecnologias digitais em seus processos.'}));
+  card.appendChild(example);
+
+  const ctxInput = el('textarea', {placeholder:'Escreva aqui sobre sua organização...', id:'orgCtxInput'});
   ctxInput.value = state.orgContext;
   card.appendChild(ctxInput);
 
   const btnRow = el('div', {class:'btn-row'});
-  btnRow.appendChild(el('button', {class:'btn', text:'Começar avaliação', onclick: () => {
+  btnRow.appendChild(el('button', {class:'btn', text:'Começar agora →', onclick: () => {
     const name = nameInput.value.trim();
     if(!name){ nameInput.style.borderColor = '#B33'; nameInput.focus(); return; }
     state.orgName = name;
@@ -208,13 +224,13 @@ function screenCollect(){
   c.appendChild(block2);
 
   // Bloco 3 -- as 4 alternativas oficiais.
-  const block3 = el('div', {class:'card'});
+  const block3 = el('div', {class:'card block-options'});
   block3.appendChild(el('div', {class:'block-label', text:'Escolha uma alternativa'}));
   block3.appendChild(renderAlternatives(attr));
   c.appendChild(block3);
 
   // Bloco 4 -- campo de conversa livre (dúvida ou resposta em texto).
-  const block4 = el('div', {class:'card'});
+  const block4 = el('div', {class:'card panel-duvidas'});
   block4.appendChild(el('div', {class:'block-label', text:'Dúvida ou resposta livre'}));
   const chatLog = state.chatLogs[attr.id] || (state.chatLogs[attr.id] = []);
   if(chatLog.length){
@@ -232,7 +248,7 @@ function screenCollect(){
     const inputRow = el('div', {class:'chat-input-row'});
     const textIn = el('input', {type:'text', placeholder:'Escreva sua dúvida ou sua resposta...', id:'chatTextInput'});
     textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ sendUserTurn(textIn.value); } });
-    const sendBtn = el('button', {class:'btn', text:'Enviar', onclick: () => sendUserTurn(textIn.value)});
+    const sendBtn = el('button', {class:'btn chat-send', text:'Enviar', onclick: () => sendUserTurn(textIn.value)});
     inputRow.appendChild(textIn);
     inputRow.appendChild(sendBtn);
     block4.appendChild(inputRow);
@@ -825,7 +841,7 @@ function sectionCharts(){
 // (c) panorama do processo -- a partir das respostas da coleta, nunca da IA.
 function sectionPanorama(){
   const p = computePanorama();
-  const card = el('div', {class:'card'});
+  const card = el('div', {class:'card panel-panorama'});
   card.appendChild(el('div', {class:'block-label', text:'Panorama da coleta'}));
   const stats = el('div', {class:'stat-row'});
   stats.appendChild(statTile(`${p.respondidos}/${p.total}`, 'atributos respondidos'));
@@ -871,7 +887,7 @@ function sectionLearning(){
 // (d) centro de dúvidas -- a conversa que já existia, agora reativa e como
 // uma seção do painel (nunca abre sozinha com um relatório).
 function sectionDuvidas(){
-  const card = el('div', {class:'card'});
+  const card = el('div', {class:'card panel-duvidas'});
   card.appendChild(el('div', {class:'block-label', text:'Centro de dúvidas'}));
   if(state.duvidasChat.length){
     const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
@@ -888,7 +904,7 @@ function sectionDuvidas(){
     const inputRow = el('div', {class:'chat-input-row'});
     const textIn = el('input', {type:'text', placeholder:'Pergunte algo sobre o resultado (ex.: por que ficamos nesse nível em Estratégia?)...', id:'duvidasTextInput'});
     textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter' && textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } });
-    const sendBtn = el('button', {class:'btn', text:'Enviar', onclick: () => { if(textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } }});
+    const sendBtn = el('button', {class:'btn chat-send', text:'Enviar', onclick: () => { if(textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } }});
     inputRow.appendChild(textIn);
     inputRow.appendChild(sendBtn);
     card.appendChild(inputRow);

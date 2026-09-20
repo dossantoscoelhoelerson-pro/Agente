@@ -2,18 +2,17 @@
 // sem biblioteca externa, mesma filosofia vanilla do resto do projeto.
 // Uma única série cada (o resultado desta organização), por isso sem
 // legenda -- o título de cada card já identifica a série (ver skill de
-// dataviz: legenda só é necessária a partir de 2 séries). Cor única
-// (var(--accent)) sobre traços finos e recessivos (var(--line)), rótulos
-// sempre em texto, nunca só cor.
-//
-// Todo texto desenhado aqui vem de dados curados no servidor (dexiModel.js)
-// -- nunca texto livre do usuário -- por isso é seguro montar como string
-// de SVG.
-
-const CHART_INK = '#1B2430';
-const CHART_INK_SOFT = '#4B5768';
-const CHART_LINE = '#DAD5C8';
-const CHART_ACCENT = '#8A5A2B';
+// dataviz: legenda só é necessária a partir de 2 séries). Cor única sobre
+// traços finos e recessivos, rótulos sempre em texto, nunca só cor. As
+// cores vêm da paleta oficial (adendo rodada 4, seção 2) -- o dado do
+// gráfico é "tecnologia/posição", por isso o marcador usa Azul Digital;
+// texto e traços estruturais usam Azul Profundo. SVG é gerado como string
+// (sem acesso a variáveis CSS), por isso os hex ficam fixos aqui -- mantidos
+// em paridade com public/css/styles.css.
+const CHART_INK = '#123F63';
+const CHART_INK_SOFT = '#4D6F8A';
+const CHART_LINE = '#D9E1E8';
+const CHART_ACCENT = '#3E9BC1';
 
 function escapeXml(s){
   return String(s).replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));

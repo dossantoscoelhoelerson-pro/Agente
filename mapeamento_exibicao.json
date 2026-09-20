@@ -2,681 +2,681 @@
  {
   "atributo": "Blockchain",
   "tecnico": "Nao.utiliza",
-  "exibicao_rascunho": "Não utiliza"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Blockchain",
   "tecnico": "Sem.necessidade",
-  "exibicao_rascunho": "Sem necessidade"
+  "exibicao": "Sem necessidade"
  },
  {
   "atributo": "Blockchain",
   "tecnico": "Planeja",
-  "exibicao_rascunho": "Planeja"
+  "exibicao": "Planeja utilizar"
  },
  {
   "atributo": "Blockchain",
   "tecnico": "Utiliza",
-  "exibicao_rascunho": "Utiliza"
+  "exibicao": "Utiliza"
  },
  {
   "atributo": "Industria.4.0",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Industria.4.0",
   "tecnico": "Sem.necessidade",
-  "exibicao_rascunho": "Sem necessidade"
+  "exibicao": "Sem necessidade"
  },
  {
   "atributo": "Industria.4.0",
   "tecnico": "Planeja",
-  "exibicao_rascunho": "Planeja"
+  "exibicao": "Planeja utilizar"
  },
  {
   "atributo": "Industria.4.0",
   "tecnico": "Utiliza",
-  "exibicao_rascunho": "Utiliza"
+  "exibicao": "Utiliza"
  },
  {
   "atributo": "Analise.de.Dados",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Analise.de.Dados",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Uso parcial"
  },
  {
   "atributo": "Analise.de.Dados",
   "tecnico": "BI",
-  "exibicao_rascunho": "Business Intelligence"
+  "exibicao": "Business Intelligence"
  },
  {
   "atributo": "Analise.de.Dados",
   "tecnico": "Avancado",
-  "exibicao_rascunho": "Avancado"
+  "exibicao": "Avançado (Machine Learning / Big Data)"
  },
  {
   "atributo": "Midias.Sociais",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Midias.Sociais",
   "tecnico": "Minimo",
-  "exibicao_rascunho": "Minimo"
+  "exibicao": "Uso mínimo"
  },
  {
   "atributo": "Midias.Sociais",
   "tecnico": "Relacionamento",
-  "exibicao_rascunho": "Relacionamento"
+  "exibicao": "Relacionamento com clientes"
  },
  {
   "atributo": "Midias.Sociais",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Uso completo"
  },
  {
   "atributo": "Mobile",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Mobile",
   "tecnico": "Processos.Internos",
-  "exibicao_rascunho": "Processos Internos"
+  "exibicao": "Processos internos"
  },
  {
   "atributo": "Mobile",
   "tecnico": "Experiencia.Cliente",
-  "exibicao_rascunho": "Experiencia Cliente"
+  "exibicao": "Experiência do cliente"
  },
  {
   "atributo": "Mobile",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Uso completo"
  },
  {
   "atributo": "Cloud",
   "tecnico": "Nao.utiliza",
-  "exibicao_rascunho": "Não utiliza"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Cloud",
   "tecnico": "Uso.minimo",
-  "exibicao_rascunho": "Uso minimo"
+  "exibicao": "Uso mínimo"
  },
  {
   "atributo": "Cloud",
   "tecnico": "Uso.moderado",
-  "exibicao_rascunho": "Uso moderado"
+  "exibicao": "Uso moderado"
  },
  {
   "atributo": "Cloud",
   "tecnico": "Uso.estrategico",
-  "exibicao_rascunho": "Uso estrategico"
+  "exibicao": "Uso estratégico"
  },
  {
   "atributo": "Software.Gestao",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Software.Gestao",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Uso parcial"
  },
  {
   "atributo": "Software.Gestao",
   "tecnico": "Basico",
-  "exibicao_rascunho": "Basico"
+  "exibicao": "Uso básico"
  },
  {
   "atributo": "Software.Gestao",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Uso completo"
  },
  {
   "atributo": "Ambiente.Digital.Trabalho",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Ambiente.Digital.Trabalho",
   "tecnico": "Software.Negocio",
-  "exibicao_rascunho": "Software Negocio"
+  "exibicao": "Apenas software de negócio"
  },
  {
   "atributo": "Ambiente.Digital.Trabalho",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Uso parcial"
  },
  {
   "atributo": "Ambiente.Digital.Trabalho",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Uso completo"
  },
  {
   "atributo": "Investimento.TI",
   "tecnico": "Menos.1pct",
-  "exibicao_rascunho": "Menos 1pct"
+  "exibicao": "Menos de 1%"
  },
  {
   "atributo": "Investimento.TI",
   "tecnico": "Entre.1.3pct",
-  "exibicao_rascunho": "Entre 1 3pct"
+  "exibicao": "Entre 1% e 3%"
  },
  {
   "atributo": "Investimento.TI",
   "tecnico": "Mais.3pct",
-  "exibicao_rascunho": "Mais 3pct"
+  "exibicao": "Mais de 3%"
  },
  {
   "atributo": "Investimento.TI",
   "tecnico": "Lideranca.Digital",
-  "exibicao_rascunho": "Liderança digital"
+  "exibicao": "Liderança digital (investimento de referência)"
  },
  {
   "atributo": "Investimentos.Planejados",
   "tecnico": "Sem.Planejamento",
-  "exibicao_rascunho": "Sem Planejamento"
+  "exibicao": "Sem planejamento"
  },
  {
   "atributo": "Investimentos.Planejados",
   "tecnico": "Mercado",
-  "exibicao_rascunho": "Mercado"
+  "exibicao": "Acompanhando o mercado"
  },
  {
   "atributo": "Investimentos.Planejados",
   "tecnico": "Estrategico",
-  "exibicao_rascunho": "Estratégico"
+  "exibicao": "Estratégico"
  },
  {
   "atributo": "Investimentos.Planejados",
   "tecnico": "Inovacao.Continua",
-  "exibicao_rascunho": "Inovacao Continua"
+  "exibicao": "Inovação contínua"
  },
  {
   "atributo": "Departamento.TI",
   "tecnico": "Terceirizado",
-  "exibicao_rascunho": "Terceirizado"
+  "exibicao": "Terceirizado"
  },
  {
   "atributo": "Departamento.TI",
   "tecnico": "Proprio.Terceirizado",
-  "exibicao_rascunho": "Proprio Terceirizado"
+  "exibicao": "Misto (próprio e terceirizado)"
  },
  {
   "atributo": "Departamento.TI",
   "tecnico": "TI.Propria",
-  "exibicao_rascunho": "TI Propria"
+  "exibicao": "TI própria"
  },
  {
   "atributo": "Departamento.TI",
   "tecnico": "Estrategico",
-  "exibicao_rascunho": "Estratégico"
+  "exibicao": "Parceiro estratégico do negócio"
  },
  {
   "atributo": "Proposta.Valor",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não"
  },
  {
   "atributo": "Proposta.Valor",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Parcial"
  },
  {
   "atributo": "Proposta.Valor",
   "tecnico": "Impacto.Digital",
-  "exibicao_rascunho": "Impacto Digital"
+  "exibicao": "Com impacto digital"
  },
  {
   "atributo": "Proposta.Valor",
   "tecnico": "Digital.no.Core",
-  "exibicao_rascunho": "Digital no Core"
+  "exibicao": "Digital no centro do negócio"
  },
  {
   "atributo": "CRM",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "CRM",
   "tecnico": "Dados.Cliente",
-  "exibicao_rascunho": "Dados Cliente"
+  "exibicao": "Registro de dados do cliente"
  },
  {
   "atributo": "CRM",
   "tecnico": "CRM.Social",
-  "exibicao_rascunho": "CRM Social"
+  "exibicao": "CRM social"
  },
  {
   "atributo": "CRM",
   "tecnico": "Estrategico",
-  "exibicao_rascunho": "Estratégico"
+  "exibicao": "Estratégico"
  },
  {
   "atributo": "Canais.Digitais",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não utiliza"
  },
  {
   "atributo": "Canais.Digitais",
   "tecnico": "Site",
-  "exibicao_rascunho": "Site"
+  "exibicao": "Site institucional"
  },
  {
   "atributo": "Canais.Digitais",
   "tecnico": "Loja.Virtual",
-  "exibicao_rascunho": "Loja Virtual"
+  "exibicao": "Loja virtual"
  },
  {
   "atributo": "Canais.Digitais",
   "tecnico": "Totalmente.Integrado",
-  "exibicao_rascunho": "Totalmente Integrado"
+  "exibicao": "Totalmente integrado"
  },
  {
   "atributo": "Novos.Mercados",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não"
  },
  {
   "atributo": "Novos.Mercados",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Parcial"
  },
  {
   "atributo": "Novos.Mercados",
   "tecnico": "Uso.Pleno",
-  "exibicao_rascunho": "Uso Pleno"
+  "exibicao": "Uso pleno"
  },
  {
   "atributo": "Novos.Mercados",
   "tecnico": "Modelo.Digital.Nativo",
-  "exibicao_rascunho": "Modelo Digital Nativo"
+  "exibicao": "Modelo digital nativo"
  },
  {
   "atributo": "Processos.Chave",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não digitalizados"
  },
  {
   "atributo": "Processos.Chave",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Parcialmente digitalizados"
  },
  {
   "atributo": "Processos.Chave",
   "tecnico": "Totalmente",
-  "exibicao_rascunho": "Totalmente"
+  "exibicao": "Totalmente digitalizados"
  },
  {
   "atributo": "Processos.Chave",
   "tecnico": "Automatizado",
-  "exibicao_rascunho": "Automatizado"
+  "exibicao": "Automatizados"
  },
  {
   "atributo": "Relacao.Parceiros",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não digital"
  },
  {
   "atributo": "Relacao.Parceiros",
   "tecnico": "EDI",
-  "exibicao_rascunho": "EDI"
+  "exibicao": "EDI (troca eletrônica de dados)"
  },
  {
   "atributo": "Relacao.Parceiros",
   "tecnico": "Sistemas.Conectados",
-  "exibicao_rascunho": "Sistemas Conectados"
+  "exibicao": "Sistemas conectados"
  },
  {
   "atributo": "Relacao.Parceiros",
   "tecnico": "Cadeia.Integrada",
-  "exibicao_rascunho": "Cadeia Integrada"
+  "exibicao": "Cadeia totalmente integrada"
  },
  {
   "atributo": "Receitas.Custos",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Nenhum impacto"
  },
  {
   "atributo": "Receitas.Custos",
   "tecnico": "Reducao.Custos",
-  "exibicao_rascunho": "Redução de custos"
+  "exibicao": "Redução de custos"
  },
  {
   "atributo": "Receitas.Custos",
   "tecnico": "Novas.Receitas",
-  "exibicao_rascunho": "Novas receitas"
+  "exibicao": "Novas receitas"
  },
  {
   "atributo": "Receitas.Custos",
   "tecnico": "Novo.Modelo.Negocio",
-  "exibicao_rascunho": "Novo modelo de negócio"
+  "exibicao": "Novo modelo de negócio"
  },
  {
   "atributo": "Dados.Estrategia",
   "tecnico": "Basico",
-  "exibicao_rascunho": "Basico"
+  "exibicao": "Uso básico"
  },
  {
   "atributo": "Dados.Estrategia",
   "tecnico": "Operacional",
-  "exibicao_rascunho": "Operacional"
+  "exibicao": "Uso operacional"
  },
  {
   "atributo": "Dados.Estrategia",
   "tecnico": "Gestao.Integrada",
-  "exibicao_rascunho": "Gestão integrada"
+  "exibicao": "Gestão integrada"
  },
  {
   "atributo": "Dados.Estrategia",
   "tecnico": "Recurso.Estrategico",
-  "exibicao_rascunho": "Recurso estratégico"
+  "exibicao": "Recurso estratégico"
  },
  {
   "atributo": "Ciberseguranca",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não trata"
  },
  {
   "atributo": "Ciberseguranca",
   "tecnico": "Ciente.Planejando",
-  "exibicao_rascunho": "Ciente, planejando"
+  "exibicao": "Ciente e planejando"
  },
  {
   "atributo": "Ciberseguranca",
   "tecnico": "Estrategico",
-  "exibicao_rascunho": "Estratégico"
+  "exibicao": "Estratégico"
  },
  {
   "atributo": "Ciberseguranca",
   "tecnico": "Certificado.Auditado",
-  "exibicao_rascunho": "Certificado e auditado"
+  "exibicao": "Certificado e auditado"
  },
  {
   "atributo": "Estrategia.Digital",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não possui"
  },
  {
   "atributo": "Estrategia.Digital",
   "tecnico": "Ciente.Planejando",
-  "exibicao_rascunho": "Ciente, planejando"
+  "exibicao": "Ciente e planejando"
  },
  {
   "atributo": "Estrategia.Digital",
   "tecnico": "Parcial",
-  "exibicao_rascunho": "Parcial"
+  "exibicao": "Parcialmente definida"
  },
  {
   "atributo": "Estrategia.Digital",
   "tecnico": "Sim",
-  "exibicao_rascunho": "Sim"
+  "exibicao": "Sim, definida"
  },
  {
   "atributo": "Engajamento",
   "tecnico": "Limitado",
-  "exibicao_rascunho": "Limitado"
+  "exibicao": "Limitado"
  },
  {
   "atributo": "Engajamento",
   "tecnico": "Moderado",
-  "exibicao_rascunho": "Moderado"
+  "exibicao": "Moderado"
  },
  {
   "atributo": "Engajamento",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Completo"
  },
  {
   "atributo": "Engajamento",
   "tecnico": "Protagonista",
-  "exibicao_rascunho": "Protagonista"
+  "exibicao": "Protagonista"
  },
  {
   "atributo": "Aceitacao.Mudancas",
   "tecnico": "Critico",
-  "exibicao_rascunho": "Critico"
+  "exibicao": "Crítico"
  },
  {
   "atributo": "Aceitacao.Mudancas",
   "tecnico": "Aceita",
-  "exibicao_rascunho": "Aceita"
+  "exibicao": "Aceita"
  },
  {
   "atributo": "Aceitacao.Mudancas",
   "tecnico": "Curioso",
-  "exibicao_rascunho": "Curioso"
+  "exibicao": "Curioso"
  },
  {
   "atributo": "Aceitacao.Mudancas",
   "tecnico": "Entusiasmado",
-  "exibicao_rascunho": "Entusiasmado"
+  "exibicao": "Entusiasmado"
  },
  {
   "atributo": "Competencias.Digitais",
   "tecnico": "Inexistente",
-  "exibicao_rascunho": "Inexistente"
+  "exibicao": "Inexistente"
  },
  {
   "atributo": "Competencias.Digitais",
   "tecnico": "Basico",
-  "exibicao_rascunho": "Basico"
+  "exibicao": "Básico"
  },
  {
   "atributo": "Competencias.Digitais",
   "tecnico": "Avancado",
-  "exibicao_rascunho": "Avancado"
+  "exibicao": "Avançado"
  },
  {
   "atributo": "Competencias.Digitais",
   "tecnico": "Referencia.Digital",
-  "exibicao_rascunho": "Referencia Digital"
+  "exibicao": "Referência digital"
  },
  {
   "atributo": "Gestao.Talentos",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não realiza"
  },
  {
   "atributo": "Gestao.Talentos",
   "tecnico": "Basico",
-  "exibicao_rascunho": "Basico"
+  "exibicao": "Básico"
  },
  {
   "atributo": "Gestao.Talentos",
   "tecnico": "Investe.Ativamente",
-  "exibicao_rascunho": "Investe Ativamente"
+  "exibicao": "Investe ativamente"
  },
  {
   "atributo": "Gestao.Talentos",
   "tecnico": "Estrategico",
-  "exibicao_rascunho": "Estratégico"
+  "exibicao": "Estratégico"
  },
  {
   "atributo": "Educacao.Treinamento",
   "tecnico": "Nao",
-  "exibicao_rascunho": "Não"
+  "exibicao": "Não realiza"
  },
  {
   "atributo": "Educacao.Treinamento",
   "tecnico": "Ocasional",
-  "exibicao_rascunho": "Ocasional"
+  "exibicao": "Ocasional"
  },
  {
   "atributo": "Educacao.Treinamento",
   "tecnico": "Continuo",
-  "exibicao_rascunho": "Continuo"
+  "exibicao": "Contínuo"
  },
  {
   "atributo": "Educacao.Treinamento",
   "tecnico": "Estrategico",
-  "exibicao_rascunho": "Estratégico"
+  "exibicao": "Estratégico"
  },
  {
   "atributo": "Autonomia",
   "tecnico": "Restrita",
-  "exibicao_rascunho": "Restrita"
+  "exibicao": "Restrita"
  },
  {
   "atributo": "Autonomia",
   "tecnico": "Moderado",
-  "exibicao_rascunho": "Moderado"
+  "exibicao": "Moderada"
  },
  {
   "atributo": "Autonomia",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Completa"
  },
  {
   "atributo": "Autonomia",
   "tecnico": "Autogerenciado",
-  "exibicao_rascunho": "Autogerenciado"
+  "exibicao": "Autogerenciada"
  },
  {
   "atributo": "Comunicacao",
   "tecnico": "Interna.Area",
-  "exibicao_rascunho": "Interna Area"
+  "exibicao": "Restrita à própria área"
  },
  {
   "atributo": "Comunicacao",
   "tecnico": "Entre.Departamentos",
-  "exibicao_rascunho": "Entre Departamentos"
+  "exibicao": "Entre departamentos"
  },
  {
   "atributo": "Comunicacao",
   "tecnico": "Aberta",
-  "exibicao_rascunho": "Aberta"
+  "exibicao": "Aberta"
  },
  {
   "atributo": "Comunicacao",
   "tecnico": "Colaborativa.Digital",
-  "exibicao_rascunho": "Colaborativa Digital"
+  "exibicao": "Colaborativa digital"
  },
  {
   "atributo": "Colaboracao",
   "tecnico": "Nao.Incentivada",
-  "exibicao_rascunho": "Nao Incentivada"
+  "exibicao": "Não incentivada"
  },
  {
   "atributo": "Colaboracao",
   "tecnico": "Incentivada",
-  "exibicao_rascunho": "Incentivada"
+  "exibicao": "Incentivada"
  },
  {
   "atributo": "Colaboracao",
   "tecnico": "Completo",
-  "exibicao_rascunho": "Completo"
+  "exibicao": "Completa"
  },
  {
   "atributo": "Colaboracao",
   "tecnico": "Co.Criacao.Estrategica",
-  "exibicao_rascunho": "Co Criacao Estrategica"
+  "exibicao": "Cocriação estratégica"
  },
  {
   "atributo": "Capacidade.Inovar",
   "tecnico": "Nao.Incentivada",
-  "exibicao_rascunho": "Nao Incentivada"
+  "exibicao": "Não incentivada"
  },
  {
   "atributo": "Capacidade.Inovar",
   "tecnico": "Incentivada",
-  "exibicao_rascunho": "Incentivada"
+  "exibicao": "Incentivada"
  },
  {
   "atributo": "Capacidade.Inovar",
   "tecnico": "Suporte.Pleno",
-  "exibicao_rascunho": "Suporte Pleno"
+  "exibicao": "Suporte pleno"
  },
  {
   "atributo": "Capacidade.Inovar",
   "tecnico": "Cultura.Inovacao",
-  "exibicao_rascunho": "Cultura Inovacao"
+  "exibicao": "Cultura de inovação"
  },
  {
   "atributo": "Agilidade",
   "tecnico": "Lenta",
-  "exibicao_rascunho": "Lenta"
+  "exibicao": "Lenta"
  },
  {
   "atributo": "Agilidade",
   "tecnico": "Moderado",
-  "exibicao_rascunho": "Moderado"
+  "exibicao": "Moderada"
  },
  {
   "atributo": "Agilidade",
   "tecnico": "Agil",
-  "exibicao_rascunho": "Agil"
+  "exibicao": "Ágil"
  },
  {
   "atributo": "Agilidade",
   "tecnico": "Preditiva",
-  "exibicao_rascunho": "Preditiva"
+  "exibicao": "Preditiva"
  },
  {
   "atributo": "Lideranca",
   "tecnico": "Autoritaria",
-  "exibicao_rascunho": "Autoritaria"
+  "exibicao": "Autoritária"
  },
  {
   "atributo": "Lideranca",
   "tecnico": "Participativa",
-  "exibicao_rascunho": "Participativa"
+  "exibicao": "Participativa"
  },
  {
   "atributo": "Lideranca",
   "tecnico": "Transformacional",
-  "exibicao_rascunho": "Transformacional"
+  "exibicao": "Transformacional"
  },
  {
   "atributo": "Lideranca",
   "tecnico": "Distribuida.Digital",
-  "exibicao_rascunho": "Distribuida Digital"
+  "exibicao": "Distribuída digital"
  },
  {
   "atributo": "Tomada.Decisao",
   "tecnico": "Intuitiva",
-  "exibicao_rascunho": "Intuitiva"
+  "exibicao": "Intuitiva"
  },
  {
   "atributo": "Tomada.Decisao",
   "tecnico": "Analitica",
-  "exibicao_rascunho": "Analitica"
+  "exibicao": "Analítica"
  },
  {
   "atributo": "Tomada.Decisao",
   "tecnico": "Data.Driven",
-  "exibicao_rascunho": "Data Driven"
+  "exibicao": "Orientada a dados"
  },
  {
   "atributo": "Tomada.Decisao",
   "tecnico": "Preditiva.IA",
-  "exibicao_rascunho": "Preditiva IA"
+  "exibicao": "Preditiva com IA"
  },
  {
   "atributo": "Propensao.Risco",
   "tecnico": "Averse",
-  "exibicao_rascunho": "Averse"
+  "exibicao": "Avessa a risco"
  },
  {
   "atributo": "Propensao.Risco",
   "tecnico": "Neutro",
-  "exibicao_rascunho": "Neutro"
+  "exibicao": "Neutra"
  },
  {
   "atributo": "Propensao.Risco",
   "tecnico": "Busca.Riscos",
-  "exibicao_rascunho": "Busca Riscos"
+  "exibicao": "Busca riscos"
  },
  {
   "atributo": "Propensao.Risco",
   "tecnico": "Empreendedor.Digital",
-  "exibicao_rascunho": "Empreendedor Digital"
+  "exibicao": "Empreendedora digital"
  }
 ]
