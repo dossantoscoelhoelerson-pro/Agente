@@ -1,10 +1,14 @@
 const express = require('express');
 const { z } = require('zod');
 const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
+const { PDFParse } = require('pdf-parse');
 
 const { ATTRS } = require('./attrs');
+const { displayLabel } = require('./displayMap');
 const { client, MODEL, handleAnthropicError } = require('./anthropicClient');
 const {
+  EXPLAIN_SYSTEM_PROMPT,
+  buildExplainUserPrompt,
   COLLECT_SYSTEM_PROMPT,
   buildCollectUserPrompt,
   INTERPRET_SYSTEM_PROMPT,
@@ -16,7 +20,7 @@ const router = express.Router();
 const ATTR_INDEX = new Map(ATTRS.map((a) => [a.id, a]));
 
 const TurnSchema = z.object({
-  action: z.enum(['ask', 'present_options', 'register']),
+  action: z.enum(['reply', 'register']),
   message: z.string(),
   chosen: z.string().optional(),
 });
@@ -29,11 +33,41 @@ function sanitizeHistory(history) {
     .map((m) => ({ role: m.role, text: m.text.slice(0, 4000) }));
 }
 
+// Os 34 atributos, enriquecidos com o texto de exibição (Bloco 3) de cada
+// alternativa -- o valor técnico (usado para registrar/CSV/.dxi) nunca
+// muda, niveisExibicao é só um array paralelo, mesmos índices de niveis.
 router.get('/attrs', (req, res) => {
-  res.json({ attrs: ATTRS });
+  const attrs = ATTRS.map((a) => ({
+    ...a,
+    niveisExibicao: a.niveis.map((n) => displayLabel(a.id, n)),
+  }));
+  res.json({ attrs });
 });
 
-// Etapa 1 -- um turno da conversa de coleta para UM atributo.
+// Bloco 2 -- explicação adaptada ao contexto da empresa para UM atributo.
+// Nunca decide nada sobre a resposta, só gera texto explicativo.
+router.post('/collect/explain', async (req, res) => {
+  const { attrId, orgName, orgContext } = req.body || {};
+
+  const attr = ATTR_INDEX.get(attrId);
+  if (!attr) return res.status(400).json({ error: 'attrId inválido.' });
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 500,
+      system: [{ type: 'text', text: EXPLAIN_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildExplainUserPrompt(attr, orgName, String(orgContext || '')) }],
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    res.json({ message: textBlock ? textBlock.text : '' });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Bloco 4 -- um turno do campo de conversa livre para UM atributo.
 router.post('/collect/turn', async (req, res) => {
   const { attrId, orgName, orgContext, history } = req.body || {};
 
@@ -63,14 +97,49 @@ router.post('/collect/turn', async (req, res) => {
     // escolhido for, byte a byte, uma das 4 alternativas oficiais do atributo.
     if (parsed.action === 'register' && (!parsed.chosen || !attr.niveis.includes(parsed.chosen))) {
       return res.json({
-        action: 'present_options',
-        message: parsed.message || 'Pode confirmar escolhendo uma das alternativas abaixo?',
+        action: 'reply',
+        message: parsed.message || 'Pode confirmar escolhendo uma das alternativas acima?',
       });
     }
 
     res.json({ action: parsed.action, message: parsed.message, chosen: parsed.chosen });
   } catch (err) {
     handleAnthropicError(err, res);
+  }
+});
+
+// Etapa 3 -- extrai o texto de um PDF (relatório exportado pelo DEXi) no
+// servidor, já que o navegador não tem como ler PDF nativamente.
+router.post('/extract-pdf', async (req, res) => {
+  const { pdfBase64 } = req.body || {};
+  if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+    return res.status(400).json({ error: 'pdfBase64 é obrigatório.' });
+  }
+
+  let buffer;
+  try {
+    buffer = Buffer.from(pdfBase64, 'base64');
+  } catch {
+    return res.status(400).json({ error: 'pdfBase64 não é um base64 válido.' });
+  }
+  if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) {
+    return res.status(400).json({ error: 'Arquivo PDF vazio ou maior que 15MB.' });
+  }
+
+  let parser;
+  try {
+    parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    const text = (result.text || '').trim();
+    if (!text) {
+      return res.status(422).json({ error: 'Não encontrei texto neste PDF (pode ser um PDF escaneado como imagem). Cole o texto manualmente.' });
+    }
+    res.json({ text });
+  } catch (err) {
+    console.error('[extract-pdf]', err);
+    res.status(422).json({ error: 'Não consegui extrair o texto deste PDF: ' + err.message });
+  } finally {
+    if (parser) await parser.destroy().catch(() => {});
   }
 });
 

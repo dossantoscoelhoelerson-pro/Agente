@@ -84,6 +84,18 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
 }
 .progress-label{font-size:13px; color:var(--ink-soft);}
 
+.block-label{
+  font-size:12px; font-weight:600; letter-spacing:.03em; text-transform:uppercase;
+  color:var(--accent); margin-bottom:10px;
+}
+.block-official-text{
+  font-family:var(--font-display); font-size:19px; line-height:1.45; color:var(--ink);
+}
+.block-explain-text{font-size:15px; line-height:1.65; color:var(--ink-soft);}
+.card.block-explain{background:var(--accent-soft); border-color:transparent;}
+.card.block-explain .block-label{color:var(--ink-soft);}
+.card.block-explain .block-explain-text{color:var(--ink);}
+
 .group-tag{
   display:inline-block; font-size:12px; color:var(--accent);
   background:var(--accent-soft); padding:4px 10px; border-radius:99px;
@@ -98,6 +110,8 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   display:flex; align-items:center; gap:14px; transition:border-color .12s, background .12s;
 }
 .opt:hover{border-color:var(--accent);}
+.opt-selected{border-color:var(--accent); background:var(--accent-soft);}
+.opt-selected .num{background:var(--accent); color:var(--paper);}
 .opt .num{
   width:26px; height:26px; border-radius:50%; background:var(--line);
   color:var(--ink-soft); font-size:13px; font-weight:600;

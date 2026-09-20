@@ -3,7 +3,8 @@
 Ferramenta de coleta conversacional e interpretação de resultado para o protótipo de
 dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštnar e Pucihar
 (2021), com o **DEXi** como motor oficial de cálculo. A especificação completa está em
-`especificacao_experiencia_conversacional.md`.
+`especificacao_experiencia_conversacional.md`, com correções e adições em
+`adendo_especificacao_rodada2.md`.
 
 ## Arquitetura
 
@@ -15,6 +16,14 @@ dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštn
 - **Asset**: `assets/template.dxi` é o template original do modelo DEXi (extraído e validado
   a partir do protótipo), servido como arquivo estático e editado no navegador como texto
   puro (nunca reserializado por um parser XML -- ver seção 7 da especificação).
+- **Tela de cada atributo em 4 blocos** (adendo, seção 1): (1) a pergunta oficial, literal,
+  vinda direto de `attr.descricao`, nunca gerada pela IA; (2) uma explicação adaptada ao
+  contexto da empresa, gerada pela IA; (3) as 4 alternativas oficiais, sempre visíveis como
+  botões, rotuladas com o texto de exibição curado em `mapeamento_exibicao_rascunho.json`
+  (o valor técnico que vai para CSV/.dxi nunca muda); (4) um campo de conversa livre para
+  dúvida ou resposta em texto.
+- **Etapa 3 aceita PDF** (adendo, seção 3): o texto é extraído no backend (`pdf-parse`)
+  antes de ir para a IA interpretar -- o navegador não lê PDF nativamente.
 
 ```
 Usuário -> [Etapa 1: coleta conversacional] -> CSV + .dxi preenchido
@@ -78,18 +87,21 @@ simples de rodar em qualquer outro lugar sem essa adaptação.
 
 ```
 server/
-  index.js        servidor Express (estáticos + API)
-  routes.js        endpoints /api/attrs, /api/collect/turn, /api/interpret/turn
-  attrs.js          os 34 atributos básicos (fonte única de verdade)
-  prompts.js        prompts dos dois agentes
-  anthropicClient.js cliente da Anthropic + tratamento de erros
+  index.js           servidor Express (estáticos + API)
+  routes.js           endpoints /api/attrs, /api/collect/explain, /api/collect/turn,
+                       /api/extract-pdf, /api/interpret/turn
+  attrs.js             os 34 atributos básicos (fonte única de verdade)
+  displayMap.js        carrega mapeamento_exibicao_rascunho.json (texto de exibição do Bloco 3)
+  prompts.js           prompts dos agentes (explicação, coleta, interpretação)
+  anthropicClient.js  cliente da Anthropic + tratamento de erros
 public/
   index.html
   css/styles.css
-  js/app.js          estado, telas, chamadas ao backend
-  js/dxi.js          decodeTemplate/fillDxi/splitKeepEnds/validateDxi
+  js/app.js           estado, telas (4 blocos por atributo), chamadas ao backend
+  js/dxi.js           decodeTemplate/fillDxi/splitKeepEnds/validateDxi
 assets/
-  template.dxi       template original do modelo DEXi
+  template.dxi        template original do modelo DEXi
+mapeamento_exibicao_rascunho.json   tabela técnico -> exibição das 136 alternativas (rascunho)
 ```
 
 ## O que ainda falta (pendências conhecidas da especificação)
@@ -99,3 +111,11 @@ assets/
   provisória e legítima da pergunta.
 - Hospedagem definitiva e persistência entre sessões: decisões em aberto, não bloqueiam
   esta primeira versão (ver especificação, seção 12).
+- `mapeamento_exibicao_rascunho.json` é um **rascunho** (adendo, seção 2) -- a acentuação
+  não é gerada automaticamente (risco de acertar errado), então boa parte das 136 linhas
+  só teve o ponto trocado por espaço, sem acento adicionado (ex. "Basico", "Estrategico" em
+  algumas linhas, acentuado em outras). Vale uma revisão humana linha a linha antes de
+  considerar o texto de exibição definitivo.
+- Seções 4 (painel/cockpit com indicadores visuais e simulação de cenários) e 5 (identidade
+  visual com a paleta de 6 cores) do adendo ainda não foram aplicadas -- fora do escopo
+  pedido nesta rodada.

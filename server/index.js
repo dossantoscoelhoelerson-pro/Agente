@@ -7,7 +7,9 @@ const apiRoutes = require('./routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '2mb' }));
+// 20mb cobre um PDF de até ~15MB (a codificação base64 do upload da Etapa 3
+// infla o tamanho original em ~33%).
+app.use(express.json({ limit: '20mb' }));
 
 app.use('/api', apiRoutes);
 

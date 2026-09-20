@@ -11,11 +11,13 @@ const state = {
   idx: 0,
   answers: {},
   registro: {},          // attrId -> {id, resposta, conversa}
-  chatLogs: {},           // attrId -> [{role, text}]
+  chatLogs: {},           // attrId -> [{role, text}] -- Bloco 4 (conversa livre)
+  explanations: {},       // attrId -> texto do Bloco 2 (explicação adaptada)
+  explainErrors: {},      // attrId -> mensagem de erro do Bloco 2, se falhou
+  explaining: false,
   orgName: '',
   orgContext: '',
   editingFromReview: false,
-  pendingOptions: null,
   thinking: false,
   turnInFlight: false,
 
@@ -119,10 +121,24 @@ function goToAttribute(idx, opts){
   state.idx = idx;
   state.screen = 'collect';
   state.editingFromReview = !!opts.fromReview;
-  const attr = ATTRS[idx];
-  const already = !!state.answers[attr.id];
-  state.pendingOptions = already ? attr.niveis : null;
   render();
+}
+
+// Bloco 3 -- as 4 alternativas oficiais, sempre visíveis como cards
+// clicáveis (nunca gated atrás de uma decisão da IA). O rótulo mostrado é
+// o texto de exibição (mapeamento_exibicao_rascunho.json, via /api/attrs);
+// o valor registrado ao clicar é sempre o valor técnico exato.
+function renderAlternatives(attr){
+  const opts = el('div', {class:'options'});
+  const niveisExibicao = attr.niveisExibicao || attr.niveis;
+  attr.niveis.forEach((lvl, i) => {
+    const selected = state.answers[attr.id] === lvl;
+    const btn = el('div', {class:'opt' + (selected ? ' opt-selected' : ''), onclick: () => registerAnswer(attr.id, lvl)});
+    btn.appendChild(el('div', {class:'num', text: String(i+1)}));
+    btn.appendChild(el('div', {text: niveisExibicao[i]}));
+    opts.appendChild(btn);
+  });
+  return opts;
 }
 
 function screenCollect(){
@@ -136,43 +152,58 @@ function screenCollect(){
   track.appendChild(el('div', {class:'progress-fill', style:`width:${Math.round((answeredCount/ATTRS.length)*100)}%`}));
   c.appendChild(track);
 
-  const card = el('div', {class:'card'});
+  // Bloco 1 -- pergunta oficial, literal, seca. Nunca passa pela IA.
+  const block1 = el('div', {class:'card block-official'});
+  block1.appendChild(el('div', {class:'block-label', text:'Pergunta oficial'}));
+  block1.appendChild(el('div', {class:'block-official-text', text: attr.descricao}));
+  c.appendChild(block1);
 
-  const chatLog = state.chatLogs[attr.id] || (state.chatLogs[attr.id] = []);
-  const chatBox = el('div', {class:'chat-log'});
-  chatLog.forEach(m => {
-    chatBox.appendChild(el('div', {class: 'bubble ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text}));
-  });
-  card.appendChild(chatBox);
-
-  if(state.thinking){
-    card.appendChild(el('div', {class:'bubble bubble-agent'}, [
+  // Bloco 2 -- explicação adaptada ao contexto da empresa, gerada pela IA.
+  const block2 = el('div', {class:'card block-explain'});
+  block2.appendChild(el('div', {class:'block-label', text: `O que isso significa para ${state.orgName}`}));
+  if(state.explanations[attr.id]){
+    block2.appendChild(el('div', {class:'block-explain-text', text: state.explanations[attr.id]}));
+  } else if(state.explaining){
+    block2.appendChild(el('div', {class:'block-explain-text'}, [
       el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
     ]));
+  } else if(state.explainErrors[attr.id]){
+    block2.appendChild(el('div', {class:'error-box', text: state.explainErrors[attr.id]}));
+    block2.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: () => ensureExplanation(attr)}));
   }
+  c.appendChild(block2);
 
-  if(!state.thinking && state.pendingOptions){
-    const opts = el('div', {class:'options'});
-    state.pendingOptions.forEach((lvl, i) => {
-      const btn = el('div', {class:'opt', onclick: () => registerAnswer(attr.id, lvl)});
-      btn.appendChild(el('div', {class:'num', text: String(i+1)}));
-      btn.appendChild(el('div', {text: lvl}));
-      opts.appendChild(btn);
+  // Bloco 3 -- as 4 alternativas oficiais.
+  const block3 = el('div', {class:'card'});
+  block3.appendChild(el('div', {class:'block-label', text:'Escolha uma alternativa'}));
+  block3.appendChild(renderAlternatives(attr));
+  c.appendChild(block3);
+
+  // Bloco 4 -- campo de conversa livre (dúvida ou resposta em texto).
+  const block4 = el('div', {class:'card'});
+  block4.appendChild(el('div', {class:'block-label', text:'Dúvida ou resposta livre'}));
+  const chatLog = state.chatLogs[attr.id] || (state.chatLogs[attr.id] = []);
+  if(chatLog.length){
+    const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
+    chatLog.forEach(m => {
+      chatBox.appendChild(el('div', {class: 'bubble ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text}));
     });
-    card.appendChild(opts);
+    block4.appendChild(chatBox);
   }
-
-  if(!state.thinking){
+  if(state.thinking){
+    block4.appendChild(el('div', {class:'bubble bubble-agent'}, [
+      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
+    ]));
+  } else {
     const inputRow = el('div', {class:'chat-input-row'});
-    const textIn = el('input', {type:'text', placeholder:'Digite sua resposta ou dúvida...', id:'chatTextInput'});
+    const textIn = el('input', {type:'text', placeholder:'Escreva sua dúvida ou sua resposta...', id:'chatTextInput'});
     textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ sendUserTurn(textIn.value); } });
     const sendBtn = el('button', {class:'btn', text:'Enviar', onclick: () => sendUserTurn(textIn.value)});
     inputRow.appendChild(textIn);
     inputRow.appendChild(sendBtn);
-    card.appendChild(inputRow);
+    block4.appendChild(inputRow);
   }
-
-  c.appendChild(card);
+  c.appendChild(block4);
 
   const nav = el('div', {class:'btn-row'});
   if(state.idx > 0){
@@ -181,10 +212,33 @@ function screenCollect(){
   nav.appendChild(el('button', {class:'btn secondary', text:'Revisar respostas', onclick: () => { state.screen = 'review'; render(); }}));
   c.appendChild(nav);
 
-  if(chatLog.length === 0 && !state.pendingOptions && !state.thinking && !state.turnInFlight){
-    startAttributeTurn();
+  if(!state.explanations[attr.id] && !state.explaining && !state.explainErrors[attr.id]){
+    ensureExplanation(attr);
   }
   return c;
+}
+
+// Bloco 2 -- gera a explicação adaptada ao contexto da empresa. Independe
+// de qualquer clique/turno de conversa: carrega assim que o atributo abre.
+async function ensureExplanation(attr){
+  if(state.explanations[attr.id] || state.explaining) return;
+  state.explaining = true;
+  delete state.explainErrors[attr.id];
+  render();
+  try{
+    const res = await fetch('/api/collect/explain', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ attrId: attr.id, orgName: state.orgName, orgContext: state.orgContext }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
+    state.explanations[attr.id] = data.message || '';
+  } catch(err){
+    state.explainErrors[attr.id] = 'Não consegui gerar uma explicação adaptada agora (' + err.message + '). Você já pode responder usando a pergunta oficial acima ou as alternativas abaixo.';
+  }
+  state.explaining = false;
+  render();
 }
 
 function sendUserTurn(text){
@@ -192,15 +246,8 @@ function sendUserTurn(text){
   if(!text || state.thinking || state.turnInFlight) return;
   const attr = ATTRS[state.idx];
   state.chatLogs[attr.id].push({role:'user', text});
-  state.pendingOptions = null;
   render();
   callAgentTurn();
-}
-
-async function startAttributeTurn(){
-  state.thinking = true;
-  render();
-  await callAgentTurn();
 }
 
 async function callAgentTurn(){
@@ -230,10 +277,8 @@ async function callAgentTurn(){
       return;
     }
     state.chatLogs[attr.id].push({role:'assistant', text: data.message || ''});
-    state.pendingOptions = (data.action === 'present_options') ? attr.niveis : null;
   } catch(err){
-    state.chatLogs[attr.id].push({role:'assistant', text: 'Não consegui processar essa etapa automaticamente (' + err.message + '). Você pode escolher uma das alternativas oficiais abaixo para seguir.'});
-    state.pendingOptions = attr.niveis;
+    state.chatLogs[attr.id].push({role:'assistant', text: 'Não consegui processar essa dúvida automaticamente (' + err.message + '). Você pode continuar escolhendo diretamente uma das alternativas acima.'});
   }
   state.thinking = false;
   state.turnInFlight = false;
@@ -243,7 +288,6 @@ async function callAgentTurn(){
 function registerAnswer(id, val){
   state.answers[id] = val;
   state.registro[id] = { id, resposta: val, conversa: (state.chatLogs[id] || []).slice() };
-  state.pendingOptions = null;
 
   if(state.editingFromReview){
     state.editingFromReview = false;
@@ -379,11 +423,45 @@ function screenManual(){
 
 // ---------- Etapa 3: upload do resultado + interpretação ----------
 
+function arrayBufferToBase64(buf){
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunkSize = 0x8000;
+  for(let i = 0; i < bytes.length; i += chunkSize){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+// O DEXi exporta o resultado em PDF -- extrai o texto no backend (o
+// navegador não lê PDF nativamente) e usa esse texto como se fosse o
+// conteúdo colado/carregado normalmente.
+async function extractPdfText(file, okMsgEl, textareaEl){
+  try{
+    const buf = await file.arrayBuffer();
+    const pdfBase64 = arrayBufferToBase64(buf);
+    const res = await fetch('/api/extract-pdf', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ pdfBase64 }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
+    state.dexiText = data.text;
+    textareaEl.value = data.text;
+    okMsgEl.textContent = 'PDF processado: ' + file.name;
+  } catch(err){
+    okMsgEl.textContent = '';
+    state.uploadError = 'Não consegui extrair o texto do PDF (' + err.message + '). Você pode copiar o texto do PDF manualmente e colar no campo abaixo.';
+    render();
+  }
+}
+
 function screenUpload(){
   const c = el('div');
   c.appendChild(stepsNav(2));
   c.appendChild(el('h1', {text:'Carregue o resultado do DEXi.'}));
-  c.appendChild(el('p', {class:'lede', text:'Cole o texto do relatório, ou carregue um arquivo .txt/.json/.csv com o resultado.'}));
+  c.appendChild(el('p', {class:'lede', text:'Cole o texto do relatório, ou carregue um arquivo .txt/.json/.csv/.pdf com o resultado -- inclusive o PDF exportado direto pelo DEXi.'}));
 
   const card = el('div', {class:'card'});
 
@@ -425,10 +503,16 @@ function screenUpload(){
 
   const zone = el('div', {class:'upload-zone'});
   zone.appendChild(el('div', {class:'icon', text:'⇪'}));
-  zone.appendChild(el('div', {text:'Clique para escolher um arquivo (.txt, .json, .csv)'}));
-  const fileInput = el('input', {type:'file', accept:'.txt,.json,.csv', onchange: (e)=>{
+  zone.appendChild(el('div', {text:'Clique para escolher um arquivo (.txt, .json, .csv, .pdf)'}));
+  const fileInput = el('input', {type:'file', accept:'.txt,.json,.csv,.pdf', onchange: (e)=>{
     const f = e.target.files[0];
     if(!f) return;
+    const isPdf = f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf';
+    if(isPdf){
+      okMsg.textContent = 'Extraindo texto de ' + f.name + '...';
+      extractPdfText(f, okMsg, textarea);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       state.dexiText = reader.result;
