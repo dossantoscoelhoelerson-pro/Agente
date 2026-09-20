@@ -82,7 +82,14 @@ function render(){
   if(renderPending){ renderPending = false; render(); }
 }
 
+// Etapa 1 = abertura, as 34 perguntas, revisão e conclusão da coleta --
+// usa um fundo de página diferente das Etapas 2 e 3 (ver --etapa1-bg em
+// public/css/styles.css).
+const ETAPA1_SCREENS = ['intro', 'collect', 'review', 'done1'];
+
 function renderOnce(){
+  document.body.classList.toggle('etapa-1', ETAPA1_SCREENS.includes(state.screen));
+
   const app = document.getElementById('app');
   app.innerHTML = '';
   if(state.screen === 'loading') app.appendChild(screenLoading());

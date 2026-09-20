@@ -1,7 +1,10 @@
 /* Paleta de cores oficial do produto (adendo_especificacao_rodada4.md,
-   seção 2, com o Off-white trocado por #DFECF2 a pedido do usuário --
-   mesma função de fundo estrutural principal, só o valor mudou).
-   Estruturais: fundo azul claro + Azul Profundo. Expressão (sempre com
+   seção 2), com dois ajustes a pedido do usuário: o Off-white trocado por
+   #DFECF2 (mesma função de fundo estrutural principal) e depois --paper /
+   --paper-raised invertidos entre si -- o fundo de página das Etapas 2 e 3
+   é branco (#FFFFFF) e os cards são azul claro (#DFECF2). --etapa1-bg
+   (cinza #F2F2F2 da Etapa 1) não faz parte dessa inversão.
+   Estruturais: branco/azul claro + Azul Profundo. Expressão (sempre com
    função semântica, nunca decorativas):
      --blue   Azul Digital     #3E9BC1  tecnologia/interação: elementos
               clicáveis, links, progresso.
@@ -18,7 +21,7 @@
    neutra" pedida para erros/avisos, propositalmente fora da família do
    vermelho de identidade. */
 :root{
-  --paper:#DFECF2; --paper-raised:#FFFFFF;
+  --paper:#FFFFFF; --paper-raised:#DFECF2;
   --ink:#123F63; --ink-soft:#4D6F8A;
   --line:#D9E1E8;
 
@@ -28,6 +31,13 @@
   --red:#D96F72; --red-soft:#F8E5E5;
 
   --state-bg:#E7E3DA; --state-text:#3A3F44;
+
+  /* Fundo específico da Etapa 1 (abertura + as 34 perguntas + revisão +
+     conclusão da coleta) -- pedido do usuário: #F2F2F2 em vez do
+     #DFECF2 usado nas Etapas 2 e 3. Em modo escuro este valor é igual ao
+     --paper escuro normal (ver blocos de modo escuro abaixo), ou seja, o
+     modo escuro não muda -- só existe essa variação na tela clara. */
+  --etapa1-bg:#F2F2F2;
 
   --font-display:'Fraunces', Georgia, serif;
   --font-body:'Inter', -apple-system, Segoe UI, sans-serif;
@@ -48,6 +58,7 @@
     --red:#E5989A; --red-soft:#3A2224;
 
     --state-bg:#2A2D30; --state-text:#D9D6CD;
+    --etapa1-bg:#0E2436;
   }
 }
 :root[data-theme="dark"]{
@@ -59,6 +70,7 @@
   --green:#74D2C5; --green-soft:#123A34;
   --yellow:#F7C84B; --yellow-soft:#3B2E10; --yellow-strong:#F7C84B;
   --red:#E5989A; --red-soft:#3A2224;
+  --etapa1-bg:#0E2436;
 
   --state-bg:#2A2D30; --state-text:#D9D6CD;
 }
@@ -68,6 +80,13 @@ body{
   font-family:var(--font-body); line-height:1.5;
   min-height:100vh;
 }
+/* Etapa 1 (abertura, as 34 perguntas, revisão, conclusão da coleta) usa um
+   fundo próprio -- ver --etapa1-bg. A classe é alternada em public/js/app.js
+   a cada render(), conforme a tela atual. Redefinir --paper aqui (em vez de
+   só o background do body) garante que os elementos que herdam --paper
+   dentro dessas telas (campos de texto, caixa de exemplo) acompanhem o
+   mesmo fundo, sem precisar repetir a variável em cada seletor. */
+body.etapa-1{--paper:var(--etapa1-bg);}
 .wrap{max-width:720px; margin:0 auto; padding:48px 24px 96px;}
 .eyebrow{
   font-family:var(--font-body); font-size:13px; color:var(--ink-soft);
