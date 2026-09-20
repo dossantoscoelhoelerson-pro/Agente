@@ -5,6 +5,7 @@
 // funciona sem nenhuma capability especial).
 
 let ATTRS = [];
+let DEXI_MODEL = null; // {root, dimensoes, grupos} -- ver /api/dexi-model
 
 const state = {
   screen: 'loading',
@@ -25,10 +26,19 @@ const state = {
   collectionSourceLoaded: false, // JSON da coleta foi carregado manualmente (sessão nova)
   uploadError: '',
 
-  reportChat: [],
-  reportThinking: false,
-  reportError: '',
-  reportConsistencia: null,
+  // Painel da Etapa 3 (adendo rodada 3) -- ver funções ensurePanel/ensureLearning.
+  panel: null,          // {nivelFinal, nivelFinalLabel, capDigital, capDigitalLabel, capOrganizacional, capOrganizacionalLabel, grupos, consistencia}
+  panelLoading: false,
+  panelError: '',
+  learning: null,        // {temas, pontosAtencao}
+  learningLoading: false,
+  learningError: '',
+  pdfExporting: false,
+  pdfExportError: '',
+
+  duvidasChat: [],
+  duvidasThinking: false,
+  duvidasError: '',
 };
 
 function el(tag, attrs, children){
@@ -43,7 +53,28 @@ function el(tag, attrs, children){
   return e;
 }
 
+// Trava de reentrância: uma tela pode, ao ser construída, disparar uma
+// chamada assíncrona cujo início síncrono chama render() de novo (ex.
+// "state.x = true; render();" antes do primeiro await) -- se isso
+// acontecer ainda dentro de uma chamada a render() em andamento, o
+// appendChild() de fora conclui depois e duplica o conteúdo no DOM. Os
+// pontos de disparo já usam setTimeout para evitar isso, mas esta trava
+// garante que nenhum outro caminho volte a introduzir o mesmo bug.
+let renderInProgress = false;
+let renderPending = false;
+
 function render(){
+  if(renderInProgress){ renderPending = true; return; }
+  renderInProgress = true;
+  try{
+    renderOnce();
+  } finally {
+    renderInProgress = false;
+  }
+  if(renderPending){ renderPending = false; render(); }
+}
+
+function renderOnce(){
   const app = document.getElementById('app');
   app.innerHTML = '';
   if(state.screen === 'loading') app.appendChild(screenLoading());
@@ -152,10 +183,13 @@ function screenCollect(){
   track.appendChild(el('div', {class:'progress-fill', style:`width:${Math.round((answeredCount/ATTRS.length)*100)}%`}));
   c.appendChild(track);
 
-  // Bloco 1 -- pergunta oficial, literal, seca. Nunca passa pela IA.
+  // Bloco 1 -- pergunta oficial, literal, seca. Vem de perguntas_oficiais.json
+  // (attr.pergunta, via /api/attrs) -- NUNCA de attr.descricao, que é uma
+  // anotação técnica interna do modelo, não a pergunta (bug corrigido,
+  // adendo rodada 3). Nunca passa pela IA.
   const block1 = el('div', {class:'card block-official'});
   block1.appendChild(el('div', {class:'block-label', text:'Pergunta oficial'}));
-  block1.appendChild(el('div', {class:'block-official-text', text: attr.descricao}));
+  block1.appendChild(el('div', {class:'block-official-text', text: attr.pergunta}));
   c.appendChild(block1);
 
   // Bloco 2 -- explicação adaptada ao contexto da empresa, gerada pela IA.
@@ -213,7 +247,12 @@ function screenCollect(){
   c.appendChild(nav);
 
   if(!state.explanations[attr.id] && !state.explaining && !state.explainErrors[attr.id]){
-    ensureExplanation(attr);
+    // setTimeout adia a chamada para depois deste render() terminar --
+    // ensureExplanation chama render() de novo assim que começa, e
+    // chamar isso ainda dentro da construção da tela atual duplicava o
+    // conteúdo no DOM (o innerHTML='' do render aninhado rodava antes do
+    // appendChild deste render() já estar pendurado).
+    setTimeout(() => ensureExplanation(attr), 0);
   }
   return c;
 }
@@ -547,9 +586,9 @@ function screenUpload(){
     if(!canProceed()){ state.uploadError = 'Carregue o JSON da coleta desta organização antes de continuar — ele não está disponível nesta sessão.'; render(); return; }
     state.dexiText = text;
     state.uploadError = '';
-    state.reportChat = [];
-    state.reportError = '';
-    state.reportConsistencia = null;
+    state.panel = null; state.panelError = '';
+    state.learning = null; state.learningError = '';
+    state.duvidasChat = []; state.duvidasError = '';
     state.screen = 'report';
     render();
   });
@@ -558,11 +597,97 @@ function screenUpload(){
   return c;
 }
 
-async function interpretTurn(userMessage){
-  const historySnapshot = state.reportChat.slice();
-  if(userMessage) state.reportChat.push({role:'user', text: userMessage});
-  state.reportThinking = true;
-  state.reportError = '';
+// ---------- Etapa 3: painel visual (adendo rodada 3) ----------
+// (a) status geral, (b) gráficos das duas dimensões e dos grupos, (c)
+// panorama da coleta, (d) centro de dúvidas (conversa, agora só uma seção
+// do painel), (e) centro de aprendizado. Status e gráficos vêm sempre do
+// resultado oficial do DEXi (extraídos, nunca recalculados); panorama vem
+// direto das respostas da coleta; aprendizado e dúvidas são gerados por IA.
+
+// Consistência dos 34 atributos -- não depende da IA nem da extração do
+// painel, então nunca deve ficar refém de uma falha de API (ver bug real:
+// exportar o PDF sem o painel ter conseguido extrair nada fazia o rótulo
+// "consistenciaOk" cair para false por padrão, sinalizando uma divergência
+// que não existia de verdade).
+function computeConsistencia(){
+  return ATTRS.every(a => {
+    const val = state.answers[a.id];
+    return val && a.niveis.includes(val);
+  });
+}
+
+function computePanorama(){
+  const total = ATTRS.length;
+  let respondidos = 0;
+  const maisBaixas = [], maisAltas = [];
+  ATTRS.forEach(a => {
+    const val = state.answers[a.id];
+    if(!val) return;
+    respondidos++;
+    const idx = a.niveis.indexOf(val);
+    if(idx === 0) maisBaixas.push(a.id);
+    if(idx === a.niveis.length - 1) maisAltas.push(a.id);
+  });
+  return { respondidos, total, maisBaixas, maisAltas };
+}
+
+async function ensurePanel(){
+  if(state.panel || state.panelLoading) return;
+  state.panelLoading = true;
+  state.panelError = '';
+  render();
+  try{
+    const res = await fetch('/api/interpret/extract', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ orgName: state.orgName, answers: state.answers, dexiText: state.dexiText }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
+    state.panel = data;
+  } catch(err){
+    state.panelError = 'Não consegui extrair o status e os gráficos do resultado do DEXi (' + err.message + '). O panorama e o centro de dúvidas abaixo ainda funcionam a partir do texto carregado.';
+  }
+  state.panelLoading = false;
+  render();
+  if(state.panel) ensureLearning();
+}
+
+async function ensureLearning(){
+  if(state.learning || state.learningLoading) return;
+  state.learningLoading = true;
+  state.learningError = '';
+  render();
+  try{
+    const res = await fetch('/api/interpret/learning', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        orgName: state.orgName,
+        orgContext: state.orgContext,
+        answers: state.answers,
+        capDigital: state.panel ? state.panel.capDigital : null,
+        capOrganizacional: state.panel ? state.panel.capOrganizacional : null,
+        grupos: state.panel ? state.panel.grupos : [],
+      }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
+    state.learning = data;
+  } catch(err){
+    state.learningError = 'Não consegui gerar o centro de aprendizado agora (' + err.message + ').';
+  }
+  state.learningLoading = false;
+  render();
+}
+
+async function duvidasTurn(userMessage){
+  userMessage = (userMessage || '').trim();
+  if(!userMessage || state.duvidasThinking) return;
+  state.duvidasChat.push({role:'user', text: userMessage});
+  const historySnapshot = state.duvidasChat.slice(0, -1);
+  state.duvidasThinking = true;
+  state.duvidasError = '';
   render();
   try{
     const res = await fetch('/api/interpret/turn', {
@@ -575,74 +700,255 @@ async function interpretTurn(userMessage){
         registroCompleto: ATTRS.map(a => state.registro[a.id]).filter(Boolean),
         dexiText: state.dexiText,
         history: historySnapshot,
-        userMessage: userMessage || null,
+        userMessage,
       }),
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
-    state.reportChat.push({role:'assistant', text: data.message});
-    state.reportConsistencia = data.consistencia;
+    state.duvidasChat.push({role:'assistant', text: data.message});
   } catch(err){
-    state.reportError = 'Não consegui gerar a resposta: ' + err.message;
+    state.duvidasError = 'Não consegui gerar a resposta: ' + err.message;
   }
-  state.reportThinking = false;
+  state.duvidasThinking = false;
   render();
+}
+
+async function downloadPanelPdf(){
+  if(state.pdfExporting) return;
+  state.pdfExporting = true;
+  state.pdfExportError = '';
+  render();
+  try{
+    const res = await fetch('/api/interpret/export-pdf', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        orgName: state.orgName,
+        orgContext: state.orgContext,
+        dexiText: state.dexiText,
+        nivelFinalLabel: state.panel && state.panel.nivelFinalLabel,
+        capDigitalLabel: state.panel && state.panel.capDigitalLabel,
+        capOrganizacionalLabel: state.panel && state.panel.capOrganizacionalLabel,
+        grupos: (state.panel && state.panel.grupos) || [],
+        panorama: computePanorama(),
+        temas: (state.learning && state.learning.temas) || [],
+        consistenciaOk: state.panel ? state.panel.consistencia.completo : computeConsistencia(),
+      }),
+    });
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || ('Erro ' + res.status));
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (state.orgName || 'diagnostico').replace(/\s+/g,'_') + '_diagnostico.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(err){
+    state.pdfExportError = 'Não consegui gerar o PDF: ' + err.message;
+  }
+  state.pdfExporting = false;
+  render();
+}
+
+function statTile(value, label){
+  const t = el('div', {class:'stat-tile'});
+  t.appendChild(el('div', {class:'stat-value', text: value}));
+  t.appendChild(el('div', {class:'stat-caption', text: label}));
+  return t;
+}
+
+// (a) status geral -- grande, com o rótulo "Resultado oficial do DEXi"
+// sempre visível, e a posição na escala de 4 níveis.
+function sectionStatus(){
+  const card = el('div', {class:'card panel-status'});
+  card.appendChild(el('div', {class:'block-label', text:'Resultado oficial do DEXi'}));
+  if(state.panelLoading && !state.panel){
+    card.appendChild(el('div', {class:'block-explain-text'}, [
+      el('span', {class:'spinner'}), el('span', {text:' analisando o resultado...', style:'margin-left:8px;'})
+    ]));
+    return card;
+  }
+  const nivelLabel = state.panel && state.panel.nivelFinalLabel;
+  card.appendChild(el('div', {class:'status-hero', text: nivelLabel || 'Não identificado no texto carregado'}));
+  if(DEXI_MODEL){
+    const idx = (state.panel && state.panel.nivelFinal) ? DEXI_MODEL.root.niveis.indexOf(state.panel.nivelFinal) : -1;
+    const track = el('div', {class:'scale-track'});
+    DEXI_MODEL.root.niveisExibicao.forEach((lbl, i) => {
+      track.appendChild(el('div', {class:'scale-seg' + (i === idx ? ' scale-seg-active' : ''), text: lbl}));
+    });
+    card.appendChild(track);
+  }
+  return card;
+}
+
+// (b) gráficos das duas dimensões e dos grupos intermediários.
+function sectionCharts(){
+  const card = el('div', {class:'card'});
+  card.appendChild(el('div', {class:'block-label', text:'Gráficos'}));
+  const grid = el('div', {class:'chart-grid'});
+
+  const scatterWrap = el('div', {class:'chart-card'});
+  scatterWrap.appendChild(el('div', {class:'chart-title', text:'Capacidade Digital × Capacidade Organizacional'}));
+  const scatterBox = el('div', {class:'chart-box'});
+  scatterWrap.appendChild(scatterBox);
+  grid.appendChild(scatterWrap);
+
+  const radarWrap = el('div', {class:'chart-card'});
+  radarWrap.appendChild(el('div', {class:'chart-title', text:'Grupos intermediários'}));
+  const radarBox = el('div', {class:'chart-box'});
+  radarWrap.appendChild(radarBox);
+  grid.appendChild(radarWrap);
+
+  card.appendChild(grid);
+
+  if(DEXI_MODEL && state.panel){
+    const dimDigital = DEXI_MODEL.dimensoes.find(d => d.id === 'CAP.DIGITAL');
+    const dimOrg = DEXI_MODEL.dimensoes.find(d => d.id === 'CAP.ORGANIZACIONAL');
+    const xIdx = state.panel.capDigital ? dimDigital.niveis.indexOf(state.panel.capDigital) : null;
+    const yIdx = state.panel.capOrganizacional ? dimOrg.niveis.indexOf(state.panel.capOrganizacional) : null;
+    renderDimensionScatter(scatterBox, { xLabels: dimDigital.niveisExibicao, yLabels: dimOrg.niveisExibicao, xIdx, yIdx });
+
+    const groups = DEXI_MODEL.grupos.map(g => {
+      const found = state.panel.grupos.find(pg => pg.id === g.id);
+      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
+    });
+    renderGroupRadar(radarBox, groups);
+  } else {
+    scatterBox.appendChild(el('div', {class:'chart-empty-note', text: state.panelLoading ? 'Carregando...' : 'Sem dados ainda.'}));
+    radarBox.appendChild(el('div', {class:'chart-empty-note', text: state.panelLoading ? 'Carregando...' : 'Sem dados ainda.'}));
+  }
+  return card;
+}
+
+// (c) panorama do processo -- a partir das respostas da coleta, nunca da IA.
+function sectionPanorama(){
+  const p = computePanorama();
+  const card = el('div', {class:'card'});
+  card.appendChild(el('div', {class:'block-label', text:'Panorama da coleta'}));
+  const stats = el('div', {class:'stat-row'});
+  stats.appendChild(statTile(`${p.respondidos}/${p.total}`, 'atributos respondidos'));
+  stats.appendChild(statTile(String(p.maisBaixas.length), 'no nível mais baixo da própria escala'));
+  stats.appendChild(statTile(String(p.maisAltas.length), 'no nível mais alto da própria escala'));
+  card.appendChild(stats);
+  if(p.maisBaixas.length){
+    card.appendChild(el('div', {class:'block-explain-text', style:'margin-top:12px;', text: 'Respostas no nível mais baixo: ' + p.maisBaixas.join(', ') + '.'}));
+  }
+  if(p.maisAltas.length){
+    card.appendChild(el('div', {class:'block-explain-text', text: 'Respostas no nível mais alto: ' + p.maisAltas.join(', ') + '.'}));
+  }
+  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Panorama informativo, a partir das respostas da coleta -- não é uma explicação causal do resultado oficial do DEXi.'}));
+  return card;
+}
+
+// (e) centro de aprendizado -- temas de estudo vinculados aos pontos de
+// atenção, nunca livros/autores específicos (risco de citação inventada).
+function sectionLearning(){
+  const card = el('div', {class:'card block-explain'});
+  card.appendChild(el('div', {class:'block-label', text:'Centro de aprendizado'}));
+  if(state.learning && state.learning.temas.length){
+    state.learning.temas.forEach(t => {
+      const item = el('div', {class:'learning-item'});
+      item.appendChild(el('div', {class:'learning-tema', text: t.tema}));
+      item.appendChild(el('div', {class:'block-explain-text', text: t.porque}));
+      card.appendChild(item);
+    });
+  } else if(state.learningLoading){
+    card.appendChild(el('div', {class:'block-explain-text'}, [
+      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
+    ]));
+  } else if(state.learningError){
+    card.appendChild(el('div', {class:'error-box', text: state.learningError}));
+    card.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: ensureLearning}));
+  } else if(state.learning){
+    card.appendChild(el('div', {class:'block-explain-text', text:'Nenhum tema gerado nesta sessão.'}));
+  }
+  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Temas de estudo sugeridos por IA, vinculados aos pontos de atenção do diagnóstico -- não são referências bibliográficas curadas ou verificadas pelo projeto.'}));
+  return card;
+}
+
+// (d) centro de dúvidas -- a conversa que já existia, agora reativa e como
+// uma seção do painel (nunca abre sozinha com um relatório).
+function sectionDuvidas(){
+  const card = el('div', {class:'card'});
+  card.appendChild(el('div', {class:'block-label', text:'Centro de dúvidas'}));
+  if(state.duvidasChat.length){
+    const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
+    state.duvidasChat.forEach(m => {
+      chatBox.appendChild(el('div', {class: 'bubble report-body ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text}));
+    });
+    card.appendChild(chatBox);
+  }
+  if(state.duvidasThinking){
+    card.appendChild(el('div', {class:'bubble bubble-agent'}, [
+      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
+    ]));
+  } else {
+    const inputRow = el('div', {class:'chat-input-row'});
+    const textIn = el('input', {type:'text', placeholder:'Pergunte algo sobre o resultado (ex.: por que ficamos nesse nível em Estratégia?)...', id:'duvidasTextInput'});
+    textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter' && textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } });
+    const sendBtn = el('button', {class:'btn', text:'Enviar', onclick: () => { if(textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } }});
+    inputRow.appendChild(textIn);
+    inputRow.appendChild(sendBtn);
+    card.appendChild(inputRow);
+  }
+  if(state.duvidasError){
+    card.appendChild(el('div', {class:'error-box', text: state.duvidasError}));
+  }
+  return card;
 }
 
 function screenReport(){
   const c = el('div');
   c.appendChild(stepsNav(2));
   c.appendChild(el('div', {class:'result-badge', text: state.orgName}));
-  c.appendChild(el('h1', {text:'Conversa sobre o resultado'}));
+  c.appendChild(el('h1', {text:'Painel do resultado'}));
 
-  if(state.reportConsistencia && !state.reportConsistencia.completo){
+  if(state.panel && !state.panel.consistencia.completo){
     const parts = [];
-    if(state.reportConsistencia.atributosFaltando.length) parts.push('sem resposta na coleta: ' + state.reportConsistencia.atributosFaltando.join(', '));
-    if(state.reportConsistencia.atributosInvalidos.length) parts.push('valor fora das 4 alternativas oficiais: ' + state.reportConsistencia.atributosInvalidos.join(', '));
+    if(state.panel.consistencia.atributosFaltando.length) parts.push('sem resposta na coleta: ' + state.panel.consistencia.atributosFaltando.join(', '));
+    if(state.panel.consistencia.atributosInvalidos.length) parts.push('valor fora das 4 alternativas oficiais: ' + state.panel.consistencia.atributosInvalidos.join(', '));
     c.appendChild(el('div', {class:'error-box', text: 'Divergência de consistência encontrada — ' + parts.join(' · ')}));
   }
 
-  const card = el('div', {class:'card'});
-  const chatBox = el('div', {class:'chat-log'});
-  state.reportChat.forEach(m => {
-    chatBox.appendChild(el('div', {class: 'bubble report-body ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text}));
-  });
-  card.appendChild(chatBox);
+  c.appendChild(sectionStatus());
+  c.appendChild(sectionCharts());
+  c.appendChild(sectionPanorama());
+  c.appendChild(sectionLearning());
+  c.appendChild(sectionDuvidas());
 
-  if(state.reportThinking){
-    card.appendChild(el('div', {class:'bubble bubble-agent'}, [
-      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
-    ]));
+  if(state.panelError){
+    const box = el('div', {class:'error-box', text: state.panelError});
+    c.appendChild(box);
+    c.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: () => { state.panelError = ''; ensurePanel(); }}));
   }
 
-  if(!state.reportThinking){
-    const inputRow = el('div', {class:'chat-input-row'});
-    const textIn = el('input', {type:'text', placeholder:'Pergunte algo sobre o resultado (ex.: por que ficamos nesse nível em Estratégia Digital?)...', id:'reportTextInput'});
-    textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter' && textIn.value.trim()){ interpretTurn(textIn.value); textIn.value=''; } });
-    const sendBtn = el('button', {class:'btn', text:'Enviar', onclick: () => { if(textIn.value.trim()){ interpretTurn(textIn.value); textIn.value=''; } }});
-    inputRow.appendChild(textIn);
-    inputRow.appendChild(sendBtn);
-    card.appendChild(inputRow);
-  }
-  c.appendChild(card);
-
-  if(state.reportError){
-    c.appendChild(el('div', {class:'error-box', text: state.reportError}));
-  }
-
-  c.appendChild(el('div', {class:'note', text:'Esta interpretação é gerada por IA a partir do resultado oficial do DEXi e das respostas da coleta — o resultado do DEXi continua sendo a referência oficial. Qualquer cenário hipotético é sempre indicado como simulação, nunca confundido com o resultado oficial.'}));
+  c.appendChild(el('div', {class:'note', text:'O resultado final, as dimensões e os grupos vêm sempre do resultado oficial do DEXi (nunca recalculados). Interpretações, panorama e centro de aprendizado são gerados a partir dele e das respostas da coleta -- qualquer cenário hipotético é sempre indicado como simulação, nunca confundido com o resultado oficial.'}));
 
   const btnRow = el('div', {class:'btn-row'});
+  btnRow.appendChild(el('button', {class:'btn', text: state.pdfExporting ? 'Gerando PDF…' : 'Baixar PDF', disabled: state.pdfExporting, onclick: downloadPanelPdf}));
   btnRow.appendChild(el('button', {class:'btn secondary', text:'Nova avaliação', onclick: () => {
     state.screen = 'intro'; state.idx = 0; state.answers = {}; state.registro = {}; state.chatLogs = {};
+    state.explanations = {}; state.explainErrors = {};
     state.orgName = ''; state.orgContext = ''; state.dexiText = ''; state.collectionSourceLoaded = false;
-    state.reportChat = []; state.reportConsistencia = null; state.reportError = '';
+    state.panel = null; state.panelError = ''; state.learning = null; state.learningError = '';
+    state.duvidasChat = []; state.duvidasError = '';
     render();
   }}));
   c.appendChild(btnRow);
+  if(state.pdfExportError){
+    c.appendChild(el('div', {class:'error-box', text: state.pdfExportError}));
+  }
 
-  if(state.reportChat.length === 0 && !state.reportThinking){
-    interpretTurn(null);
+  if(!state.panel && !state.panelLoading && !state.panelError){
+    // !state.panelError evita um loop -- sem essa checagem, toda vez que
+    // uma falha zerasse panelLoading e chamasse render(), esta mesma
+    // condição voltaria a ficar verdadeira e disparava ensurePanel() nela
+    // de novo, para sempre (bug real, pego só ao testar com falha de API).
+    // O setTimeout evita reentrar em render() antes deste appendChild()
+    // terminar (duplicaria a tela).
+    setTimeout(ensurePanel, 0);
   }
   return c;
 }
@@ -651,12 +957,14 @@ function screenReport(){
 
 async function boot(){
   try{
-    const res = await fetch('/api/attrs');
-    const data = await res.json();
-    ATTRS = data.attrs;
+    const [attrsRes, modelRes] = await Promise.all([fetch('/api/attrs'), fetch('/api/dexi-model')]);
+    const attrsData = await attrsRes.json();
+    const modelData = await modelRes.json();
+    ATTRS = attrsData.attrs;
+    DEXI_MODEL = modelData;
   } catch(err){
     document.getElementById('app').innerHTML = '';
-    document.getElementById('app').appendChild(el('div', {class:'error-box', text:'Não consegui carregar os atributos do servidor. Recarregue a página.'}));
+    document.getElementById('app').appendChild(el('div', {class:'error-box', text:'Não consegui carregar os dados do servidor. Recarregue a página.'}));
     return;
   }
   state.screen = 'intro';

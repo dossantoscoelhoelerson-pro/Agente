@@ -4,7 +4,7 @@ Ferramenta de coleta conversacional e interpretação de resultado para o protó
 dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštnar e Pucihar
 (2021), com o **DEXi** como motor oficial de cálculo. A especificação completa está em
 `especificacao_experiencia_conversacional.md`, com correções e adições em
-`adendo_especificacao_rodada2.md`.
+`adendo_especificacao_rodada2.md` e `adendo_especificacao_rodada3.md`.
 
 ## Arquitetura
 
@@ -15,15 +15,24 @@ dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštn
   de `claude.use(...)`.
 - **Asset**: `assets/template.dxi` é o template original do modelo DEXi (extraído e validado
   a partir do protótipo), servido como arquivo estático e editado no navegador como texto
-  puro (nunca reserializado por um parser XML -- ver seção 7 da especificação).
-- **Tela de cada atributo em 4 blocos** (adendo, seção 1): (1) a pergunta oficial, literal,
-  vinda direto de `attr.descricao`, nunca gerada pela IA; (2) uma explicação adaptada ao
-  contexto da empresa, gerada pela IA; (3) as 4 alternativas oficiais, sempre visíveis como
-  botões, rotuladas com o texto de exibição curado em `mapeamento_exibicao_rascunho.json`
-  (o valor técnico que vai para CSV/.dxi nunca muda); (4) um campo de conversa livre para
-  dúvida ou resposta em texto.
-- **Etapa 3 aceita PDF** (adendo, seção 3): o texto é extraído no backend (`pdf-parse`)
-  antes de ir para a IA interpretar -- o navegador não lê PDF nativamente.
+  puro (nunca reserializado por um parser XML -- ver seção 7 da especificação). É também a
+  fonte da hierarquia raiz/dimensões/grupos e das escalas de 4 níveis usadas no painel da
+  Etapa 3 (`server/dexiModel.js`).
+- **Tela de cada atributo em 4 blocos** (adendo rodada 2, seção 1): (1) a pergunta oficial,
+  literal, vinda de `perguntas_oficiais.json` (nunca de `attr.descricao`, que é uma anotação
+  técnica interna do modelo -- bug corrigido na rodada 3), nunca gerada/parafraseada pela IA;
+  (2) uma explicação adaptada ao contexto da empresa, gerada pela IA; (3) as 4 alternativas
+  oficiais, sempre visíveis como botões, rotuladas com o texto de exibição curado em
+  `mapeamento_exibicao_rascunho.json` (o valor técnico que vai para CSV/.dxi nunca muda);
+  (4) um campo de conversa livre para dúvida ou resposta em texto.
+- **Etapa 3 é um painel visual** (adendo rodada 3): status geral (nível final + posição na
+  escala de 4 níveis), gráficos SVG (posição nas duas dimensões e radar dos 7 grupos
+  intermediários -- sempre extraídos do resultado oficial do DEXi, nunca recalculados),
+  panorama da coleta (client-side, a partir das respostas), centro de dúvidas (a conversa,
+  agora reativa e como uma seção do painel) e centro de aprendizado (temas de estudo
+  vinculados aos pontos de atenção, nunca livros/autores específicos). Aceita upload de PDF
+  (o texto é extraído no backend com `pdf-parse`) além de `.txt/.json/.csv`. Tem exportação
+  do painel inteiro como PDF (`pdfkit`, server-side).
 
 ```
 Usuário -> [Etapa 1: coleta conversacional] -> CSV + .dxi preenchido
@@ -32,7 +41,7 @@ Usuário -> [Etapa 1: coleta conversacional] -> CSV + .dxi preenchido
                                  Usuário importa o .dxi no DEXi,
                                  roda "Evaluate", exporta o resultado
                                                      |
-Usuário -> [Etapa 3: upload do resultado] -> conversa de interpretação (IA)
+Usuário -> [Etapa 3: upload do resultado] -> painel + centro de dúvidas (IA)
 ```
 
 ## Rodando localmente
@@ -87,35 +96,53 @@ simples de rodar em qualquer outro lugar sem essa adaptação.
 
 ```
 server/
-  index.js           servidor Express (estáticos + API)
-  routes.js           endpoints /api/attrs, /api/collect/explain, /api/collect/turn,
-                       /api/extract-pdf, /api/interpret/turn
-  attrs.js             os 34 atributos básicos (fonte única de verdade)
-  displayMap.js        carrega mapeamento_exibicao_rascunho.json (texto de exibição do Bloco 3)
-  prompts.js           prompts dos agentes (explicação, coleta, interpretação)
-  anthropicClient.js  cliente da Anthropic + tratamento de erros
+  index.js              servidor Express (estáticos + API)
+  routes.js               todos os endpoints /api/* (ver abaixo)
+  attrs.js                 os 34 atributos básicos (fonte única de verdade)
+  officialQuestions.js      carrega perguntas_oficiais.json (Bloco 1)
+  displayMap.js             carrega mapeamento_exibicao_rascunho.json (Bloco 3)
+  dexiModel.js              hierarquia raiz/dimensões/grupos e escalas (painel da Etapa 3),
+                            extraídas de assets/template.dxi
+  prompts.js                prompts dos agentes (explicação, coleta, extração,
+                            aprendizado, centro de dúvidas)
+  exportPdf.js              monta o PDF do painel (pdfkit)
+  anthropicClient.js       cliente da Anthropic + tratamento de erros
 public/
   index.html
   css/styles.css
-  js/app.js           estado, telas (4 blocos por atributo), chamadas ao backend
-  js/dxi.js           decodeTemplate/fillDxi/splitKeepEnds/validateDxi
+  js/app.js               estado, telas (4 blocos por atributo, painel da Etapa 3)
+  js/dxi.js               decodeTemplate/fillDxi/splitKeepEnds/validateDxi
+  js/charts.js             gráficos SVG do painel (posição nas dimensões, radar dos grupos)
 assets/
-  template.dxi        template original do modelo DEXi
-mapeamento_exibicao_rascunho.json   tabela técnico -> exibição das 136 alternativas (rascunho)
+  template.dxi            template original do modelo DEXi
+perguntas_oficiais.json                     pergunta oficial de cada atributo (Bloco 1)
+mapeamento_exibicao_rascunho.json           técnico -> exibição das 136 alternativas (Bloco 3)
 ```
+
+Endpoints (`server/routes.js`):
+
+| Endpoint | Uso |
+|---|---|
+| `GET /api/attrs` | os 34 atributos + pergunta oficial + texto de exibição das alternativas |
+| `GET /api/dexi-model` | hierarquia raiz/dimensões/grupos + escalas, para o painel |
+| `POST /api/collect/explain` | Bloco 2 -- explicação adaptada ao contexto |
+| `POST /api/collect/turn` | Bloco 4 -- turno da conversa livre de um atributo |
+| `POST /api/extract-pdf` | extrai texto de um PDF enviado (Etapa 3) |
+| `POST /api/interpret/extract` | status + dimensões + grupos, extraídos do resultado do DEXi |
+| `POST /api/interpret/learning` | centro de aprendizado (temas de estudo) |
+| `POST /api/interpret/turn` | centro de dúvidas -- turno da conversa sobre o resultado |
+| `POST /api/interpret/export-pdf` | exporta o painel completo como PDF |
 
 ## O que ainda falta (pendências conhecidas da especificação)
 
-- A redação oficial e definitiva das 34 perguntas ainda não foi entregue pelo pesquisador
-  -- por ora, o campo `descricao` de cada atributo (embutido no protótipo) é a base
-  provisória e legítima da pergunta.
 - Hospedagem definitiva e persistência entre sessões: decisões em aberto, não bloqueiam
   esta primeira versão (ver especificação, seção 12).
-- `mapeamento_exibicao_rascunho.json` é um **rascunho** (adendo, seção 2) -- a acentuação
-  não é gerada automaticamente (risco de acertar errado), então boa parte das 136 linhas
-  só teve o ponto trocado por espaço, sem acento adicionado (ex. "Basico", "Estrategico" em
-  algumas linhas, acentuado em outras). Vale uma revisão humana linha a linha antes de
-  considerar o texto de exibição definitivo.
-- Seções 4 (painel/cockpit com indicadores visuais e simulação de cenários) e 5 (identidade
-  visual com a paleta de 6 cores) do adendo ainda não foram aplicadas -- fora do escopo
-  pedido nesta rodada.
+- `mapeamento_exibicao_rascunho.json` já foi atualizado pelo pesquisador (ex. "BI" ->
+  "Business Intelligence"), mas ainda carrega o nome de rascunho -- vale confirmar se já é
+  a versão definitiva.
+- Seção 5 do adendo rodada 2 (identidade visual com a paleta de 6 cores oficiais) ainda não
+  foi aplicada -- fora do escopo pedido até agora.
+- Os rótulos legíveis dos 2 dimensões + 7 grupos do painel (`server/dexiModel.js`, campo
+  `label`) e a limpeza cosmética dos tokens de escala agregada (`DISPLAY_LEVELS`) foram
+  curados por mim a partir do `template.dxi` -- vale uma conferência humana, mesma lógica
+  do `mapeamento_exibicao_rascunho.json`.
