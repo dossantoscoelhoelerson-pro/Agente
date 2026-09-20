@@ -1,0 +1,312 @@
+/* Paleta de cores oficial do produto (adendo_especificacao_rodada4.md,
+   seção 2), com dois ajustes a pedido do usuário: o Off-white trocado por
+   #DFECF2 (mesma função de fundo estrutural principal) e depois --paper /
+   --paper-raised invertidos entre si -- o fundo de página das Etapas 2 e 3
+   é branco (#FFFFFF) e os cards são azul claro (#DFECF2). --etapa1-bg
+   (cinza #F2F2F2 da Etapa 1) não faz parte dessa inversão.
+   Estruturais: branco/azul claro + Azul Profundo. Expressão (sempre com
+   função semântica, nunca decorativas):
+     --blue   Azul Digital     #3E9BC1  tecnologia/interação: elementos
+              clicáveis, links, progresso.
+     --green  Verde Inteligência #43B7AA  IA: interpretação, insights --
+              usada só onde o conteúdo é de fato gerado pela IA (Bloco 2,
+              centro de aprendizado, falas da IA no chat).
+     --yellow Amarelo Evolução #F7C84B  evolução/oportunidade -- com
+              moderação, nunca como cor dominante.
+     --red    Vermelho Identidade #D96F72  identidade visual/marca --
+              NUNCA usada para erro (ver --state-*).
+   --blue-strong é uma variante mais escura do Azul Digital só para texto
+   branco sobre fundo sólido (o tom oficial não passa em contraste AA com
+   texto normal em cima). --state-bg/--state-text são a "cor de estado
+   neutra" pedida para erros/avisos, propositalmente fora da família do
+   vermelho de identidade. */
+:root{
+  --paper:#FFFFFF; --paper-raised:#DFECF2;
+  --ink:#123F63; --ink-soft:#4D6F8A;
+  --line:#D9E1E8;
+
+  --blue:#3E9BC1; --blue-soft:#E3F1F6; --blue-strong:#2C7B99;
+  --green:#43B7AA; --green-soft:#E1F4F1;
+  --yellow:#F7C84B; --yellow-soft:#FCF1D8; --yellow-strong:#8A6D1E;
+  --red:#D96F72; --red-soft:#F8E5E5;
+
+  --state-bg:#E7E3DA; --state-text:#3A3F44;
+
+  /* Fundo específico da Etapa 1 (abertura + as 34 perguntas + revisão +
+     conclusão da coleta) -- pedido do usuário: #F2F2F2 em vez do
+     #DFECF2 usado nas Etapas 2 e 3. Em modo escuro este valor é igual ao
+     --paper escuro normal (ver blocos de modo escuro abaixo), ou seja, o
+     modo escuro não muda -- só existe essa variação na tela clara. */
+  --etapa1-bg:#F2F2F2;
+
+  --font-display:'Fraunces', Georgia, serif;
+  --font-body:'Inter', -apple-system, Segoe UI, sans-serif;
+}
+/* Modo escuro: não faz parte da paleta oficial (pensada para tela clara) --
+   é uma extensão minha, mantendo os mesmos matizes (só ajustados de
+   luminosidade para legibilidade em fundo escuro), documentada aqui para
+   quem for revisar. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E2436; --paper-raised:#15324B;
+    --ink:#F1EEE6; --ink-soft:#A9BDCC;
+    --line:#2B4A63;
+
+    --blue:#6CC0DE; --blue-soft:#163B4C; --blue-strong:#4FA6C4;
+    --green:#74D2C5; --green-soft:#123A34;
+    --yellow:#F7C84B; --yellow-soft:#3B2E10; --yellow-strong:#F7C84B;
+    --red:#E5989A; --red-soft:#3A2224;
+
+    --state-bg:#2A2D30; --state-text:#D9D6CD;
+    --etapa1-bg:#0E2436;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E2436; --paper-raised:#15324B;
+  --ink:#F1EEE6; --ink-soft:#A9BDCC;
+  --line:#2B4A63;
+
+  --blue:#6CC0DE; --blue-soft:#163B4C; --blue-strong:#4FA6C4;
+  --green:#74D2C5; --green-soft:#123A34;
+  --yellow:#F7C84B; --yellow-soft:#3B2E10; --yellow-strong:#F7C84B;
+  --red:#E5989A; --red-soft:#3A2224;
+  --etapa1-bg:#0E2436;
+
+  --state-bg:#2A2D30; --state-text:#D9D6CD;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font-body); line-height:1.5;
+  min-height:100vh;
+}
+/* Etapa 1 (abertura, as 34 perguntas, revisão, conclusão da coleta) usa um
+   fundo próprio -- ver --etapa1-bg. A classe é alternada em public/js/app.js
+   a cada render(), conforme a tela atual. Redefinir --paper aqui (em vez de
+   só o background do body) garante que os elementos que herdam --paper
+   dentro dessas telas (campos de texto, caixa de exemplo) acompanhem o
+   mesmo fundo, sem precisar repetir a variável em cada seletor. */
+body.etapa-1{--paper:var(--etapa1-bg);}
+.wrap{max-width:720px; margin:0 auto; padding:48px 24px 96px;}
+.eyebrow{
+  font-family:var(--font-body); font-size:13px; color:var(--ink-soft);
+  margin-bottom:6px;
+}
+/* toque de marca (identidade visual) -- só no cabeçalho da tela de abertura */
+.eyebrow.brand{color:var(--red); font-weight:600;}
+h1{
+  font-family:var(--font-display); font-weight:500; font-size:34px;
+  line-height:1.15; margin:0 0 14px; letter-spacing:-0.01em;
+}
+h2{
+  font-family:var(--font-display); font-weight:500; font-size:24px;
+  margin:0 0 10px; letter-spacing:-0.01em;
+}
+p{color:var(--ink-soft); font-size:16px; margin:0 0 16px;}
+.lede{font-size:18px; max-width:56ch;}
+.caption-line{font-size:14px; color:var(--ink-soft); font-style:italic; margin:0 0 16px;}
+.example-box{
+  background:var(--paper); border:1px solid var(--line); border-radius:10px;
+  padding:14px 16px; margin:0 0 18px;
+}
+.example-box .example-label{
+  font-size:11px; font-weight:600; letter-spacing:.03em; text-transform:uppercase;
+  color:var(--ink-soft); margin-bottom:6px;
+}
+.example-box .example-text{font-size:14px; font-style:italic; color:var(--ink-soft); line-height:1.6;}
+
+.card{
+  background:var(--paper-raised); border:1px solid var(--line);
+  border-radius:14px; padding:28px; margin-top:24px;
+}
+.btn{
+  font-family:var(--font-body); font-weight:600; font-size:15px;
+  border-radius:9px; padding:13px 22px; border:none; cursor:pointer;
+  background:var(--ink); color:var(--paper); transition:opacity .15s;
+}
+.btn:hover{opacity:.85;}
+.btn.secondary{
+  background:transparent; color:var(--ink); border:1px solid var(--line);
+}
+/* elementos interativos de conversa (campo de conversa/enviar) em Azul Digital */
+.btn.chat-send{background:var(--blue-strong); color:#fff;}
+.btn.small{padding:8px 14px; font-size:13px;}
+.btn:disabled{opacity:.35; cursor:not-allowed;}
+.btn-row{display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;}
+
+input[type=text]{
+  width:100%; font-family:var(--font-body); font-size:16px;
+  padding:12px 14px; border:1px solid var(--line); border-radius:9px;
+  background:var(--paper); color:var(--ink); margin-bottom:14px;
+}
+input[type=text]:focus, textarea:focus{outline:2px solid var(--blue); outline-offset:1px;}
+textarea{
+  width:100%; font-family:var(--font-body); font-size:15px;
+  padding:12px 14px; border:1px solid var(--line); border-radius:9px;
+  background:var(--paper); color:var(--ink); min-height:90px; resize:vertical;
+}
+label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
+
+.progress-track{
+  height:6px; background:var(--line); border-radius:99px; overflow:hidden;
+  margin:20px 0 4px;
+}
+.progress-fill{
+  height:100%; background:var(--blue); border-radius:99px;
+  transition:width .3s ease;
+}
+.progress-label{font-size:13px; color:var(--ink-soft);}
+
+.block-label{
+  font-size:12px; font-weight:600; letter-spacing:.03em; text-transform:uppercase;
+  color:var(--ink-soft); margin-bottom:10px;
+}
+.block-official-text{
+  font-family:var(--font-display); font-size:19px; line-height:1.45; color:var(--ink);
+}
+/* elementos interativos (escolher, conversar) -> Azul Digital no rótulo */
+.card.block-options .block-label,
+.card.panel-duvidas .block-label{color:var(--blue);}
+.card.panel-status .block-label{color:var(--ink);}
+.block-explain-text{font-size:15px; line-height:1.65; color:var(--ink-soft);}
+/* Bloco 2 e centro de aprendizado: conteúdo gerado pela IA -> Verde Inteligência */
+.card.block-explain{background:var(--green-soft); border-color:transparent;}
+.card.block-explain .block-label{color:var(--green);}
+.card.block-explain .block-explain-text{color:var(--ink);}
+
+.group-tag{
+  display:inline-block; font-size:12px; color:var(--blue);
+  background:var(--blue-soft); padding:4px 10px; border-radius:99px;
+  margin-bottom:14px;
+}
+
+.options{display:flex; flex-direction:column; gap:10px; margin-top:18px;}
+.opt{
+  text-align:left; font-family:var(--font-body); font-size:15.5px;
+  color:var(--ink); background:var(--paper-raised); border:1.5px solid var(--line);
+  border-radius:10px; padding:15px 18px; cursor:pointer;
+  display:flex; align-items:center; gap:14px; transition:border-color .12s, background .12s;
+}
+.opt:hover{border-color:var(--blue);}
+.opt-selected{border-color:var(--blue); background:var(--blue-soft);}
+.opt-selected .num{background:var(--blue); color:#fff;}
+.opt .num{
+  width:26px; height:26px; border-radius:50%; background:var(--line);
+  color:var(--ink-soft); font-size:13px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+
+.chat-log{display:flex; flex-direction:column; gap:12px; margin-bottom:6px;}
+.bubble{
+  max-width:86%; padding:12px 16px; border-radius:14px; font-size:15.5px; line-height:1.5;
+  white-space:pre-wrap;
+}
+/* falas da IA no chat = conteúdo gerado pela IA -> Verde Inteligência */
+.bubble-agent{
+  background:var(--green-soft); color:var(--ink); align-self:flex-start;
+  border-bottom-left-radius:4px;
+}
+.bubble-user{
+  background:var(--ink); color:var(--paper); align-self:flex-end;
+  border-bottom-right-radius:4px;
+}
+.chat-input-row{display:flex; gap:10px; margin-top:18px;}
+.chat-input-row input{margin-bottom:0; flex:1;}
+
+.steps-nav{display:flex; gap:6px; margin-bottom:36px;}
+.steps-nav .dot{
+  flex:1; height:4px; border-radius:99px; background:var(--line);
+}
+.steps-nav .dot.active{background:var(--blue);}
+.steps-nav .dot.done{background:var(--blue);}
+
+.list-check{list-style:none; padding:0; margin:0;}
+.list-check li{
+  padding:10px 0 10px 30px; position:relative; color:var(--ink-soft); font-size:15px;
+  border-bottom:1px solid var(--line);
+}
+.list-check li:last-child{border-bottom:none;}
+.list-check li::before{
+  content:'○'; position:absolute; left:0; color:var(--ink-soft);
+}
+
+.review-list{list-style:none; padding:0; margin:0;}
+.review-list li{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:9px 0; border-bottom:1px solid var(--line); font-size:14px;
+}
+.review-list li:last-child{border-bottom:none;}
+.review-list .rl-name{color:var(--ink); flex:1;}
+.review-list .rl-val{color:var(--ink-soft); text-align:right;}
+/* pendência a resolver = oportunidade -> Amarelo Evolução, com moderação (só o texto) */
+.review-list .rl-val.empty{color:var(--yellow-strong);}
+
+.upload-zone{
+  border:2px dashed var(--line); border-radius:14px; padding:32px;
+  text-align:center; cursor:pointer; transition:border-color .15s;
+}
+.upload-zone:hover, .upload-zone.drag{border-color:var(--blue);}
+.upload-zone input{display:none;}
+.upload-zone .icon{font-size:28px; margin-bottom:8px;}
+.file-ok{color:var(--blue-strong); font-size:14px; margin-top:10px;}
+
+/* chip com o nome da organização = identidade -> Vermelho Identidade, com moderação */
+.result-badge{
+  display:inline-block; font-family:var(--font-display); font-size:15px;
+  background:var(--red-soft); color:var(--red); padding:6px 16px;
+  border-radius:99px; margin-bottom:18px;
+}
+.report-body{white-space:pre-wrap; font-size:15.5px; line-height:1.65; color:var(--ink);}
+.report-body strong{color:var(--ink); font-weight:600;}
+
+.note{
+  font-size:13.5px; color:var(--ink-soft); background:var(--blue-soft);
+  border-radius:9px; padding:12px 16px; margin-top:18px;
+}
+.spinner{
+  width:18px; height:18px; border:2px solid var(--line);
+  border-top-color:var(--blue); border-radius:50%;
+  animation:spin .7s linear infinite; display:inline-block; vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* erros/avisos usam uma cor de estado neutra -- nunca o Vermelho Identidade
+   (ver adendo rodada 4, seção 2: "não usar vermelho para estados de erro"). */
+.error-box{
+  background:var(--state-bg); color:var(--state-text); border-radius:9px;
+  padding:14px 16px; font-size:14px; margin-top:14px;
+}
+
+/* Painel da Etapa 3 (adendo rodada 3) */
+/* status geral = resultado oficial/estrutural -> Azul Profundo, não Verde
+   (não é um insight da IA, é o dado extraído do resultado do DEXi). */
+.status-hero{
+  font-family:var(--font-display); font-size:40px; font-weight:500; color:var(--ink);
+  margin:4px 0 18px; line-height:1.1;
+}
+.scale-track{display:flex; gap:6px;}
+.scale-seg{
+  flex:1; text-align:center; font-size:11px; padding:10px 4px; border-radius:8px;
+  background:var(--paper); border:1px solid var(--line); color:var(--ink-soft);
+}
+.scale-seg-active{background:var(--ink); border-color:var(--ink); color:var(--paper); font-weight:600;}
+
+.chart-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:16px;}
+@media (max-width:640px){ .chart-grid{grid-template-columns:1fr;} }
+.chart-card{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px;}
+.chart-title{font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:8px;}
+.chart-box svg{width:100%; height:auto; display:block;}
+.chart-empty-note{font-size:12.5px; color:var(--ink-soft); padding:32px 8px; text-align:center;}
+
+/* panorama = pontos de atenção/evolução -> Amarelo, com moderação (só o rótulo) */
+.card.panel-panorama .block-label{color:var(--yellow-strong);}
+.stat-row{display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;}
+.stat-tile{
+  flex:1; min-width:130px; background:var(--paper); border:1px solid var(--line);
+  border-radius:10px; padding:14px 16px;
+}
+.stat-value{font-family:var(--font-display); font-size:24px; color:var(--ink);}
+.stat-caption{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+
+.learning-item{margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+.learning-item:first-of-type{margin-top:0; padding-top:0; border-top:none;}
+.learning-tema{font-weight:600; color:var(--ink); margin-bottom:4px;}
