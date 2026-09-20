@@ -53,6 +53,23 @@ configurar `ANTHROPIC_API_KEY` nas variáveis de ambiente do host e rodar `npm s
 provedor -- a escolha de onde hospedar é decisão do time do projeto (ver especificação,
 seção 12).
 
+### Deploy no Render sem usar terminal (Blueprint)
+
+O repositório já tem um `render.yaml` na raiz com as configurações preenchidas
+(build/start command, branch, plano free). Basta:
+
+1. Ter uma chave da API da Anthropic (console.anthropic.com -> Settings -> API Keys).
+2. No painel do Render (render.com): **New + -> Blueprint**.
+3. Conectar/selecionar o repositório `dossantoscoelhoelerson-pro/Agente` -- o Render
+   detecta o `render.yaml` sozinho.
+4. Quando pedir o valor de `ANTHROPIC_API_KEY` (marcada como secreta no blueprint, por
+   isso não vem preenchida), colar a chave.
+5. Confirmar -- o Render builda e sobe o serviço e entrega uma URL pública
+   (`https://diagnostico-maturidade-digital.onrender.com` ou similar).
+
+No plano free o serviço "dorme" após um tempo sem uso -- o primeiro acesso depois disso
+pode levar ~30-50s para acordar.
+
 Para hosts serverless (ex. Vercel), os endpoints em `server/routes.js` podem ser adaptados
 para funções individuais sem alterar a lógica -- o servidor Express atual é a forma mais
 simples de rodar em qualquer outro lugar sem essa adaptação.
