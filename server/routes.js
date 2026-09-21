@@ -61,6 +61,11 @@ router.get('/attrs', (req, res) => {
     ...a,
     pergunta: questionFor(a.id) || a.descricao,
     niveisExibicao: a.niveis.map((n) => displayLabel(a.id, n)),
+    // grupoTop = o grupo A1-A4/B1-B3 (7 no total) correspondente ao subgrupo-
+    // folha do atributo (attr.grupo) -- usado pelo painel da Etapa 3 (adendo
+    // rodada 5, item 1.1) para agrupar os 34 atributos sob os mesmos 7 grupos
+    // já usados no radar, sem duplicar a tabela LEAF_TO_GROUP no cliente.
+    grupoTop: groupIdFor(a.grupo),
   }));
   res.json({ attrs });
 });
@@ -281,9 +286,10 @@ router.post('/interpret/learning', async (req, res) => {
   if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'answers é obrigatório.' });
 
   const pontosAtencao = buildPontosAtencao({ answers, capDigital, capOrganizacional, grupos });
+  const pontoLabels = pontosAtencao.map((p) => p.label);
 
   const LearningSchema = z.object({
-    temas: z.array(z.object({ tema: z.string(), porque: z.string() })),
+    temas: z.array(z.object({ tema: z.string(), porque: z.string(), pontoLabel: z.string().nullable() })),
   });
 
   try {
@@ -296,7 +302,17 @@ router.post('/interpret/learning', async (req, res) => {
     });
     const parsed = response.parsed_output;
     if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
-    res.json({ temas: parsed.temas, pontosAtencao });
+    // Validação defensiva (mesmo padrão do resto do projeto): só aceitar um
+    // pontoLabel que seja, exatamente, um dos rótulos de ponto de atenção que
+    // foram de fato passados à IA -- nunca confiar que ela não inventou um
+    // grupo/atributo fora dessa lista (adendo rodada 5, item 1.4: a etiqueta
+    // visual do centro de aprendizado precisa apontar para um ponto real).
+    const temas = parsed.temas.map((t) => ({
+      tema: t.tema,
+      porque: t.porque,
+      pontoLabel: t.pontoLabel && pontoLabels.includes(t.pontoLabel) ? t.pontoLabel : null,
+    }));
+    res.json({ temas, pontosAtencao });
   } catch (err) {
     handleAnthropicError(err, res);
   }

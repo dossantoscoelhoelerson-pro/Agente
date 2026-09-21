@@ -4,6 +4,13 @@
 // oficial, panorama da organização e recomendações do centro de
 // aprendizado.
 const PDFDocument = require('pdfkit');
+const path = require('path');
+
+// Logo ORBE (adendo rodada 5, seção 3) -- o mesmo arquivo fornecido, usado
+// exatamente como está (só redimensionado por doc.image(), nunca redesenhado).
+// A variante de fundo branco é a única compatível com o fundo branco padrão
+// do PDF.
+const LOGO_PATH = path.join(__dirname, '..', 'public', 'assets', 'brand', 'orbe_lockup_branco.png');
 
 // Paleta oficial (adendo rodada 4, seção 2), adaptada ao PDF: os tons puros
 // de Azul Digital/Verde Inteligência falham contraste AA como texto em
@@ -47,6 +54,15 @@ function buildReportPdf(data) {
     doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
+
+    try {
+      doc.image(LOGO_PATH, doc.page.margins.left, doc.y, { width: 120 });
+      doc.moveDown(3.2);
+    } catch (err) {
+      // Nunca deixar a exportação falhar por causa do logo -- se o arquivo
+      // não puder ser lido por algum motivo, o PDF segue sem ele.
+      console.error('[export-pdf] logo', err);
+    }
 
     h1(doc, 'Diagnóstico de Maturidade Digital');
     p(doc, orgName || '(organização não informada)', { continued: false });

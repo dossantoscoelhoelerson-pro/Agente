@@ -1,11 +1,11 @@
-# Diagnóstico de Maturidade Digital
+# ORBE — Diagnóstico de Maturidade Digital
 
-Ferramenta de coleta conversacional e interpretação de resultado para o protótipo de
-dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštnar e Pucihar
-(2021), com o **DEXi** como motor oficial de cálculo. A especificação completa está em
-`especificacao_experiencia_conversacional.md`, com correções e adições em
-`adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.md` e
-`adendo_especificacao_rodada4.md`.
+**ORBE** ("Visão integrada") é a ferramenta de coleta conversacional e interpretação de
+resultado para o protótipo de dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de
+Kljajić Borštnar e Pucihar (2021), com o **DEXi** como motor oficial de cálculo. A
+especificação completa está em `especificacao_experiencia_conversacional.md`, com correções
+e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.md`,
+`adendo_especificacao_rodada4.md` e `adendo_especificacao_rodada5.md`.
 
 ## Arquitetura
 
@@ -40,6 +40,28 @@ dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de Kljajić Borštn
   estado neutra, nunca o Vermelho Identidade (regra explícita do adendo).
 - **Textos de abertura e de contextualização da organização**: cópia exata do adendo rodada
   4 (seções 3 e 5), sem paráfrase.
+- **Identidade visual ORBE** (adendo rodada 5): logo fornecido pelo pesquisador
+  (`public/assets/brand/`), usado exatamente como está -- nunca redesenhado, só
+  recortado/redimensionado (favicon derivado só do símbolo, cabeçalho fixo persistente em
+  todas as telas, tela de abertura, cabeçalho do PDF exportado). Detalhes da proveniência de
+  cada recorte em `public/assets/brand/README.md`. Transições suaves (fade) entre
+  telas/blocos e cards/espaçamento revisados em toda a aplicação, não só nas telas mais
+  recentes.
+- **Painel da Etapa 3 elevado** (adendo rodada 5, seção 1), usando o mockup em
+  `orbe_identidade_visual_e_mockup.png` como referência de organização (nunca cópia pixel a
+  pixel, e nenhum dos números ilustrativos do mockup foi usado): navegação por abas
+  (Diagnóstico / Dimensões / Atributos / Evolução / Relatórios -- adaptação do "menu lateral"
+  do mockup para o layout estreito de coluna única já usado no resto da aplicação);
+  indicador circular de posição unificado com o selo de classificação (preenchimento é
+  sempre a posição do nível oficial dentro da própria escala de 4 níveis, nunca um
+  percentual calculado ou inventado); detalhamento por grupo sob demanda (clique em um dos 7
+  grupos para ver os atributos básicos que o compõem, com o valor de cada um); lista visual
+  dedicada de "atributos em destaque" (pontos fortes/atenção), com indicador de cor e resumo
+  de uma linha rastreável até a resposta real da coleta; sugestões do centro de aprendizado
+  com etiqueta visual do grupo/atributo que motivou cada uma (validada no servidor contra a
+  lista real de pontos de atenção, nunca um texto livre da IA). A aba Evolução não simula um
+  histórico entre sessões que a ferramenta não guarda -- mostra a posição atual e é honesta
+  sobre essa limitação em vez de inventar uma tendência.
 
 ```
 Usuário -> [Etapa 1: coleta conversacional] -> CSV + .dxi preenchido
@@ -117,9 +139,14 @@ server/
 public/
   index.html
   css/styles.css
-  js/app.js               estado, telas (4 blocos por atributo, painel da Etapa 3)
+  js/app.js               estado, telas (4 blocos por atributo, painel da Etapa 3 com abas)
   js/dxi.js               decodeTemplate/fillDxi/splitKeepEnds/validateDxi
-  js/charts.js             gráficos SVG do painel (posição nas dimensões, radar dos grupos)
+  js/charts.js             gráficos SVG do painel (dimensões, radar dos grupos, indicador
+                            circular de posição na escala)
+  assets/
+    brand/                 logo ORBE original + derivados só de recorte/redimensionamento
+                            (ver public/assets/brand/README.md)
+    favicon/                favicon/ícones de app derivados do símbolo do logo
 assets/
   template.dxi            template original do modelo DEXi
 perguntas_oficiais.json                     pergunta oficial de cada atributo (Bloco 1)
@@ -131,7 +158,7 @@ Endpoints (`server/routes.js`):
 
 | Endpoint | Uso |
 |---|---|
-| `GET /api/attrs` | os 34 atributos + pergunta oficial + texto de exibição das alternativas |
+| `GET /api/attrs` | os 34 atributos + pergunta oficial + texto de exibição das alternativas + grupo A1-A4/B1-B3 correspondente (`grupoTop`, painel da Etapa 3) |
 | `GET /api/dexi-model` | hierarquia raiz/dimensões/grupos + escalas, para o painel |
 | `POST /api/collect/explain` | Bloco 2 -- explicação adaptada ao contexto |
 | `POST /api/collect/turn` | Bloco 4 -- turno da conversa livre de um atributo |
