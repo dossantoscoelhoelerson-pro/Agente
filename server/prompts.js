@@ -113,19 +113,19 @@ REGRAS INVIOLÁVEIS:
 - Cada tema sugerido deve estar vinculado a um ponto de atenção específico do diagnóstico (um grupo ou atributo que ficou em nível mais baixo) -- nunca uma recomendação genérica de transformação digital desconectada do resultado.
 - Recomendações são sempre possibilidades ("uma área possível para aprofundar seria...") -- nunca prescrições ("a organização deve...").
 
-Responda em JSON estruturado: uma lista de 3 a 6 temas, cada um com "tema" (curto) e "porque" (1-2 frases conectando ao ponto de atenção específico do diagnóstico, citando o grupo/atributo).`;
+Responda em JSON estruturado: uma lista de 3 a 6 temas, cada um com "tema" (curto), "porque" (1-2 frases conectando ao ponto de atenção específico do diagnóstico, citando o grupo/atributo) e "pontoLabel" (o rótulo exato -- copiado byte a byte da lista de pontos de atenção recebida -- do grupo/dimensão que motivou este tema; null só se o tema não estiver ligado a nenhum ponto específico da lista).`;
 
 function buildLearningUserPrompt({ orgName, orgContext, pontosAtencao }) {
   const pontosTxt = pontosAtencao.length
     ? pontosAtencao
         .map((p) => `- ${p.label} (nível oficial: ${p.nivel})${p.atributos.length ? `, atributos que mais pesaram: ${p.atributos.join(', ')}` : ''}`)
         .join('\n')
-    : '(nenhum ponto de atenção claro foi identificado nos dados disponíveis -- sugira temas gerais de continuidade, deixando isso explícito.)';
+    : '(nenhum ponto de atenção claro foi identificado nos dados disponíveis -- sugira temas gerais de continuidade, deixando isso explícito, e use pontoLabel null em todos.)';
 
   return `Organização: ${orgName}
 Contexto: ${orgContext || '(não informado)'}
 
-Pontos de atenção identificados (nível oficial do DEXi mais baixo dentro da escala do grupo):
+Pontos de atenção identificados (nível oficial do DEXi mais baixo dentro da escala do grupo) -- use exatamente estes rótulos em "pontoLabel", nunca um texto parecido ou reescrito:
 ${pontosTxt}
 
 Sugira os temas do centro de aprendizado, seguindo as regras do sistema.`;
