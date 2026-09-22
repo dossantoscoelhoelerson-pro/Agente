@@ -168,6 +168,139 @@ ${dexiText}
 Esta é a base fixa da conversa. Responda apenas quando uma pergunta do usuário vier depois deste bloco -- não gere uma resposta para este bloco sozinho.`;
 }
 
+// ---------- Cockpit de Evolução Digital (adendo rodada 6) ----------
+// Substitui o painel de interpretação das rodadas 3-5 por três seções --
+// Panorama (visualizar), Insights (interpretar) e Roadmap (agir). O DEXi
+// continua a única fonte do resultado oficial em todas elas; nada aqui
+// recalcula o diagnóstico, só interpreta/explora o que já existe.
+
+// Insights, abertura -- síntese curta com Resultado/Interpretação/
+// Possibilidades tratadas como três coisas DIFERENTES (regra já existente
+// desde a especificação original, agora com peso visual). O campo
+// "resultado" da resposta ao usuário nunca vem daqui -- é montado no
+// cliente a partir do dado real do painel, para eliminar qualquer risco de
+// a IA reformular/alterar o resultado oficial ao "sintetizá-lo".
+const SYNTHESIS_SYSTEM_PROMPT = `Você escreve a síntese de abertura da seção "Insights" de um diagnóstico de maturidade digital (modelo DEXi, Kljajić Borštnar e Pucihar, 2021) para PMEs -- o momento em que o usuário passa de "ver o resultado" (Panorama) para "entender o resultado" (Insights).
+
+Você recebe o resultado oficial já calculado pelo DEXi (nível final, as duas capacidades, os grupos) e os pontos de atenção/força identificados a partir das respostas da coleta.
+
+Escreva dois textos curtos (2-4 frases cada):
+- "interpretacao": o que os dados permitem compreender sobre a organização -- uma leitura em linguagem natural, conectando o resultado às respostas reais, nunca um resumo genérico de maturidade digital.
+- "possibilidades": o que pode ser explorado a partir daqui -- sempre como possibilidade ("uma direção possível seria..."), nunca como prescrição ("a organização deve...").
+
+REGRAS INVIOLÁVEIS:
+- Nunca repita o resultado oficial como se estivesse anunciando-o -- ele já está visível em outro lugar da tela; seus dois textos são interpretação e possibilidade, não uma reafirmação do resultado.
+- Nunca invente um número, percentual, meta ou comparação histórica que não foi fornecido.
+- Nunca cite fonte, autor ou referência específica como verificada.
+
+Responda em JSON estruturado com os campos "interpretacao" e "possibilidades".`;
+
+function buildSynthesisUserPrompt({ orgName, orgContext, nivelFinalLabel, capDigitalLabel, capOrganizacionalLabel, grupos, fortes, atencao }) {
+  const gruposTxt = (grupos || []).length
+    ? grupos.map((g) => `- ${g.label}: ${g.nivelLabel}`).join('\n')
+    : '(grupos não identificados no texto do resultado)';
+  const fortesTxt = fortes.length ? fortes.join(', ') : '(nenhum identificado)';
+  const atencaoTxt = atencao.length ? atencao.join(', ') : '(nenhum identificado)';
+
+  return `Organização: ${orgName}
+Contexto: ${orgContext || '(não informado)'}
+
+Resultado oficial do DEXi:
+- Maturidade Digital: ${nivelFinalLabel || 'não identificado no texto carregado'}
+- Capacidade Digital: ${capDigitalLabel || 'não identificado'}
+- Capacidade Organizacional: ${capOrganizacionalLabel || 'não identificado'}
+
+Grupos:
+${gruposTxt}
+
+Atributos no nível mais alto da própria escala (pontos fortes): ${fortesTxt}
+Atributos no nível mais baixo da própria escala (pontos de atenção): ${atencaoTxt}
+
+Escreva a síntese (interpretacao + possibilidades), seguindo as regras do sistema.`;
+}
+
+// Insights -- exploração de um atributo individual. "O que isso significa"
+// reaproveita a explicação do Bloco 2 já gerada na Etapa 1 (mesmo texto,
+// zero chamada nova) quando disponível; este prompt cobre só o campo novo,
+// "possibilidades", ancorado na resposta e na evidência reais.
+const ATTRIBUTE_EXPLORE_SYSTEM_PROMPT = `Você aponta possibilidades de evolução para UM atributo específico de um diagnóstico de maturidade digital (modelo DEXi, Kljajić Borštnar e Pucihar, 2021), a partir do nível em que a organização respondeu esse atributo na coleta.
+
+REGRAS INVIOLÁVEIS:
+- Nunca cite livro, autor ou fonte específica como referência verificada -- sugira áreas/temas, nunca títulos.
+- Sempre como possibilidade ("uma possibilidade seria...", "poderia explorar..."), nunca como prescrição.
+- Ancore a resposta na resposta real registrada e, se houver, na evidência/conversa fornecida -- nunca presuma informação que não foi dada.
+- Não repita a pergunta oficial nem a resposta como se as estivesse anunciando -- elas já aparecem em outro lugar da tela.
+
+Responda só com o texto de "possibilidades" (2-3 frases), sem markdown, sem aspas envolvendo o texto todo.`;
+
+function buildAttributeExploreUserPrompt({ attr, pergunta, resposta, respostaLabel, orgName, orgContext, evidenciaTxt }) {
+  return `Atributo: ${attr.id}
+Pergunta oficial (já exibida ao usuário, não repita): ${pergunta}
+Resposta registrada na coleta: ${respostaLabel || resposta}
+
+Organização: ${orgName}
+Contexto: ${orgContext || '(não informado)'}
+${evidenciaTxt ? `\nEvidência (conversa registrada durante a coleta deste atributo):\n${evidenciaTxt}\n` : ''}
+Escreva as possibilidades de evolução para este atributo, seguindo as regras do sistema.`;
+}
+
+// Roadmap -- geração inicial de ações a partir dos pontos de atenção.
+// Mesmo padrão de LEARNING_SYSTEM_PROMPT (nunca prescrição, sempre
+// rastreável a um ponto real), mas propondo AÇÕES em vez de temas de
+// estudo. Toda ação retornada é rotulada "Sugestão da IA" no cliente -- o
+// usuário decide o que de fato entra no roadmap (nunca autoaceito aqui).
+const ROADMAP_GENERATE_SYSTEM_PROMPT = `Você propõe um roadmap inicial de ações para uma organização evoluir sua maturidade digital, a partir dos pontos de atenção de um diagnóstico (modelo DEXi, Kljajić Borštnar e Pucihar, 2021) -- a IA aqui só SUGERE, quem decide o que entra no roadmap é o usuário.
+
+REGRAS INVIOLÁVEIS:
+- Cada ação deve estar vinculada a um ponto de atenção específico (grupo ou dimensão) da lista recebida -- nunca uma ação genérica de "transformação digital" desconectada do resultado.
+- Ações são sempre possibilidades a considerar, nunca prescrições -- redija o objetivo como "uma ação possível seria..." em espírito, mesmo que o campo em si seja curto.
+- horizonte deve ser exatamente um destes três valores: "0-3", "3-6" ou "6-12" (meses) -- nunca outro texto.
+- Nunca invente um responsável específico (nome de pessoa/cargo da organização) -- o campo de responsável fica em branco para o usuário preencher.
+- Nunca cite fonte, autor ou referência específica como verificada.
+
+Responda em JSON estruturado: uma lista de 3 a 6 ações, cada uma com "titulo" (curto, acionável), "origemLabel" (o rótulo exato -- copiado byte a byte -- do ponto de atenção da lista recebida que motivou a ação), "objetivo" (1-2 frases), "horizonte" ("0-3"|"3-6"|"6-12") e "indicadorSugerido" (uma métrica ou sinal simples para acompanhar, curto).`;
+
+function buildRoadmapGenerateUserPrompt({ orgName, orgContext, pontosAtencao }) {
+  const pontosTxt = pontosAtencao.length
+    ? pontosAtencao
+        .map((p) => `- ${p.label} (nível oficial: ${p.nivel})${p.atributos.length ? `, atributos que mais pesaram: ${p.atributos.join(', ')}` : ''}`)
+        .join('\n')
+    : '(nenhum ponto de atenção claro foi identificado -- proponha ações gerais de continuidade, deixando isso explícito, e use origemLabel null em todas.)';
+
+  return `Organização: ${orgName}
+Contexto: ${orgContext || '(não informado)'}
+
+Pontos de atenção identificados -- use exatamente estes rótulos em "origemLabel", nunca um texto parecido ou reescrito:
+${pontosTxt}
+
+Proponha o roadmap inicial, seguindo as regras do sistema.`;
+}
+
+// Roadmap -- conversa contextual sobre UMA ação específica (quebrar em
+// etapas, sugerir indicador/prazo/responsável). Texto livre, mesmo padrão
+// de INTERPRET_SYSTEM_PROMPT (recomendação como possibilidade).
+const ROADMAP_ACTION_SYSTEM_PROMPT = `Você ajuda a organização a detalhar UMA ação específica de um roadmap de evolução digital, criada a partir de um diagnóstico de maturidade digital (modelo DEXi, Kljajić Borštnar e Pucihar, 2021).
+
+REGRAS:
+- Fique focado nesta ação específica -- não repita o diagnóstico inteiro nem outras ações.
+- Recomendações são sempre possibilidades ("uma forma de quebrar isso em etapas seria...") -- nunca prescrições.
+- Nunca invente um responsável específico, prazo oficial ou indicador que soe como decisão já tomada pela organização -- são sempre sugestões para o usuário avaliar.
+- Nunca cite fonte, autor ou referência específica como verificada.
+- Tom: acolhedor e consultivo, direto ao ponto.`;
+
+function buildRoadmapActionContextPrompt({ orgName, action }) {
+  return `Organização: ${orgName}
+
+Ação do roadmap em discussão:
+- Título: ${action.titulo}
+- Origem no diagnóstico: ${action.origemLabel || '(não vinculada a um ponto específico)'}
+- Objetivo: ${action.objetivo || '(não informado)'}
+- Horizonte: ${action.horizonte || '(não informado)'}
+${action.isAiSuggestion ? '(esta ação foi originalmente sugerida pela IA -- o usuário pode estar validando, ajustando ou questionando a sugestão)' : '(esta ação foi criada manualmente pelo usuário)'}
+
+Esta é a base fixa da conversa sobre esta ação específica. Responda apenas quando uma pergunta do usuário vier depois deste bloco.`;
+}
+
 module.exports = {
   EXPLAIN_SYSTEM_PROMPT,
   buildExplainUserPrompt,
@@ -179,4 +312,12 @@ module.exports = {
   buildLearningUserPrompt,
   INTERPRET_SYSTEM_PROMPT,
   buildInterpretContextPrompt,
+  SYNTHESIS_SYSTEM_PROMPT,
+  buildSynthesisUserPrompt,
+  ATTRIBUTE_EXPLORE_SYSTEM_PROMPT,
+  buildAttributeExploreUserPrompt,
+  ROADMAP_GENERATE_SYSTEM_PROMPT,
+  buildRoadmapGenerateUserPrompt,
+  ROADMAP_ACTION_SYSTEM_PROMPT,
+  buildRoadmapActionContextPrompt,
 };

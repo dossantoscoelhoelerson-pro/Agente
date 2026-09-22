@@ -26,24 +26,19 @@ const state = {
   collectionSourceLoaded: false, // JSON da coleta foi carregado manualmente (sessão nova)
   uploadError: '',
 
-  // Painel da Etapa 3 (adendo rodada 3) -- ver funções ensurePanel/ensureLearning.
-  panel: null,          // {nivelFinal, nivelFinalLabel, capDigital, capDigitalLabel, capOrganizacional, capOrganizacionalLabel, grupos, consistencia}
+  // Resultado oficial do DEXi, extraído do texto carregado (ver ensurePanel()
+  // abaixo) -- base de dados compartilhada pelas três seções do Cockpit
+  // (adendo rodada 6). {nivelFinal, nivelFinalLabel, capDigital,
+  // capDigitalLabel, capOrganizacional, capOrganizacionalLabel, grupos, consistencia}
+  panel: null,
   panelLoading: false,
   panelError: '',
-  learning: null,        // {temas, pontosAtencao}
-  learningLoading: false,
-  learningError: '',
   pdfExporting: false,
   pdfExportError: '',
 
-  duvidasChat: [],
-  duvidasThinking: false,
-  duvidasError: '',
-
-  // Navegação do painel da Etapa 3 (adendo rodada 5) -- abas + grupo aberto
-  // no detalhamento sob demanda (item 1.1).
-  reportTab: 'diagnostico',
-  reportExpandedGroup: null,
+  // O resto do estado do Cockpit (Panorama/Insights/Roadmap) é adicionado a
+  // este objeto por public/js/cockpit.js, carregado depois deste arquivo --
+  // mantém app.js só com o que é comum a toda a aplicação.
 };
 
 function el(tag, attrs, children){
@@ -94,6 +89,9 @@ const ETAPA1_SCREENS = ['intro', 'collect', 'review', 'done1'];
 
 function renderOnce(){
   document.body.classList.toggle('etapa-1', ETAPA1_SCREENS.includes(state.screen));
+  // Cockpit (adendo rodada 6) usa um layout mais largo que o --wrap de
+  // 720px da coleta -- produto/dashboard, não formulário de leitura linear.
+  document.body.classList.toggle('cockpit-screen', state.screen === 'report');
 
   const app = document.getElementById('app');
   app.innerHTML = '';
@@ -648,8 +646,7 @@ function screenUpload(){
     state.dexiText = text;
     state.uploadError = '';
     state.panel = null; state.panelError = '';
-    state.learning = null; state.learningError = '';
-    state.duvidasChat = []; state.duvidasError = '';
+    if(typeof resetCockpitState === 'function') resetCockpitState();
     state.screen = 'report';
     render();
   });
@@ -718,6 +715,9 @@ function computePanorama(){
   return { respondidos, total, maisBaixas, maisAltas };
 }
 
+// Extração do resultado oficial do DEXi (nível final, duas capacidades,
+// grupos) -- base de dados compartilhada pelas três seções do Cockpit
+// (Panorama, Insights e Roadmap partem todos daqui, nunca recalculam).
 async function ensurePanel(){
   if(state.panel || state.panelLoading) return;
   state.panelLoading = true;
@@ -733,71 +733,11 @@ async function ensurePanel(){
     if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
     state.panel = data;
   } catch(err){
-    state.panelError = 'Não consegui extrair o status e os gráficos do resultado do DEXi (' + err.message + '). O panorama e o centro de dúvidas abaixo ainda funcionam a partir do texto carregado.';
+    state.panelError = 'Não consegui extrair o resultado oficial do DEXi (' + err.message + ').';
   }
   state.panelLoading = false;
   render();
-  if(state.panel) ensureLearning();
-}
-
-async function ensureLearning(){
-  if(state.learning || state.learningLoading) return;
-  state.learningLoading = true;
-  state.learningError = '';
-  render();
-  try{
-    const res = await fetch('/api/interpret/learning', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        orgName: state.orgName,
-        orgContext: state.orgContext,
-        answers: state.answers,
-        capDigital: state.panel ? state.panel.capDigital : null,
-        capOrganizacional: state.panel ? state.panel.capOrganizacional : null,
-        grupos: state.panel ? state.panel.grupos : [],
-      }),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
-    state.learning = data;
-  } catch(err){
-    state.learningError = 'Não consegui gerar o centro de aprendizado agora (' + err.message + ').';
-  }
-  state.learningLoading = false;
-  render();
-}
-
-async function duvidasTurn(userMessage){
-  userMessage = (userMessage || '').trim();
-  if(!userMessage || state.duvidasThinking) return;
-  state.duvidasChat.push({role:'user', text: userMessage});
-  const historySnapshot = state.duvidasChat.slice(0, -1);
-  state.duvidasThinking = true;
-  state.duvidasError = '';
-  render();
-  try{
-    const res = await fetch('/api/interpret/turn', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        orgName: state.orgName,
-        orgContext: state.orgContext,
-        answers: state.answers,
-        registroCompleto: ATTRS.map(a => state.registro[a.id]).filter(Boolean),
-        dexiText: state.dexiText,
-        history: historySnapshot,
-        userMessage,
-      }),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
-    state.duvidasChat.push({role:'assistant', text: data.message});
-  } catch(err){
-    state.duvidasError = 'Não consegui gerar a resposta: ' + err.message;
-  }
-  state.duvidasThinking = false;
-  render();
+  if(state.panel && typeof onPanelReady === 'function') onPanelReady();
 }
 
 async function downloadPanelPdf(){
@@ -818,7 +758,7 @@ async function downloadPanelPdf(){
         capOrganizacionalLabel: state.panel && state.panel.capOrganizacionalLabel,
         grupos: (state.panel && state.panel.grupos) || [],
         panorama: computePanorama(),
-        temas: (state.learning && state.learning.temas) || [],
+        temas: typeof pdfTemasFromRoadmap === 'function' ? pdfTemasFromRoadmap() : [],
         consistenciaOk: state.panel ? state.panel.consistencia.completo : computeConsistencia(),
       }),
     });
@@ -837,403 +777,6 @@ async function downloadPanelPdf(){
   }
   state.pdfExporting = false;
   render();
-}
-
-function statTile(value, label){
-  const t = el('div', {class:'stat-tile'});
-  t.appendChild(el('div', {class:'stat-value', text: value}));
-  t.appendChild(el('div', {class:'stat-caption', text: label}));
-  return t;
-}
-
-// (a) status geral -- grande, com o rótulo "Resultado oficial do DEXi"
-// sempre visível, a posição na escala de 4 níveis, e (adendo rodada 5, item
-// 1.3) o indicador circular unificado com o mesmo selo de classificação,
-// em vez de aparecerem como elementos separados.
-function sectionStatus(){
-  const card = el('div', {class:'card panel-status'});
-  card.appendChild(el('div', {class:'block-label', text:'Resultado oficial do DEXi'}));
-  if(state.panelLoading && !state.panel){
-    card.appendChild(el('div', {class:'block-explain-text'}, [
-      el('span', {class:'spinner'}), el('span', {text:' analisando o resultado...', style:'margin-left:8px;'})
-    ]));
-    return card;
-  }
-  const nivelLabel = state.panel && state.panel.nivelFinalLabel;
-  const idx = (DEXI_MODEL && state.panel && state.panel.nivelFinal) ? DEXI_MODEL.root.niveis.indexOf(state.panel.nivelFinal) : null;
-
-  const row = el('div', {class:'status-hero-row'});
-  const gaugeBox = el('div', {class:'status-gauge'});
-  row.appendChild(gaugeBox);
-  const textBox = el('div', {style:'flex:1; min-width:200px;'});
-  textBox.appendChild(el('div', {class:'status-hero', text: nivelLabel || 'Não identificado no texto carregado'}));
-  if(DEXI_MODEL){
-    const track = el('div', {class:'scale-track'});
-    DEXI_MODEL.root.niveisExibicao.forEach((lbl, i) => {
-      track.appendChild(el('div', {class:'scale-seg' + (i === idx ? ' scale-seg-active' : ''), text: lbl}));
-    });
-    textBox.appendChild(track);
-  }
-  row.appendChild(textBox);
-  card.appendChild(row);
-
-  if(DEXI_MODEL){
-    renderLevelGauge(gaugeBox, { levelLabel: nivelLabel, idx, total: DEXI_MODEL.root.niveis.length });
-  }
-  return card;
-}
-
-// (b) gráficos das duas dimensões e dos grupos intermediários.
-function sectionCharts(){
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Gráficos'}));
-  const grid = el('div', {class:'chart-grid'});
-
-  const scatterWrap = el('div', {class:'chart-card'});
-  scatterWrap.appendChild(el('div', {class:'chart-title', text:'Capacidade Digital × Capacidade Organizacional'}));
-  const scatterBox = el('div', {class:'chart-box'});
-  scatterWrap.appendChild(scatterBox);
-  grid.appendChild(scatterWrap);
-
-  const radarWrap = el('div', {class:'chart-card'});
-  radarWrap.appendChild(el('div', {class:'chart-title', text:'Grupos intermediários'}));
-  const radarBox = el('div', {class:'chart-box'});
-  radarWrap.appendChild(radarBox);
-  grid.appendChild(radarWrap);
-
-  card.appendChild(grid);
-
-  if(DEXI_MODEL && state.panel){
-    const dimDigital = DEXI_MODEL.dimensoes.find(d => d.id === 'CAP.DIGITAL');
-    const dimOrg = DEXI_MODEL.dimensoes.find(d => d.id === 'CAP.ORGANIZACIONAL');
-    const xIdx = state.panel.capDigital ? dimDigital.niveis.indexOf(state.panel.capDigital) : null;
-    const yIdx = state.panel.capOrganizacional ? dimOrg.niveis.indexOf(state.panel.capOrganizacional) : null;
-    renderDimensionScatter(scatterBox, { xLabels: dimDigital.niveisExibicao, yLabels: dimOrg.niveisExibicao, xIdx, yIdx });
-
-    const groups = DEXI_MODEL.grupos.map(g => {
-      const found = state.panel.grupos.find(pg => pg.id === g.id);
-      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
-    });
-    renderGroupRadar(radarBox, groups);
-  } else {
-    scatterBox.appendChild(el('div', {class:'chart-empty-note', text: state.panelLoading ? 'Carregando...' : 'Sem dados ainda.'}));
-    radarBox.appendChild(el('div', {class:'chart-empty-note', text: state.panelLoading ? 'Carregando...' : 'Sem dados ainda.'}));
-  }
-  return card;
-}
-
-// (c) panorama do processo -- a partir das respostas da coleta, nunca da IA.
-function sectionPanorama(){
-  const p = computePanorama();
-  const card = el('div', {class:'card panel-panorama'});
-  card.appendChild(el('div', {class:'block-label', text:'Panorama da coleta'}));
-  const stats = el('div', {class:'stat-row'});
-  stats.appendChild(statTile(`${p.respondidos}/${p.total}`, 'atributos respondidos'));
-  stats.appendChild(statTile(String(p.maisBaixas.length), 'no nível mais baixo da própria escala'));
-  stats.appendChild(statTile(String(p.maisAltas.length), 'no nível mais alto da própria escala'));
-  card.appendChild(stats);
-  if(p.maisBaixas.length){
-    card.appendChild(el('div', {class:'block-explain-text', style:'margin-top:12px;', text: 'Respostas no nível mais baixo: ' + p.maisBaixas.join(', ') + '.'}));
-  }
-  if(p.maisAltas.length){
-    card.appendChild(el('div', {class:'block-explain-text', text: 'Respostas no nível mais alto: ' + p.maisAltas.join(', ') + '.'}));
-  }
-  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Panorama informativo, a partir das respostas da coleta -- não é uma explicação causal do resultado oficial do DEXi.'}));
-  return card;
-}
-
-// (1.2) Seção dedicada -- lista visual (não texto corrido) dos atributos em
-// destaque, com indicador de cor e resumo de uma linha rastreável até a
-// resposta real da coleta. No mockup esta lógica aparece como "Atributos em
-// destaque" (adendo rodada 5, item 1.2).
-function sectionDestaques(){
-  const { fortes, atencao } = pontosDestaqueLists();
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Atributos em destaque'}));
-
-  const renderGroup = (title, cls, items) => {
-    const g = el('div', {class:'destaque-group'});
-    g.appendChild(el('div', {class:'destaque-group-title ' + cls, text: title}));
-    if(!items.length){
-      g.appendChild(el('div', {class:'block-explain-text', text:'Nenhum atributo nesta condição.'}));
-    } else {
-      items.forEach(({attr, label}) => {
-        const item = el('div', {class:'destaque-item'});
-        item.appendChild(el('div', {class:'destaque-dot ' + cls}));
-        const text = el('div', {class:'destaque-item-text'});
-        text.appendChild(el('b', {text: humanizeAttrId(attr.id) + ': '}));
-        text.appendChild(document.createTextNode('resposta registrada na coleta foi "' + label + '".'));
-        item.appendChild(text);
-        g.appendChild(item);
-      });
-    }
-    return g;
-  };
-
-  card.appendChild(renderGroup('Pontos fortes', 'forte', fortes));
-  card.appendChild(renderGroup('Pontos de atenção', 'atencao', atencao));
-  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Melhor/pior posição dentro da própria escala de 4 níveis de cada atributo (a mesma leitura do panorama) -- não é um ranking entre atributos diferentes nem um cálculo do DEXi.'}));
-  return card;
-}
-
-// (1.1) Visão por grupo -- cada um dos 7 grupos intermediários com barra de
-// posição na própria escala e, sob demanda (clique), o detalhamento dos
-// atributos básicos que o compõem com o valor de cada um (adendo rodada 5,
-// item 1.1). grupoTop já vem calculado pelo servidor (GET /api/attrs), a
-// partir da mesma tabela LEAF_TO_GROUP usada no radar -- nunca duplicada
-// aqui.
-function sectionGroupCards(){
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Grupos -- detalhamento por atributo'}));
-
-  if(!DEXI_MODEL){
-    card.appendChild(el('div', {class:'chart-empty-note', text:'Carregando...'}));
-    return card;
-  }
-
-  DEXI_MODEL.grupos.forEach((g) => {
-    const found = state.panel ? state.panel.grupos.find((pg) => pg.id === g.id) : null;
-    const idx = found ? g.niveis.indexOf(found.nivel) : null;
-    const isOpen = state.reportExpandedGroup === g.id;
-
-    const gc = el('div', {class:'group-card' + (isOpen ? ' group-card-open' : ''), onclick: () => {
-      state.reportExpandedGroup = isOpen ? null : g.id;
-      render();
-    }});
-    const header = el('div', {class:'group-card-header'});
-    header.appendChild(el('div', {class:'group-card-title', text: g.label}));
-    const right = el('div', {style:'display:flex; align-items:center; gap:10px;'});
-    right.appendChild(el('div', {class:'group-card-level', text: found ? found.nivelLabel : 'não identificado'}));
-    right.appendChild(el('div', {class:'group-card-caret', text: '›'}));
-    header.appendChild(right);
-    gc.appendChild(header);
-
-    const track = el('div', {class:'group-bar-track'});
-    const frac = (idx !== null && idx !== undefined) ? (idx + 1) / g.niveis.length : 0;
-    track.appendChild(el('div', {class:'group-bar-fill', style: `width:${Math.round(frac*100)}%`}));
-    gc.appendChild(track);
-
-    if(isOpen){
-      const body = el('div', {class:'group-card-body', onclick: (e) => e.stopPropagation()});
-      const attrsOfGroup = ATTRS.filter((a) => a.grupoTop === g.id);
-      if(!attrsOfGroup.length){
-        body.appendChild(el('div', {class:'block-explain-text', text:'Nenhum atributo básico mapeado para este grupo.'}));
-      } else {
-        attrsOfGroup.forEach((a) => {
-          const val = state.answers[a.id];
-          const vIdx = val ? a.niveis.indexOf(val) : -1;
-          const vLabel = (vIdx >= 0 && a.niveisExibicao) ? a.niveisExibicao[vIdx] : (val || 'não respondido');
-          const row = el('div', {class:'group-attr-row'});
-          row.appendChild(el('div', {class:'ga-name', text: humanizeAttrId(a.id)}));
-          row.appendChild(el('div', {class:'ga-val', text: vLabel}));
-          body.appendChild(row);
-        });
-      }
-      gc.appendChild(body);
-    }
-    card.appendChild(gc);
-  });
-  return card;
-}
-
-// Aba "Evolução" -- a jornada de 4 estágios já existente (sectionStatus),
-// ampliada. Deliberadamente NÃO mostra um gráfico de tendência histórica:
-// o mockup sugere um, mas esta versão da ferramenta não guarda dados entre
-// sessões (fora do escopo original) -- fabricar uma tendência sem dados
-// reais violaria a regra de ouro do adendo. A nota abaixo é honesta sobre
-// essa limitação em vez de simular um histórico.
-function sectionEvolucao(){
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Evolução -- posição atual na jornada'}));
-  card.appendChild(el('div', {class:'block-explain-text', text:'A posição abaixo é sempre o resultado oficial mais recente do DEXi para esta organização -- a mesma classificação mostrada em "Diagnóstico".'}));
-  card.appendChild(el('div', {class:'note', style:'margin-top:14px;', text:'Esta versão da ferramenta não guarda um histórico entre sessões, então não há uma linha de tendência ao longo do tempo para mostrar -- mostrar uma aqui exigiria inventar dados que não existem. Para acompanhar evolução, repita o diagnóstico periodicamente e compare os PDFs exportados de cada rodada.'}));
-  return card;
-}
-
-// Card "Próximos passos" (referência do mockup) -- prévia compacta do
-// centro de aprendizado na aba Diagnóstico, com atalho para a aba
-// Relatórios onde a seção completa (com as etiquetas do item 1.4) já vive.
-// Nunca duplica a chamada à IA -- só lê o que já está (ou não) carregado em
-// state.learning.
-function sectionProximosPassos(){
-  const card = el('div', {class:'card block-explain'});
-  card.appendChild(el('div', {class:'block-label', text:'Próximos passos'}));
-  if(state.learning && state.learning.temas.length){
-    state.learning.temas.slice(0, 2).forEach((t) => {
-      const item = el('div', {class:'learning-item'});
-      if(t.pontoLabel) item.appendChild(el('div', {class:'learning-tag', text: '⚑ ' + t.pontoLabel}));
-      item.appendChild(el('div', {class:'learning-tema', text: t.tema}));
-      card.appendChild(item);
-    });
-    card.appendChild(el('button', {class:'btn secondary small', text:'Ver centro de aprendizado completo →', style:'margin-top:14px;', onclick: () => { state.reportTab = 'relatorios'; render(); }}));
-  } else if(state.learningLoading || state.panelLoading){
-    card.appendChild(el('div', {class:'block-explain-text'}, [
-      el('span', {class:'spinner'}), el('span', {text:' preparando sugestões...', style:'margin-left:8px;'})
-    ]));
-  } else {
-    card.appendChild(el('div', {class:'block-explain-text', text:'As sugestões do centro de aprendizado aparecem aqui assim que o resultado for analisado -- veja a aba Relatórios.'}));
-  }
-  return card;
-}
-
-function reportTabNav(){
-  const tabs = [
-    {id:'diagnostico', label:'Diagnóstico'},
-    {id:'dimensoes', label:'Dimensões'},
-    {id:'atributos', label:'Atributos'},
-    {id:'evolucao', label:'Evolução'},
-    {id:'relatorios', label:'Relatórios'},
-  ];
-  const nav = el('div', {class:'report-tabs'});
-  tabs.forEach((t) => {
-    const active = state.reportTab === t.id;
-    nav.appendChild(el('button', {
-      class: 'report-tab' + (active ? ' report-tab-active' : ''),
-      text: t.label,
-      onclick: () => { state.reportTab = t.id; render(); },
-    }));
-  });
-  return nav;
-}
-
-// (e) centro de aprendizado -- temas de estudo vinculados aos pontos de
-// atenção, nunca livros/autores específicos (risco de citação inventada).
-function sectionLearning(){
-  const card = el('div', {class:'card block-explain'});
-  card.appendChild(el('div', {class:'block-label', text:'Centro de aprendizado'}));
-  if(state.learning && state.learning.temas.length){
-    state.learning.temas.forEach(t => {
-      const item = el('div', {class:'learning-item'});
-      // (1.4) etiqueta visual do ponto de atenção que motivou o tema --
-      // pontoLabel já vem validado pelo servidor contra a lista real de
-      // pontos de atenção (nunca um texto livre inventado pela IA).
-      if(t.pontoLabel){
-        item.appendChild(el('div', {class:'learning-tag', text: '⚑ ' + t.pontoLabel}));
-      }
-      item.appendChild(el('div', {class:'learning-tema', text: t.tema}));
-      item.appendChild(el('div', {class:'block-explain-text', text: t.porque}));
-      card.appendChild(item);
-    });
-  } else if(state.learningLoading){
-    card.appendChild(el('div', {class:'block-explain-text'}, [
-      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
-    ]));
-  } else if(state.learningError){
-    card.appendChild(el('div', {class:'error-box', text: state.learningError}));
-    card.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: ensureLearning}));
-  } else if(state.learning){
-    card.appendChild(el('div', {class:'block-explain-text', text:'Nenhum tema gerado nesta sessão.'}));
-  }
-  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Temas de estudo sugeridos por IA, vinculados aos pontos de atenção do diagnóstico -- não são referências bibliográficas curadas ou verificadas pelo projeto.'}));
-  return card;
-}
-
-// (d) centro de dúvidas -- a conversa que já existia, agora reativa e como
-// uma seção do painel (nunca abre sozinha com um relatório).
-function sectionDuvidas(){
-  const card = el('div', {class:'card panel-duvidas'});
-  card.appendChild(el('div', {class:'block-label', text:'Centro de dúvidas'}));
-  if(state.duvidasChat.length){
-    const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
-    state.duvidasChat.forEach(m => {
-      chatBox.appendChild(el('div', {class: 'bubble report-body ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text}));
-    });
-    card.appendChild(chatBox);
-  }
-  if(state.duvidasThinking){
-    card.appendChild(el('div', {class:'bubble bubble-agent'}, [
-      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
-    ]));
-  } else {
-    const inputRow = el('div', {class:'chat-input-row'});
-    const textIn = el('input', {type:'text', placeholder:'Pergunte algo sobre o resultado (ex.: por que ficamos nesse nível em Estratégia?)...', id:'duvidasTextInput'});
-    textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter' && textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } });
-    const sendBtn = el('button', {class:'btn chat-send', text:'Enviar', onclick: () => { if(textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } }});
-    inputRow.appendChild(textIn);
-    inputRow.appendChild(sendBtn);
-    card.appendChild(inputRow);
-  }
-  if(state.duvidasError){
-    card.appendChild(el('div', {class:'error-box', text: state.duvidasError}));
-  }
-  return card;
-}
-
-// Painel da Etapa 3 (adendo rodada 5) -- navegação por abas seguindo a
-// lógica de organização do mockup (Diagnóstico / Dimensões / Atributos /
-// Evolução / Relatórios), sem copiar layout pixel a pixel. Cada aba é uma
-// combinação das mesmas seções já existentes (status, gráficos, panorama,
-// centro de aprendizado, centro de dúvidas) mais as três novas peças do
-// adendo (indicador circular unificado, cards de grupo com detalhamento,
-// lista de atributos em destaque) -- nada aqui recalcula ou inventa um
-// valor que não venha do resultado oficial do DEXi ou da coleta.
-function screenReport(){
-  const c = el('div');
-  c.appendChild(stepsNav(2));
-  c.appendChild(el('div', {class:'result-badge', text: state.orgName}));
-  c.appendChild(el('h1', {text:'Painel do resultado'}));
-
-  if(state.panel && !state.panel.consistencia.completo){
-    const parts = [];
-    if(state.panel.consistencia.atributosFaltando.length) parts.push('sem resposta na coleta: ' + state.panel.consistencia.atributosFaltando.join(', '));
-    if(state.panel.consistencia.atributosInvalidos.length) parts.push('valor fora das 4 alternativas oficiais: ' + state.panel.consistencia.atributosInvalidos.join(', '));
-    c.appendChild(el('div', {class:'error-box', text: 'Divergência de consistência encontrada — ' + parts.join(' · ')}));
-  }
-
-  c.appendChild(reportTabNav());
-
-  const tab = state.reportTab;
-  if(tab === 'diagnostico'){
-    c.appendChild(sectionStatus());
-    c.appendChild(sectionDestaques());
-    c.appendChild(sectionProximosPassos());
-  } else if(tab === 'dimensoes'){
-    c.appendChild(sectionCharts());
-    c.appendChild(sectionPanorama());
-  } else if(tab === 'atributos'){
-    c.appendChild(sectionGroupCards());
-    c.appendChild(sectionDestaques());
-  } else if(tab === 'evolucao'){
-    c.appendChild(sectionEvolucao());
-  } else if(tab === 'relatorios'){
-    c.appendChild(sectionLearning());
-    c.appendChild(sectionDuvidas());
-  }
-
-  if(state.panelError){
-    const box = el('div', {class:'error-box', text: state.panelError});
-    c.appendChild(box);
-    c.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: () => { state.panelError = ''; ensurePanel(); }}));
-  }
-
-  c.appendChild(el('div', {class:'note', text:'O resultado final, as dimensões e os grupos vêm sempre do resultado oficial do DEXi (nunca recalculados). Interpretações, panorama e centro de aprendizado são gerados a partir dele e das respostas da coleta -- qualquer cenário hipotético é sempre indicado como simulação, nunca confundido com o resultado oficial.'}));
-
-  const btnRow = el('div', {class:'btn-row'});
-  btnRow.appendChild(el('button', {class:'btn', text: state.pdfExporting ? 'Gerando PDF…' : 'Baixar PDF', disabled: state.pdfExporting, onclick: downloadPanelPdf}));
-  btnRow.appendChild(el('button', {class:'btn secondary', text:'Nova avaliação', onclick: () => {
-    state.screen = 'intro'; state.idx = 0; state.answers = {}; state.registro = {}; state.chatLogs = {};
-    state.explanations = {}; state.explainErrors = {};
-    state.orgName = ''; state.orgContext = ''; state.dexiText = ''; state.collectionSourceLoaded = false;
-    state.panel = null; state.panelError = ''; state.learning = null; state.learningError = '';
-    state.duvidasChat = []; state.duvidasError = '';
-    state.reportTab = 'diagnostico'; state.reportExpandedGroup = null;
-    render();
-  }}));
-  c.appendChild(btnRow);
-  if(state.pdfExportError){
-    c.appendChild(el('div', {class:'error-box', text: state.pdfExportError}));
-  }
-
-  if(!state.panel && !state.panelLoading && !state.panelError){
-    // !state.panelError evita um loop -- sem essa checagem, toda vez que
-    // uma falha zerasse panelLoading e chamasse render(), esta mesma
-    // condição voltaria a ficar verdadeira e disparava ensurePanel() nela
-    // de novo, para sempre (bug real, pego só ao testar com falha de API).
-    // O setTimeout evita reentrar em render() antes deste appendChild()
-    // terminar (duplicaria a tela).
-    setTimeout(ensurePanel, 0);
-  }
-  return c;
 }
 
 // ---------- boot ----------
