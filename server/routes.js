@@ -20,6 +20,14 @@ const {
   buildLearningUserPrompt,
   INTERPRET_SYSTEM_PROMPT,
   buildInterpretContextPrompt,
+  SYNTHESIS_SYSTEM_PROMPT,
+  buildSynthesisUserPrompt,
+  ATTRIBUTE_EXPLORE_SYSTEM_PROMPT,
+  buildAttributeExploreUserPrompt,
+  ROADMAP_GENERATE_SYSTEM_PROMPT,
+  buildRoadmapGenerateUserPrompt,
+  ROADMAP_ACTION_SYSTEM_PROMPT,
+  buildRoadmapActionContextPrompt,
 } = require('./prompts');
 
 const router = express.Router();
@@ -313,6 +321,151 @@ router.post('/interpret/learning', async (req, res) => {
       pontoLabel: t.pontoLabel && pontoLabels.includes(t.pontoLabel) ? t.pontoLabel : null,
     }));
     res.json({ temas, pontosAtencao });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Insights, abertura: síntese curta da seção,
+// com "interpretacao" e "possibilidades" gerados pela IA. O campo
+// "resultado" NUNCA vem daqui -- é montado no cliente a partir do dado real
+// do painel (state.panel), eliminando qualquer risco de a IA reformular o
+// resultado oficial ao "sintetizá-lo".
+router.post('/insights/synthesis', async (req, res) => {
+  const { orgName, orgContext, nivelFinalLabel, capDigitalLabel, capOrganizacionalLabel, grupos, fortes, atencao } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  const SynthesisSchema = z.object({ interpretacao: z.string(), possibilidades: z.string() });
+
+  try {
+    const response = await client.messages.parse({
+      model: MODEL,
+      max_tokens: 700,
+      system: [{ type: 'text', text: SYNTHESIS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildSynthesisUserPrompt({
+        orgName, orgContext: String(orgContext || ''), nivelFinalLabel, capDigitalLabel, capOrganizacionalLabel,
+        grupos: Array.isArray(grupos) ? grupos : [],
+        fortes: Array.isArray(fortes) ? fortes : [],
+        atencao: Array.isArray(atencao) ? atencao : [],
+      }) }],
+      output_config: { format: zodOutputFormat(SynthesisSchema) },
+    });
+    const parsed = response.parsed_output;
+    if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
+    res.json(parsed);
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Insights, exploração de um atributo
+// individual: só o campo "possibilidades" (o "o que isso significa" reusa a
+// explicação do Bloco 2 já gerada na Etapa 1, no cliente, sem chamada nova).
+router.post('/insights/attribute-explore', async (req, res) => {
+  const { attrId, orgName, orgContext, evidenciaConversa } = req.body || {};
+
+  const attr = ATTR_INDEX.get(attrId);
+  if (!attr) return res.status(400).json({ error: 'attrId inválido.' });
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  const pergunta = questionFor(attr.id) || attr.descricao;
+  const resposta = req.body.resposta;
+  const respostaLabel = req.body.respostaLabel;
+  const evidenciaTxt = Array.isArray(evidenciaConversa)
+    ? evidenciaConversa
+        .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
+        .slice(-20)
+        .map((m) => `${m.role === 'assistant' ? 'agente' : 'usuário'}: ${m.text.slice(0, 1000)}`)
+        .join('\n')
+    : '';
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 400,
+      system: [{ type: 'text', text: ATTRIBUTE_EXPLORE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildAttributeExploreUserPrompt({ attr, pergunta, resposta, respostaLabel, orgName, orgContext: String(orgContext || ''), evidenciaTxt }) }],
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    res.json({ possibilidades: textBlock ? textBlock.text : '' });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Roadmap: proposta inicial de ações a partir
+// dos pontos de atenção, reaproveitando buildPontosAtencao() (mesma leitura
+// já usada pelo centro de aprendizado). Toda ação vem marcada como sugestão
+// -- o cliente rotula "Sugestão da IA" e o usuário decide o que aceitar.
+router.post('/roadmap/generate', async (req, res) => {
+  const { orgName, orgContext, answers, capDigital, capOrganizacional, grupos } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+  if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'answers é obrigatório.' });
+
+  const pontosAtencao = buildPontosAtencao({ answers, capDigital, capOrganizacional, grupos });
+  const pontoLabels = pontosAtencao.map((p) => p.label);
+
+  const RoadmapSchema = z.object({
+    acoes: z.array(z.object({
+      titulo: z.string(),
+      origemLabel: z.string().nullable(),
+      objetivo: z.string(),
+      horizonte: z.enum(['0-3', '3-6', '6-12']),
+      indicadorSugerido: z.string(),
+    })),
+  });
+
+  try {
+    const response = await client.messages.parse({
+      model: MODEL,
+      max_tokens: 1800,
+      system: [{ type: 'text', text: ROADMAP_GENERATE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildRoadmapGenerateUserPrompt({ orgName, orgContext: String(orgContext || ''), pontosAtencao }) }],
+      output_config: { format: zodOutputFormat(RoadmapSchema) },
+    });
+    const parsed = response.parsed_output;
+    if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
+    // Mesma validação defensiva de sempre: origemLabel só é aceito se bater
+    // byte a byte com um rótulo real da lista enviada.
+    const acoes = parsed.acoes.map((a) => ({
+      ...a,
+      origemLabel: a.origemLabel && pontoLabels.includes(a.origemLabel) ? a.origemLabel : null,
+    }));
+    res.json({ acoes });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Roadmap: conversa contextual sobre UMA ação.
+router.post('/roadmap/action-turn', async (req, res) => {
+  const { orgName, action, history, userMessage } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+  if (!action || typeof action !== 'object' || typeof action.titulo !== 'string') {
+    return res.status(400).json({ error: 'action é obrigatório.' });
+  }
+  if (typeof userMessage !== 'string' || !userMessage.trim()) {
+    return res.status(400).json({ error: 'userMessage é obrigatório.' });
+  }
+
+  const contextPrompt = buildRoadmapActionContextPrompt({ orgName, action });
+  const safeHistory = sanitizeHistory(history);
+  const messages = [{ role: 'user', content: contextPrompt }];
+  safeHistory.forEach((m) => messages.push({ role: m.role, content: m.text }));
+  messages.push({ role: 'user', content: userMessage.trim() });
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1500,
+      system: [{ type: 'text', text: ROADMAP_ACTION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages,
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    res.json({ message: textBlock ? textBlock.text : '' });
   } catch (err) {
     handleAnthropicError(err, res);
   }

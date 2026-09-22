@@ -5,7 +5,8 @@ resultado para o protótipo de dissertação de mestrado (PROFNIT/UFSJ), aplican
 Kljajić Borštnar e Pucihar (2021), com o **DEXi** como motor oficial de cálculo. A
 especificação completa está em `especificacao_experiencia_conversacional.md`, com correções
 e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.md`,
-`adendo_especificacao_rodada4.md` e `adendo_especificacao_rodada5.md`.
+`adendo_especificacao_rodada4.md`, `adendo_especificacao_rodada5.md` e
+`adendo_especificacao_rodada6.md`.
 
 ## Arquitetura
 
@@ -26,14 +27,41 @@ e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.
   oficiais, sempre visíveis como botões, rotuladas com o texto de exibição final em
   `mapeamento_exibicao.json` (adendo rodada 4 -- o valor técnico que vai para CSV/.dxi nunca
   muda); (4) um campo de conversa livre para dúvida ou resposta em texto.
-- **Etapa 3 é um painel visual** (adendo rodada 3): status geral (nível final + posição na
-  escala de 4 níveis), gráficos SVG (posição nas duas dimensões e radar dos 7 grupos
-  intermediários -- sempre extraídos do resultado oficial do DEXi, nunca recalculados),
-  panorama da coleta (client-side, a partir das respostas), centro de dúvidas (a conversa,
-  agora reativa e como uma seção do painel) e centro de aprendizado (temas de estudo
-  vinculados aos pontos de atenção, nunca livros/autores específicos). Aceita upload de PDF
-  (o texto é extraído no backend com `pdf-parse`) além de `.txt/.json/.csv`. Tem exportação
-  do painel inteiro como PDF (`pdfkit`, server-side).
+- **Etapa 3 aceita o resultado do DEXi** por upload de PDF (texto extraído no backend com
+  `pdf-parse`) ou `.txt/.json/.csv` colado/carregado.
+- **Etapa 3 é o "Cockpit de Evolução Digital"** (adendo rodada 6, substitui o painel das
+  rodadas 3-5): três seções que são três momentos metodológicos da jornada, não só três
+  páginas -- **Panorama** ("Onde estamos?", visualizar), **Insights** ("O que isso
+  significa?", interpretar/explorar) e **Roadmap** ("O que vamos fazer?", agir). Todas
+  partem do mesmo resultado oficial extraído do DEXi (`POST /api/interpret/extract`, nunca
+  recalculado). Detalhes de cada seção em `public/js/cockpit.js`:
+  - **Panorama**: hero de abertura, resultado de maturidade em destaque com indicador
+    circular unificado ao selo de classificação (preenchimento é sempre a posição do nível
+    oficial na própria escala de 4 níveis, nunca um percentual calculado), comparação das
+    duas capacidades, **heatmap D3** dos 34 atributos (Capacidade → Grupo → Atributo, a
+    hierarquia real do modelo), **sunburst D3** com drill-down da estrutura completa,
+    "Atual × Meta" (meta escolhida pelo usuário nesta sessão, nunca inventada nem
+    persistida), exploração com filtros e busca.
+  - **Insights**: síntese de abertura gerada por IA com três blocos visualmente distintos
+    (Resultado -- montado no cliente a partir do dado real, nunca da IA --, Interpretação e
+    Possibilidades), chat integrado "Converse com seu diagnóstico" com perguntas sugeridas
+    (mesma engine do antigo centro de dúvidas), visualização de rastreabilidade com um
+    exemplo real da própria coleta, cards de pontos fortes/pontos de atenção, exploração de
+    atributo individual (reaproveita a explicação do Bloco 2 já gerada na Etapa 1 quando
+    disponível, sem chamada nova).
+  - **Roadmap**: timeline de 12 meses (0-3/3-6/6-12), ações criadas manualmente ou propostas
+    pela IA a partir dos pontos de atenção (sempre rotuladas "Sugestão da IA", nunca
+    autoaceitas), conversa contextual por ação, status (não iniciada/em andamento/
+    concluída/pausada). **Funciona só com estado de sessão** (igual ao resto da aplicação
+    hoje -- nada persiste entre sessões): revisões de 3/6/12 meses, comparação com uma
+    avaliação anterior real e retomar o roadmap numa visita futura exigiriam um banco de
+    dados e um mecanismo de identificação de organização entre sessões -- mudança estrutural
+    deliberadamente **não implementada nesta rodada** (ver nota explícita na própria tela do
+    Roadmap e na seção 0 do adendo rodada 6).
+  - **D3.js** é servido localmente (`public/js/vendor/d3.min.js`, ver o README ao lado) --
+    não por CDN externo, para não depender de um serviço de terceiros no host de deploy.
+  - Exportação do Cockpit inteiro como PDF continua disponível (`pdfkit`, server-side) --
+    a seção "Centro de aprendizado" do PDF agora mostra as ações do Roadmap.
 - **Paleta de cores oficial** (adendo rodada 4, seção 2) aplicada em toda a aplicação --
   tela de coleta, painel, gráficos, botões e PDF exportado (`public/css/styles.css`, com a
   correspondência de cada cor documentada no topo do arquivo). Erros/avisos usam uma cor de
@@ -139,10 +167,15 @@ server/
 public/
   index.html
   css/styles.css
-  js/app.js               estado, telas (4 blocos por atributo, painel da Etapa 3 com abas)
+  js/app.js               estado compartilhado, roteador de telas, Etapa 1 (4 blocos por
+                            atributo), extração do resultado do DEXi (ensurePanel)
+  js/cockpit.js             Cockpit de Evolução Digital -- Panorama/Insights/Roadmap
+                            (adendo rodada 6)
   js/dxi.js               decodeTemplate/fillDxi/splitKeepEnds/validateDxi
-  js/charts.js             gráficos SVG do painel (dimensões, radar dos grupos, indicador
-                            circular de posição na escala)
+  js/charts.js             gráficos SVG pequenos reaproveitados no Panorama (comparação das
+                            capacidades, indicador circular de posição na escala)
+  js/vendor/               bibliotecas de terceiros servidas localmente (D3.js -- ver
+                            public/js/vendor/README.md)
   assets/
     brand/                 logo ORBE original + derivados só de recorte/redimensionamento
                             (ver public/assets/brand/README.md)
@@ -163,15 +196,29 @@ Endpoints (`server/routes.js`):
 | `POST /api/collect/explain` | Bloco 2 -- explicação adaptada ao contexto |
 | `POST /api/collect/turn` | Bloco 4 -- turno da conversa livre de um atributo |
 | `POST /api/extract-pdf` | extrai texto de um PDF enviado (Etapa 3) |
-| `POST /api/interpret/extract` | status + dimensões + grupos, extraídos do resultado do DEXi |
-| `POST /api/interpret/learning` | centro de aprendizado (temas de estudo) |
-| `POST /api/interpret/turn` | centro de dúvidas -- turno da conversa sobre o resultado |
-| `POST /api/interpret/export-pdf` | exporta o painel completo como PDF |
+| `POST /api/interpret/extract` | status + dimensões + grupos, extraídos do resultado do DEXi (base de todo o Cockpit) |
+| `POST /api/interpret/learning` | mantido por compatibilidade (não usado pelo Cockpit atual) |
+| `POST /api/interpret/turn` | Insights -- "Converse com seu diagnóstico" |
+| `POST /api/interpret/export-pdf` | exporta o Cockpit completo como PDF |
+| `POST /api/insights/synthesis` | Insights -- síntese de abertura (interpretação + possibilidades) |
+| `POST /api/insights/attribute-explore` | Insights -- possibilidades de evolução de um atributo (exploração individual) |
+| `POST /api/roadmap/generate` | Roadmap -- proposta inicial de ações a partir dos pontos de atenção ("Sugestão da IA") |
+| `POST /api/roadmap/action-turn` | Roadmap -- conversa contextual sobre uma ação específica |
 
 ## O que ainda falta (pendências conhecidas da especificação)
 
-- Hospedagem definitiva e persistência entre sessões: decisões em aberto, não bloqueiam
-  esta primeira versão (ver especificação, seção 12).
+- **Persistência entre sessões (decisão em aberto, adendo rodada 6, seção 0)**: hoje nada
+  na aplicação sobrevive a um recarregamento de página -- nem a coleta, nem o resultado do
+  DEXi, nem o Roadmap. Isso é suficiente para Panorama e Insights (visualizar/interpretar um
+  resultado dentro da mesma sessão), mas limita três coisas específicas do Roadmap/Panorama
+  que dependeriam de dados reais entre visitas: revisões de 3/6/12 meses do Roadmap,
+  comparação "Atual × Referência" com uma avaliação anterior real, e evolução histórica.
+  Implementar isso exigiria um banco de dados simples e um mecanismo de identificação de
+  organização entre sessões (não precisa ser login completo -- pode ser um código de acesso
+  por organização) -- mudança estrutural deliberadamente deixada para decisão do pesquisador
+  antes de implementar, em vez de simular esses dados.
+- Hospedagem definitiva: decisão em aberto, não bloqueia esta primeira versão (ver
+  especificação, seção 12).
 - Os rótulos legíveis das 2 dimensões + 7 grupos do painel (`server/dexiModel.js`, campo
   `label`) e a limpeza cosmética dos tokens de escala agregada (`DISPLAY_LEVELS`, ex.
   "Medio.Baixo" -> "Médio-baixo") foram curados por mim a partir do `template.dxi` -- ao

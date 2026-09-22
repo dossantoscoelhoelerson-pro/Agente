@@ -202,7 +202,6 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
 /* elementos interativos (escolher, conversar) -> Azul Digital no rótulo */
 .card.block-options .block-label,
 .card.panel-duvidas .block-label{color:var(--blue);}
-.card.panel-status .block-label{color:var(--ink);}
 .block-explain-text{font-size:15px; line-height:1.65; color:var(--ink-soft);}
 /* Bloco 2 e centro de aprendizado: conteúdo gerado pela IA -> Verde Inteligência */
 .card.block-explain{background:var(--green-soft); border-color:transparent;}
@@ -285,12 +284,6 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
 .upload-zone .icon{font-size:28px; margin-bottom:8px;}
 .file-ok{color:var(--blue-strong); font-size:14px; margin-top:10px;}
 
-/* chip com o nome da organização = identidade -> Vermelho Identidade, com moderação */
-.result-badge{
-  display:inline-block; font-family:var(--font-display); font-size:15px;
-  background:var(--red-soft); color:var(--red); padding:6px 16px;
-  border-radius:99px; margin-bottom:18px;
-}
 .report-body{white-space:pre-wrap; font-size:15.5px; line-height:1.65; color:var(--ink);}
 .report-body strong{color:var(--ink); font-weight:600;}
 
@@ -311,100 +304,249 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   padding:14px 16px; font-size:14px; margin-top:14px;
 }
 
-/* Painel da Etapa 3 (adendo rodada 3) */
-/* status geral = resultado oficial/estrutural -> Azul Profundo, não Verde
-   (não é um insight da IA, é o dado extraído do resultado do DEXi). */
-.status-hero{
-  font-family:var(--font-display); font-size:40px; font-weight:500; color:var(--ink);
-  margin:4px 0 18px; line-height:1.1;
-}
 .scale-track{display:flex; gap:6px;}
 .scale-seg{
   flex:1; text-align:center; font-size:11px; padding:10px 4px; border-radius:8px;
   background:var(--paper); border:1px solid var(--line); color:var(--ink-soft);
 }
 .scale-seg-active{background:var(--ink); border-color:var(--ink); color:var(--paper); font-weight:600;}
-
-.chart-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:16px;}
-@media (max-width:640px){ .chart-grid{grid-template-columns:1fr;} }
-.chart-card{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px;}
-.chart-title{font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:8px;}
 .chart-box svg{width:100%; height:auto; display:block;}
 .chart-empty-note{font-size:12.5px; color:var(--ink-soft); padding:32px 8px; text-align:center;}
 
-/* panorama = pontos de atenção/evolução -> Amarelo, com moderação (só o rótulo) */
-.card.panel-panorama .block-label{color:var(--yellow-strong);}
-.stat-row{display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;}
-.stat-tile{
-  flex:1; min-width:130px; background:var(--paper); border:1px solid var(--line);
-  border-radius:10px; padding:14px 16px;
-}
-.stat-value{font-family:var(--font-display); font-size:24px; color:var(--ink);}
-.stat-caption{font-size:12px; color:var(--ink-soft); margin-top:2px;}
 
-.learning-item{margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
-.learning-item:first-of-type{margin-top:0; padding-top:0; border-top:none;}
-.learning-tema{font-weight:600; color:var(--ink); margin-bottom:4px;}
-/* etiqueta do centro de aprendizado apontando pro ponto de atenção que
-   motivou o tema (adendo rodada 5, item 1.4) -- mesma cor de "oportunidade"
-   (Amarelo Evolução) já usada no panorama, com moderação. */
-.learning-tag{
-  display:inline-block; font-size:11.5px; font-weight:600; color:var(--yellow-strong);
-  background:var(--yellow-soft); padding:3px 10px; border-radius:99px; margin-bottom:8px;
-}
-
-/* Painel da Etapa 3, navegação por abas (adendo rodada 5 -- adaptação do
-   "menu lateral" do mockup para uma barra horizontal, mais compatível com o
-   layout estreito de coluna única já usado no resto da aplicação; mesma
-   lógica de organização em 5 seções nomeadas, não cópia pixel a pixel). */
-.report-tabs{
-  display:flex; gap:4px; margin:24px 0 4px; overflow-x:auto;
-  border-bottom:1px solid var(--line);
-}
-.report-tab{
-  font-family:var(--font-body); font-size:14px; font-weight:600; white-space:nowrap;
-  background:none; border:none; color:var(--ink-soft); cursor:pointer;
-  padding:10px 14px; border-bottom:2px solid transparent; transition:color .12s, border-color .12s;
-}
-.report-tab:hover{color:var(--ink);}
-.report-tab-active{color:var(--blue-strong); border-bottom-color:var(--blue-strong);}
-
-/* (1.3) indicador circular + status, lado a lado -- empilha em telas
-   estreitas. */
-.status-hero-row{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
-.status-hero-row .status-hero{margin:0 0 10px;}
+/* ==========================================================================
+   Cockpit de Evolução Digital (adendo rodada 6) -- substitui o painel de
+   interpretação das rodadas 3-5 (Diagnóstico/Dimensões/Atributos/Evolução/
+   Relatórios) por três seções -- Panorama, Insights, Roadmap -- que são três
+   MOMENTOS METODOLÓGICOS diferentes (visualizar -> interpretar -> agir), não
+   só três páginas. Continua usando a mesma paleta/tipografia/logo ORBE já
+   em uso -- nenhuma identidade visual paralela. Layout mais largo que o
+   --wrap de 720px da coleta (produto/dashboard, não formulário/leitura).
+   ========================================================================== */
+body.cockpit-screen .wrap{max-width:1180px;}
 .status-gauge{flex-shrink:0;}
 
-/* (1.1) cards de grupo com barra de progresso + detalhamento sob demanda. */
-.group-card{
-  border:1px solid var(--line); border-radius:12px; padding:16px 18px;
-  margin-top:12px; background:var(--paper); cursor:pointer;
+.cockpit-nav{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin-bottom:36px; padding-bottom:16px; border-bottom:1px solid var(--line);
 }
-.group-card:first-child{margin-top:0;}
-.group-card-header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
-.group-card-title{font-weight:600; color:var(--ink); font-size:15px;}
-.group-card-level{font-size:13px; color:var(--ink-soft);}
-.group-bar-track{height:6px; background:var(--line); border-radius:99px; margin-top:10px; overflow:hidden;}
-.group-bar-fill{height:100%; background:var(--blue); border-radius:99px;}
-.group-card-caret{color:var(--ink-soft); font-size:12px; transition:transform .15s;}
-.group-card-open .group-card-caret{transform:rotate(90deg);}
-.group-card-body{margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
-.group-attr-row{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:7px 0; font-size:13.5px;
+.cockpit-nav-item{
+  display:flex; align-items:center; gap:9px; padding:9px 18px 9px 9px; border-radius:99px;
+  font-family:var(--font-body); font-weight:600; font-size:14px; color:var(--ink-soft);
+  background:transparent; border:1px solid var(--line); cursor:pointer; transition:all .15s;
 }
-.group-attr-row .ga-name{color:var(--ink); flex:1;}
-.group-attr-row .ga-val{color:var(--ink-soft); text-align:right;}
+.cockpit-nav-item .cni-step{
+  width:24px; height:24px; border-radius:50%; background:var(--paper-raised); color:var(--ink-soft);
+  font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.cockpit-nav-item .cni-sub{font-weight:400; color:inherit; opacity:.8;}
+.cockpit-nav-item.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+.cockpit-nav-item.active .cni-step{background:var(--paper); color:var(--ink);}
+.cockpit-nav-item:not(.active):hover{border-color:var(--blue); color:var(--ink);}
+.cockpit-chat-trigger{
+  margin-left:auto; display:flex; align-items:center; gap:8px; padding:9px 16px; border-radius:99px;
+  font-family:var(--font-body); font-weight:600; font-size:13.5px; color:#fff;
+  background:var(--green); border:none; cursor:pointer;
+}
+.cockpit-chat-trigger:hover{opacity:.88;}
 
-/* (1.2) lista visual de atributos em destaque (pontos fortes/atenção). */
-.destaque-group{margin-top:18px;}
-.destaque-group:first-child{margin-top:0;}
-.destaque-group-title{font-size:12px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; margin-bottom:8px;}
-.destaque-group-title.forte{color:var(--blue-strong);}
-.destaque-group-title.atencao{color:var(--yellow-strong);}
-.destaque-item{display:flex; align-items:flex-start; gap:10px; padding:7px 0;}
-.destaque-dot{width:9px; height:9px; border-radius:50%; margin-top:5px; flex-shrink:0;}
-.destaque-dot.forte{background:var(--blue);}
-.destaque-dot.atencao{background:var(--yellow);}
-.destaque-item-text{font-size:14px; color:var(--ink); line-height:1.5;}
-.destaque-item-text b{font-weight:600;}
+/* Abertura de cada seção -- hero, forte hierarquia, poucos elementos. */
+.cockpit-hero{padding:4px 0 8px;}
+.cockpit-hero-eyebrow{font-size:13px; color:var(--ink-soft); margin-bottom:8px; font-weight:600;}
+.cockpit-hero-title{font-family:var(--font-display); font-size:36px; font-weight:500; margin:0 0 10px; letter-spacing:-.01em;}
+.cockpit-hero-sub{font-size:15.5px; color:var(--ink-soft); max-width:64ch; margin:0 0 18px;}
+.cockpit-hero-meta{display:flex; gap:22px; flex-wrap:wrap; margin:4px 0 22px; font-size:13px; color:var(--ink-soft);}
+.cockpit-hero-meta b{color:var(--ink); font-weight:700;}
+.cockpit-hero-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+
+.cockpit-section{margin-top:40px;}
+.cockpit-section:first-of-type{margin-top:0;}
+.cockpit-section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
+.cockpit-section-title{font-family:var(--font-display); font-size:22px; font-weight:500; margin:0;}
+.cockpit-section-question{font-size:13px; color:var(--ink-soft); font-style:italic;}
+
+.cockpit-grid-2{display:grid; grid-template-columns:1.1fr 1fr; gap:22px; align-items:stretch;}
+@media (max-width:900px){ .cockpit-grid-2{grid-template-columns:1fr;} }
+.cockpit-card{
+  background:var(--paper-raised); border:1px solid var(--line); border-radius:16px; padding:26px;
+}
+.cockpit-card.on-paper{background:var(--paper);}
+
+/* Resultado de maturidade em destaque + indicador circular unificado. */
+.cockpit-result-row{display:flex; align-items:center; gap:26px; flex-wrap:wrap;}
+.cockpit-result-title{font-family:var(--font-display); font-size:32px; margin:2px 0 8px; line-height:1.1;}
+.cockpit-result-link{
+  font-size:13px; color:var(--blue-strong); cursor:pointer; text-decoration:underline;
+  background:none; border:none; padding:0; font-family:var(--font-body); font-weight:600;
+}
+
+/* Heatmap (D3) -- 34 atributos, Capacidade -> Grupo -> Atributo. */
+.cockpit-heatmap-wrap{overflow-x:auto; padding-bottom:6px;}
+.heatmap-cell{cursor:pointer; stroke:var(--paper); stroke-width:2; transition:opacity .1s;}
+.heatmap-cell:hover{opacity:.82;}
+.heatmap-row-label{font-size:10.5px; fill:var(--ink-soft); font-family:var(--font-body);}
+.heatmap-group-label{font-size:10px; fill:var(--ink-soft); font-family:var(--font-body); text-transform:uppercase; letter-spacing:.02em;}
+.heatmap-legend{display:flex; align-items:center; gap:8px; margin-top:14px; font-size:11.5px; color:var(--ink-soft);}
+.heatmap-legend-swatch{width:14px; height:14px; border-radius:3px; display:inline-block;}
+
+/* Sunburst (D3) -- estrutura hierárquica com drill-down. */
+.sunburst-wrap{display:flex; justify-content:center;}
+.sunburst-path{cursor:pointer; stroke:var(--paper); stroke-width:1.5; transition:opacity .1s;}
+.sunburst-path:hover{opacity:.82;}
+.sunburst-center-label{font-family:var(--font-body); font-size:12px; fill:var(--ink); text-anchor:middle; font-weight:600;}
+.sunburst-center-sub{font-family:var(--font-body); font-size:10px; fill:var(--ink-soft); text-anchor:middle;}
+
+/* Tooltip flutuante compartilhado pelo heatmap e pelo sunburst. */
+.viz-tooltip{
+  position:fixed; pointer-events:none; background:var(--ink); color:var(--paper);
+  font-family:var(--font-body); font-size:12.5px; padding:9px 13px; border-radius:9px; z-index:80;
+  max-width:240px; line-height:1.45; opacity:0; transition:opacity .1s; box-shadow:0 6px 18px rgba(18,63,99,.25);
+}
+.viz-tooltip.visible{opacity:1;}
+.viz-tooltip b{display:block; margin-bottom:2px;}
+
+/* Meta da sessão (Atual x Meta) -- escolha efêmera do usuário, nunca dado
+   persistido/inventado (ver nota no JS). */
+.meta-picker{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px;}
+.meta-picker select{
+  font-family:var(--font-body); font-size:13.5px; padding:7px 12px; border:1px solid var(--line);
+  border-radius:8px; background:var(--paper); color:var(--ink);
+}
+.meta-compare{display:flex; align-items:center; gap:14px; margin-top:16px; flex-wrap:wrap;}
+.meta-compare-item{text-align:center;}
+.meta-compare-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px;}
+.meta-compare-value{font-family:var(--font-display); font-size:17px; color:var(--ink);}
+.meta-compare-arrow{color:var(--ink-soft); font-size:18px;}
+
+/* Exploração -- filtros + busca + resultados. */
+.explore-filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+.explore-filters select, .explore-filters input[type=text]{
+  font-family:var(--font-body); font-size:13.5px; padding:9px 13px; border:1px solid var(--line);
+  border-radius:9px; background:var(--paper); color:var(--ink);
+}
+.explore-filters input[type=text]{flex:1; min-width:160px;}
+.explore-results{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px;}
+.explore-result-item{
+  padding:13px 15px; border:1px solid var(--line); border-radius:11px; background:var(--paper);
+  cursor:pointer; font-size:13.5px; text-align:left;
+}
+.explore-result-item:hover{border-color:var(--blue);}
+.explore-result-item .eri-name{color:var(--ink); font-weight:600; margin-bottom:3px;}
+.explore-result-item .eri-val{color:var(--ink-soft); font-size:12.5px;}
+.explore-empty{color:var(--ink-soft); font-size:13.5px; padding:12px 0;}
+
+/* Transição para Insights -- convite, não fim de relatório. */
+.cockpit-bridge{
+  margin-top:40px; padding:30px; border-radius:18px; background:var(--green-soft);
+  text-align:center;
+}
+.cockpit-bridge-title{font-family:var(--font-display); font-size:22px; margin:0 0 18px;}
+.cockpit-bridge-actions{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+
+/* ---------- Insights ---------- */
+
+.synthesis-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;}
+@media (max-width:900px){ .synthesis-grid{grid-template-columns:1fr;} }
+.synthesis-block{border-radius:14px; padding:20px;}
+.synthesis-block.resultado{background:var(--paper-raised); border:1px solid var(--line);}
+.synthesis-block.interpretacao{background:var(--green-soft);}
+.synthesis-block.possibilidades{background:var(--yellow-soft);}
+.synthesis-block-label{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-bottom:10px;}
+.synthesis-block.resultado .synthesis-block-label{color:var(--ink);}
+.synthesis-block.interpretacao .synthesis-block-label{color:var(--green);}
+.synthesis-block.possibilidades .synthesis-block-label{color:var(--yellow-strong);}
+.synthesis-block-text{font-size:14.5px; line-height:1.6; color:var(--ink);}
+
+.insight-chat-card{background:var(--green-soft); border-radius:18px; padding:26px; margin-top:12px;}
+.insight-chat-suggestions{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 18px;}
+.insight-chip{
+  font-size:13px; padding:9px 15px; border-radius:99px; background:var(--paper); border:1px solid var(--line);
+  cursor:pointer; color:var(--ink); font-family:var(--font-body);
+}
+.insight-chip:hover{border-color:var(--green);}
+
+.trace-chain{display:flex; flex-direction:column; margin-top:10px;}
+.trace-step{display:flex; gap:14px; align-items:flex-start;}
+.trace-dot{width:11px; height:11px; border-radius:50%; background:var(--blue); margin-top:5px; flex-shrink:0;}
+.trace-connector{width:1px; background:var(--line); margin-left:5px; height:20px;}
+.trace-body{padding-bottom:10px;}
+.trace-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:2px;}
+.trace-value{font-size:15px; color:var(--ink); font-weight:600;}
+.trace-evidence{font-size:13px; color:var(--ink-soft); margin-top:4px; font-style:italic;}
+
+.insight-cards-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:18px;}
+.insight-card{border-radius:14px; padding:18px; border:1px solid var(--line); background:var(--paper);}
+.insight-card.forte{border-left:4px solid var(--blue);}
+.insight-card.atencao{border-left:4px solid var(--yellow);}
+.insight-card-title{font-weight:600; color:var(--ink); margin-bottom:4px; font-size:15px;}
+.insight-card-level{font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;}
+.insight-card-actions{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+
+/* Painel de exploração de atributo -- modal simples sobre o conteúdo. */
+.attr-detail-overlay{
+  position:fixed; inset:0; background:rgba(18,63,99,.45); z-index:90;
+  display:flex; align-items:flex-start; justify-content:center; padding:48px 20px; overflow-y:auto;
+}
+.attr-detail-panel{background:var(--paper); border-radius:20px; max-width:640px; width:100%; padding:34px; position:relative;}
+.attr-detail-close{
+  position:absolute; top:20px; right:20px; background:var(--paper-raised); border:none; border-radius:50%;
+  width:32px; height:32px; font-size:18px; cursor:pointer; color:var(--ink-soft); line-height:1;
+}
+.attr-detail-close:hover{color:var(--ink);}
+.attr-detail-eyebrow{font-size:12px; color:var(--ink-soft); margin-bottom:6px;}
+.attr-detail-title{font-family:var(--font-display); font-size:26px; margin:0 0 4px; padding-right:40px;}
+.attr-detail-level{display:inline-block; font-size:13px; font-weight:600; color:var(--blue-strong); background:var(--blue-soft); padding:4px 12px; border-radius:99px; margin-top:8px;}
+.attr-detail-section{margin-top:20px;}
+.attr-detail-section-label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:6px;}
+.attr-detail-section-text{font-size:14.5px; line-height:1.6; color:var(--ink);}
+
+/* ---------- Roadmap ---------- */
+
+.roadmap-timeline{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:24px;}
+@media (max-width:900px){ .roadmap-timeline{grid-template-columns:1fr;} }
+.roadmap-col{background:var(--paper-raised); border-radius:16px; padding:18px; min-height:140px;}
+.roadmap-col-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:14px;}
+.roadmap-col-empty{font-size:13px; color:var(--ink-soft); padding:10px 0;}
+.roadmap-action-card{
+  background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:15px 17px; margin-bottom:10px; cursor:pointer;
+}
+.roadmap-action-card:hover{border-color:var(--blue);}
+.roadmap-action-title{font-weight:600; color:var(--ink); margin-bottom:7px; font-size:14.5px;}
+.roadmap-action-meta{font-size:12px; color:var(--ink-soft); display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:8px;}
+.roadmap-ai-tag{
+  display:inline-block; font-size:10.5px; font-weight:700; color:var(--green); background:var(--green-soft);
+  padding:3px 9px; border-radius:99px; margin-bottom:8px;
+}
+.roadmap-status-badge{font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px;}
+.roadmap-status-badge.nao-iniciada{background:var(--line); color:var(--ink-soft);}
+.roadmap-status-badge.em-andamento{background:var(--blue-soft); color:var(--blue-strong);}
+.roadmap-status-badge.concluida{background:var(--green-soft); color:var(--green);}
+.roadmap-status-badge.pausada{background:var(--yellow-soft); color:var(--yellow-strong);}
+
+.roadmap-suggestions-list{display:flex; flex-direction:column; gap:12px; margin-top:16px;}
+.roadmap-suggestion-card{
+  background:var(--green-soft); border-radius:14px; padding:18px 20px;
+}
+.roadmap-suggestion-actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+
+.action-detail-body{margin-top:8px;}
+.action-detail-field{margin-bottom:16px;}
+.action-detail-field label{margin-bottom:5px;}
+.action-detail-field select, .action-detail-field input[type=text]{
+  width:100%; font-family:var(--font-body); font-size:14.5px; padding:10px 13px; border:1px solid var(--line);
+  border-radius:9px; background:var(--paper); color:var(--ink);
+}
+
+/* Aviso de limitação (revisões 3/6/12 meses, evolução histórica, atual x
+   referência sem meta definida) -- nunca escondido, sempre explícito. */
+.persistence-note{
+  background:var(--state-bg); color:var(--state-text); border-radius:12px; padding:18px 20px; margin-top:24px;
+  font-size:13.5px; line-height:1.55;
+}
+.persistence-note b{display:block; margin-bottom:4px; color:var(--ink);}
+
+@media (max-width:640px){
+  .cockpit-hero-title{font-size:28px;}
+  .cockpit-result-title{font-size:26px;}
+  .cockpit-nav-item{padding:8px 14px 8px 8px; font-size:13px;}
+}
