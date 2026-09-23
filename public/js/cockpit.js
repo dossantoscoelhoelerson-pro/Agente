@@ -215,17 +215,19 @@ function screenPanorama(){
   }
   c.appendChild(hero);
 
-  // 1.2 Resultado de Maturidade Digital em destaque.
-  c.appendChild(sectionResultado());
-
-  // 1.3 Capacidades.
-  c.appendChild(sectionCapacidades());
+  // 1.2+1.3 Resultado + capacidades, consolidados num único cartão coeso
+  // (adendo rodada 7, seção 3).
+  c.appendChild(sectionOverview());
 
   // 1.4 Heatmap dos 34 atributos.
   c.appendChild(sectionHeatmap());
 
   // 1.5 Estrutura do diagnóstico (sunburst).
   c.appendChild(sectionSunburst());
+
+  // Árvore de atributos + árvore de oportunidades (adendo rodada 7, seções 1 e 4).
+  c.appendChild(sectionAttributeTree());
+  c.appendChild(sectionOpportunityTree());
 
   // 1.6 Atual x Meta (sessão) -- 1.7 Evolução histórica é omitida (ver nota).
   c.appendChild(sectionMeta());
@@ -260,9 +262,16 @@ function formatToday(){
   return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-function sectionResultado(){
-  const card = el('div', { class: 'cockpit-card' });
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Resultado oficial do DEXi' }));
+// Seção consolidada única (adendo rodada 7, seção 3): resultado geral + as
+// duas capacidades, tudo num único cartão coeso em vez de 2-3 cartões
+// grandes empilhados -- é a mudança que reduz a "sensação de dispersão"
+// diagnosticada pelo pesquisador. Contém o resultado oficial (indicador
+// circular + escala) e, logo abaixo, o mapa das capacidades e os dois
+// radares lado a lado (item 2 do adendo -- Capacidade Digital e Capacidade
+// Organizacional separadas, nunca mais misturadas num único radar de 7
+// grupos).
+function sectionOverview(){
+  const card = el('div', { class: 'cockpit-card cockpit-overview' });
 
   const nivelLabel = state.panel && state.panel.nivelFinalLabel;
   const idx = (DEXI_MODEL && state.panel && state.panel.nivelFinal) ? DEXI_MODEL.root.niveis.indexOf(state.panel.nivelFinal) : null;
@@ -283,29 +292,55 @@ function sectionResultado(){
   textBox.appendChild(el('button', { class: 'cockpit-result-link', text: 'Como chegamos aqui? →', style: 'margin-top:14px;', onclick: () => { goToSection('insights'); } }));
   row.appendChild(textBox);
   card.appendChild(row);
-
   if(DEXI_MODEL){
     renderLevelGauge(gaugeBox, { levelLabel: nivelLabel, idx, total: DEXI_MODEL.root.niveis.length });
   }
-  return card;
-}
 
-function sectionCapacidades(){
-  const card = el('div', { class: 'cockpit-card on-paper' });
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Capacidades' }));
-  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como as duas capacidades se comportam dentro do diagnóstico?', style: 'margin-bottom:14px; display:block;' }));
+  card.appendChild(el('div', { class: 'cockpit-overview-divider' }));
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Como as duas capacidades se comportam' }));
 
-  const box = el('div', { class: 'chart-box' });
-  card.appendChild(box);
+  const caps = el('div', { class: 'cockpit-caps-grid' });
+
+  const scatterCol = el('div', { class: 'cockpit-caps-col' });
+  scatterCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Perfil geral' }));
+  const scatterBox = el('div', { class: 'chart-box' });
+  scatterCol.appendChild(scatterBox);
+  caps.appendChild(scatterCol);
+
+  const digCol = el('div', { class: 'cockpit-caps-col' });
+  digCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Capacidade Digital' }));
+  const digBox = el('div', { class: 'chart-box' });
+  digCol.appendChild(digBox);
+  caps.appendChild(digCol);
+
+  const orgCol = el('div', { class: 'cockpit-caps-col' });
+  orgCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Capacidade Organizacional' }));
+  const orgBox = el('div', { class: 'chart-box' });
+  orgCol.appendChild(orgBox);
+  caps.appendChild(orgCol);
+
+  card.appendChild(caps);
 
   if(DEXI_MODEL && state.panel){
     const dimDigital = DEXI_MODEL.dimensoes.find((d) => d.id === 'CAP.DIGITAL');
     const dimOrg = DEXI_MODEL.dimensoes.find((d) => d.id === 'CAP.ORGANIZACIONAL');
     const xIdx = state.panel.capDigital ? dimDigital.niveis.indexOf(state.panel.capDigital) : null;
     const yIdx = state.panel.capOrganizacional ? dimOrg.niveis.indexOf(state.panel.capOrganizacional) : null;
-    renderDimensionScatter(box, { xLabels: dimDigital.niveisExibicao, yLabels: dimOrg.niveisExibicao, xIdx, yIdx });
+    renderDimensionScatter(scatterBox, { xLabels: dimDigital.niveisExibicao, yLabels: dimOrg.niveisExibicao, xIdx, yIdx });
+
+    const gruposDigital = DEXI_MODEL.grupos.filter((g) => g.dimensaoId === 'CAP.DIGITAL').map((g) => {
+      const found = state.panel.grupos.find((pg) => pg.id === g.id);
+      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
+    });
+    renderGroupRadar(digBox, gruposDigital);
+
+    const gruposOrg = DEXI_MODEL.grupos.filter((g) => g.dimensaoId === 'CAP.ORGANIZACIONAL').map((g) => {
+      const found = state.panel.grupos.find((pg) => pg.id === g.id);
+      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
+    });
+    renderGroupRadar(orgBox, gruposOrg);
   } else {
-    box.appendChild(el('div', { class: 'chart-empty-note', text: 'Sem dados ainda.' }));
+    [scatterBox, digBox, orgBox].forEach((box) => box.appendChild(el('div', { class: 'chart-empty-note', text: 'Sem dados ainda.' })));
   }
   return card;
 }
@@ -394,22 +429,31 @@ function sectionSunburst(){
   return card;
 }
 
-function buildSunburstData(){
+// Fonte única da hierarquia real do diagnóstico (Maturidade Digital ->
+// Capacidade -> Grupo -> Atributo), usada pelo sunburst e pelas duas árvores
+// (adendo rodada 7) -- cada nó carrega `idx` (posição 0-3 na própria escala
+// de 4 níveis, ou null se não identificado), usado para a coloração
+// vermelho->verde das árvores; o sunburst ignora `idx` e continua colorindo
+// por capacidade, como já era.
+function buildDiagnosisTreeData(){
   return {
     id: 'ROOT', label: 'Maturidade Digital',
+    idx: (DEXI_MODEL && state.panel && state.panel.nivelFinal) ? DEXI_MODEL.root.niveis.indexOf(state.panel.nivelFinal) : null,
+    levelLabel: state.panel ? state.panel.nivelFinalLabel : null,
     children: DEXI_MODEL.dimensoes.map((dim) => {
+      const nivel = dim.id === 'CAP.DIGITAL' ? (state.panel && state.panel.capDigital) : (state.panel && state.panel.capOrganizacional);
       const dimLevel = dim.id === 'CAP.DIGITAL' ? (state.panel && state.panel.capDigitalLabel) : (state.panel && state.panel.capOrganizacionalLabel);
       const gruposOfDim = DEXI_MODEL.grupos.filter((g) => g.dimensaoId === dim.id);
       return {
-        id: dim.id, label: dim.label, levelLabel: dimLevel || null,
+        id: dim.id, label: dim.label, idx: nivel ? dim.niveis.indexOf(nivel) : null, levelLabel: dimLevel || null,
         children: gruposOfDim.map((g) => {
           const found = state.panel ? state.panel.grupos.find((pg) => pg.id === g.id) : null;
           return {
-            id: g.id, label: g.label, levelLabel: found ? found.nivelLabel : null,
+            id: g.id, label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null,
             children: ATTRS.filter((a) => a.grupoTop === g.id).map((a) => {
               const val = state.answers[a.id];
               const idx = val ? a.niveis.indexOf(val) : null;
-              return { id: a.id, label: humanizeAttrId(a.id), levelLabel: idx !== null ? a.niveisExibicao[idx] : null, isAttr: true };
+              return { id: a.id, label: humanizeAttrId(a.id), idx, levelLabel: idx !== null ? a.niveisExibicao[idx] : null, isAttr: true };
             }),
           };
         }),
@@ -421,7 +465,7 @@ function buildSunburstData(){
 function renderSunburst(container, onLeafClick){
   container.innerHTML = '';
   if(typeof d3 === 'undefined') return;
-  const data = buildSunburstData();
+  const data = buildDiagnosisTreeData();
   const root = d3.hierarchy(data).sum((d) => (d.children ? 0 : 1));
   const size = 440, radius = size / 2 - 6;
   d3.partition().size([2 * Math.PI, radius])(root);
@@ -455,6 +499,114 @@ function renderSunburst(container, onLeafClick){
 
   svg.append('text').attr('class', 'sunburst-center-label').attr('y', -4).text(state.panel && state.panel.nivelFinalLabel || 'Maturidade Digital');
   svg.append('text').attr('class', 'sunburst-center-sub').attr('y', 13).text('resultado oficial');
+}
+
+// Gradiente vermelho -> amarelo -> verde por nível real (0-3), usado só
+// pelas duas árvores abaixo (adendo rodada 7, seção 1: "exceção pontual e
+// funcional" à paleta de marca -- sinaliza nível qualitativo, nunca
+// substitui a paleta no resto da interface). Reaproveita os próprios tons
+// oficiais (--red/--yellow/--green) como paradas do gradiente, em vez de
+// inventar cores novas -- cinza neutro (--line) para "sem dado".
+const TREE_COLOR_STOPS = ['#D96F72', '#F7C84B', '#43B7AA'];
+function treeLevelColor(idx){
+  if(idx === null || idx === undefined) return '#D9E1E8';
+  return d3.scaleLinear().domain([0, 1.5, 3]).range(TREE_COLOR_STOPS).interpolate(d3.interpolateRgb)(idx);
+}
+
+// 1 -- árvore de atributos: dendrograma horizontal da hierarquia real
+// (Maturidade Digital -> Capacidade -> Grupo -> Atributo), nós coloridos
+// pelo gradiente acima. 4 -- árvore de oportunidades: MESMA estrutura e
+// MESMOS dados, só a apresentação visual muda (emphasizeWeak=true) -- nós/
+// ligações fracos (nível 0-1) ficam maiores/mais saturados, nós fortes
+// ficam discretos -- nunca uma priorização calculada à parte, só ênfase
+// visual sobre o nível real já mostrado na árvore de atributos.
+function renderDiagnosisTree(container, { onLeafClick, emphasizeWeak }){
+  container.innerHTML = '';
+  if(typeof d3 === 'undefined' || !DEXI_MODEL) return;
+  const data = buildDiagnosisTreeData();
+  const root = d3.hierarchy(data);
+  const leafCount = root.leaves().length;
+  const nodeH = 16;
+  const height = Math.max(340, leafCount * nodeH);
+  const width = 820;
+  const marginLeft = 150, labelRoom = 150;
+  d3.tree().size([height - 20, width - marginLeft - labelRoom])(root);
+
+  const svg = d3.select(container).append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`).attr('width', '100%')
+    .attr('role', 'img').attr('aria-label', emphasizeWeak ? 'Árvore de oportunidades' : 'Árvore de atributos');
+  const g = svg.append('g').attr('transform', `translate(${marginLeft},10)`);
+
+  const isWeak = (d) => d.idx !== null && d.idx !== undefined && d.idx <= 1;
+
+  g.selectAll('path.tree-link')
+    .data(root.links())
+    .join('path')
+    .attr('class', 'tree-link')
+    .attr('d', d3.linkHorizontal().x((d) => d.y).y((d) => d.x))
+    .attr('fill', 'none')
+    .attr('stroke', (d) => treeLevelColor(d.target.data.idx))
+    .attr('stroke-opacity', (d) => (emphasizeWeak ? (isWeak(d.target.data) ? 0.9 : 0.12) : 0.55))
+    .attr('stroke-width', (d) => (emphasizeWeak && isWeak(d.target.data) ? 2.4 : 1.2));
+
+  const node = g.selectAll('g.tree-node')
+    .data(root.descendants())
+    .join('g')
+    .attr('class', 'tree-node')
+    .attr('transform', (d) => `translate(${d.y},${d.x})`)
+    .style('cursor', (d) => (d.data.isAttr ? 'pointer' : 'default'))
+    .on('mouseenter', (ev, d) => showVizTooltip(ev, `<b>${escapeXml(d.data.label)}</b>${d.data.levelLabel ? escapeXml(d.data.levelLabel) : 'não identificado'}`))
+    .on('mousemove', moveVizTooltip)
+    .on('mouseleave', hideVizTooltip)
+    .on('click', (ev, d) => { if(d.data.isAttr) onLeafClick(d.data.id); });
+
+  node.append('circle')
+    .attr('r', (d) => {
+      if(!emphasizeWeak) return d.children ? 5 : 4;
+      if(d.children) return 5;
+      return isWeak(d.data) ? 6.5 : 3;
+    })
+    .attr('fill', (d) => treeLevelColor(d.data.idx))
+    .attr('opacity', (d) => (emphasizeWeak && !d.children && !isWeak(d.data) ? 0.3 : 1));
+
+  node.filter((d) => !d.children).append('text')
+    .attr('class', 'tree-leaf-label')
+    .attr('x', 9).attr('dy', '0.32em')
+    .attr('opacity', (d) => (emphasizeWeak && !isWeak(d.data) ? 0.4 : 1))
+    .text((d) => d.data.label);
+
+  node.filter((d) => d.children).append('text')
+    .attr('class', 'tree-branch-label')
+    .attr('x', -9).attr('text-anchor', 'end').attr('dy', '0.32em')
+    .text((d) => d.data.label);
+}
+
+function sectionAttributeTree(){
+  const card = el('div', { class: 'cockpit-card on-paper' });
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Árvore de atributos' }));
+  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como os 34 atributos se distribuem, do nível mais baixo (vermelho) ao mais alto (verde)?', style: 'display:block; margin-bottom:10px;' }));
+  const wrap = el('div', { class: 'cockpit-tree-wrap' });
+  card.appendChild(wrap);
+  if(DEXI_MODEL){
+    renderDiagnosisTree(wrap, { onLeafClick: (attrId) => { state.selectedAttrId = attrId; render(); }, emphasizeWeak: false });
+  } else {
+    wrap.appendChild(el('div', { class: 'chart-empty-note', text: 'Carregando...' }));
+  }
+  return card;
+}
+
+function sectionOpportunityTree(){
+  const card = el('div', { class: 'cockpit-card on-paper' });
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Árvore de oportunidades' }));
+  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Onde vale focar primeiro? Os pontos em destaque são os de nível mais baixo no resultado real.', style: 'display:block; margin-bottom:10px;' }));
+  const wrap = el('div', { class: 'cockpit-tree-wrap' });
+  card.appendChild(wrap);
+  if(DEXI_MODEL){
+    renderDiagnosisTree(wrap, { onLeafClick: (attrId) => { state.selectedAttrId = attrId; render(); }, emphasizeWeak: true });
+  } else {
+    wrap.appendChild(el('div', { class: 'chart-empty-note', text: 'Carregando...' }));
+  }
+  return card;
 }
 
 // 1.6 -- Atual x Meta: adaptação honesta do "Atual x Referência" do

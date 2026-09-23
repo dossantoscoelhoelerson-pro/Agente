@@ -50,6 +50,24 @@ function sanitizeHistory(history) {
     .map((m) => ({ role: m.role, text: m.text.slice(0, 4000) }));
 }
 
+// Estrutura real do modelo (dimensão -> grupos -> atributos), para o
+// consultor ORBE (Insights) poder oferecer caminhos concretos e nomeados ao
+// final de cada resposta sem nunca inventar um nome de grupo/atributo
+// (adendo rodada 8, seção 4) -- mesma fonte (DIMENSOES/GRUPOS/ATTRS) usada
+// em todo o resto do projeto, nunca uma lista à parte.
+function buildEstruturaTxt() {
+  return DIMENSOES.map((dim) => {
+    const gruposTxt = GRUPOS
+      .filter((g) => g.dimensaoId === dim.id)
+      .map((g) => {
+        const attrsTxt = ATTRS.filter((a) => groupIdFor(a.grupo) === g.id).map((a) => a.id).join(', ');
+        return `  - ${g.label} (atributos: ${attrsTxt})`;
+      })
+      .join('\n');
+    return `${dim.label}:\n${gruposTxt}`;
+  }).join('\n');
+}
+
 function checkConsistency(answers) {
   const missing = [];
   const invalid = [];
@@ -510,6 +528,7 @@ router.post('/interpret/turn', async (req, res) => {
     missing,
     invalid,
     registroTxt,
+    estruturaTxt: buildEstruturaTxt(),
   });
 
   const safeHistory = sanitizeHistory(history);
