@@ -4,9 +4,7 @@
 resultado para o protótipo de dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de
 Kljajić Borštnar e Pucihar (2021), com o **DEXi** como motor oficial de cálculo. A
 especificação completa está em `especificacao_experiencia_conversacional.md`, com correções
-e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.md`,
-`adendo_especificacao_rodada4.md`, `adendo_especificacao_rodada5.md` e
-`adendo_especificacao_rodada6.md`.
+e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_rodada8.md`.
 
 ## Arquitetura
 
@@ -35,20 +33,40 @@ e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.
   significa?", interpretar/explorar) e **Roadmap** ("O que vamos fazer?", agir). Todas
   partem do mesmo resultado oficial extraído do DEXi (`POST /api/interpret/extract`, nunca
   recalculado). Detalhes de cada seção em `public/js/cockpit.js`:
-  - **Panorama**: hero de abertura, resultado de maturidade em destaque com indicador
-    circular unificado ao selo de classificação (preenchimento é sempre a posição do nível
-    oficial na própria escala de 4 níveis, nunca um percentual calculado), comparação das
-    duas capacidades, **heatmap D3** dos 34 atributos (Capacidade → Grupo → Atributo, a
-    hierarquia real do modelo), **sunburst D3** com drill-down da estrutura completa,
-    "Atual × Meta" (meta escolhida pelo usuário nesta sessão, nunca inventada nem
-    persistida), exploração com filtros e busca.
-  - **Insights**: síntese de abertura gerada por IA com três blocos visualmente distintos
+  - **Panorama** (refinado na rodada 7 -- ver `adendo_especificacao_rodada7.md`):
+    resultado de maturidade em destaque com indicador circular unificado ao selo de
+    classificação (preenchimento é sempre a posição do nível oficial na própria escala de 4
+    níveis, nunca um percentual calculado), e logo abaixo, **num único cartão coeso** (não
+    mais cartões grandes empilhados -- consolidação pedida pelo pesquisador para reduzir a
+    sensação de dispersão), o mapa das duas capacidades e **dois radares D3 lado a lado**
+    (Capacidade Digital e Capacidade Organizacional, cada um só com os grupos da própria
+    dimensão -- nunca mais um radar único misturando as duas escalas). Depois: **heatmap
+    D3** dos 34 atributos (Capacidade → Grupo → Atributo), **sunburst D3** com drill-down da
+    estrutura completa, **árvore de atributos** (dendrograma D3, raiz em Maturidade Digital,
+    nós coloridos num gradiente vermelho→verde conforme o nível real na própria escala --
+    exceção pontual e funcional à paleta de marca, documentada em `treeLevelColor()` no
+    código) e **árvore de oportunidades** (mesma estrutura e mesmo dado, com os nós de nível
+    mais baixo visualmente destacados e os já desenvolvidos discretos -- nunca uma
+    priorização calculada à parte). "Atual × Meta" (meta escolhida pelo usuário nesta
+    sessão, nunca inventada nem persistida) e exploração com filtros e busca. Comparação
+    com mercado/benchmark foi avaliada e **descartada deliberadamente** -- não existe dado
+    real disponível no projeto para isso.
+  - **Insights** (postura conversacional refinada na rodada 8 -- ver
+    `adendo_especificacao_rodada8.md`): síntese de abertura gerada por IA com três blocos visualmente distintos
     (Resultado -- montado no cliente a partir do dado real, nunca da IA --, Interpretação e
     Possibilidades), chat integrado "Converse com seu diagnóstico" com perguntas sugeridas
     (mesma engine do antigo centro de dúvidas), visualização de rastreabilidade com um
     exemplo real da própria coleta, cards de pontos fortes/pontos de atenção, exploração de
     atributo individual (reaproveita a explicação do Bloco 2 já gerada na Etapa 1 quando
-    disponível, sem chamada nova).
+    disponível, sem chamada nova). **Postura do chat** (rodada 8, `server/prompts.js`,
+    `INTERPRET_SYSTEM_PROMPT`): consultor ORBE, nunca auditor/FAQ -- responde primeiro a
+    partir do resultado oficial, em texto corrido natural; nunca abre com alerta de
+    inconsistência (a divergência de dado só aparece, curta e contextual, quando é relevante
+    para a pergunta feita, e só interrompe a resposta quando impede responder com segurança);
+    nunca termina com uma pergunta genérica de fechamento -- sempre nomeia os caminhos
+    concretos disponíveis (grupos/atributos reais, vindos da estrutura do modelo passada no
+    contexto da conversa, nunca inventados). Nenhuma regra de fidelidade ao resultado do
+    DEXi muda -- é só o comportamento conversacional que é refinado.
   - **Roadmap**: timeline de 12 meses (0-3/3-6/6-12), ações criadas manualmente ou propostas
     pela IA a partir dos pontos de atenção (sempre rotuladas "Sugestão da IA", nunca
     autoaceitas), conversa contextual por ação, status (não iniciada/em andamento/

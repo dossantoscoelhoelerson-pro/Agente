@@ -23,7 +23,13 @@ function escapeXml(s){
 // referência. xIdx/yIdx são o índice (0-3) do nível de cada dimensão, ou
 // null se não foi possível extrair do texto do resultado.
 function renderDimensionScatter(container, { xLabels, yLabels, xIdx, yIdx }){
-  const W = 340, H = 300, padL = 88, padB = 46, padT = 16, padR = 16;
+  // padL maior que o necessário para os rótulos curtos de Capacidade
+  // Digital -- alguns rótulos de Capacidade Organizacional são bem mais
+  // longos ("Planejando mudança", "Mudando lentamente") e, com um padL
+  // apertado, o texto (ancorado à direita, crescendo para a esquerda)
+  // ultrapassava x=0 do viewBox e ficava cortado (bug real, pego ao usar
+  // este gráfico numa coluna mais estreita a partir da rodada 7).
+  const W = 340, H = 300, padL = 118, padB = 46, padT = 16, padR = 16;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = 4;
   const cellW = plotW / n, cellH = plotH / n;
