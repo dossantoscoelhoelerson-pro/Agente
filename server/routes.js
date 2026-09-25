@@ -536,16 +536,41 @@ router.post('/interpret/turn', async (req, res) => {
   safeHistory.forEach((m) => messages.push({ role: m.role, content: m.text }));
   messages.push({ role: 'user', content: userMessage.trim() });
 
+  // "Caminhos concretos" (rodada 9): em vez de só citar nomes em texto
+  // corrido, o agente devolve os próximos passos como dado estruturado, pra
+  // virar chip clicável na UI -- validados aqui contra os nomes reais de
+  // dimensão/grupo/atributo (mesmo padrão defensivo do resto do projeto),
+  // nunca confiando que a IA não inventou um nome parecido.
+  const InterpretTurnSchema = z.object({
+    message: z.string(),
+    nextSteps: z.array(z.object({
+      label: z.string(),
+      kind: z.enum(['dimensao', 'grupo', 'atributo']),
+      question: z.string(),
+    })).max(5),
+  });
+
   try {
-    const response = await client.messages.create({
+    const response = await client.messages.parse({
       model: MODEL,
       max_tokens: 4096,
       system: [{ type: 'text', text: INTERPRET_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages,
+      output_config: { format: zodOutputFormat(InterpretTurnSchema) },
     });
-    const textBlock = response.content.find((b) => b.type === 'text');
+    const parsed = response.parsed_output;
+    if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
+
+    const nextSteps = (parsed.nextSteps || []).filter((s) => {
+      if (s.kind === 'dimensao') return DIMENSOES.some((d) => d.label === s.label);
+      if (s.kind === 'grupo') return GRUPOS.some((g) => g.label === s.label);
+      if (s.kind === 'atributo') return ATTRS.some((a) => a.id === s.label || a.id.replace(/\./g, ' ') === s.label);
+      return false;
+    }).slice(0, 5);
+
     res.json({
-      message: textBlock ? textBlock.text : '',
+      message: parsed.message,
+      nextSteps,
       consistencia: { completo, atributosFaltando: missing, atributosInvalidos: invalid },
     });
   } catch (err) {

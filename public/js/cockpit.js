@@ -195,10 +195,16 @@ function screenReport(){
 function screenPanorama(){
   const c = el('div');
 
-  // 1.1 Abertura -- hero, sem tabela, resultado como elemento dominante.
+  // 1. Estado da organização -- abertura, sem tabela, resultado como
+  // elemento dominante. Contexto da organização mostrado literalmente como
+  // foi escrito na coleta (nunca decomposto em setor/porte/local por IA --
+  // isso arriscaria inventar um dado que o texto livre não garante).
   const hero = el('div', { class: 'cockpit-hero' });
   hero.appendChild(el('div', { class: 'cockpit-hero-eyebrow', text: state.orgName }));
   hero.appendChild(el('h1', { class: 'cockpit-hero-title', text: 'Diagnóstico de Maturidade Digital' }));
+  if(state.orgContext){
+    hero.appendChild(el('p', { class: 'cockpit-hero-sub', text: state.orgContext }));
+  }
   hero.appendChild(el('div', { class: 'cockpit-hero-meta' }, [
     el('span', {}, [document.createTextNode('Avaliado em '), el('b', { text: formatToday() })]),
     el('span', {}, [el('b', { text: '34' }), document.createTextNode(' atributos')]),
@@ -215,25 +221,31 @@ function screenPanorama(){
   }
   c.appendChild(hero);
 
-  // 1.2+1.3 Resultado + capacidades, consolidados num único cartão coeso
-  // (adendo rodada 7, seção 3).
+  // Estado geral -> Perfil -> Estrutura -> Leitura geral -> Árvore de
+  // atributos -> Capacidades -> Explorar -> Zoom no diagnóstico -> Insights.
+  // 2. Resultado + perfil geral (duas faixas qualitativas), num único
+  // cartão coeso.
   c.appendChild(sectionOverview());
 
-  // 1.4 Heatmap dos 34 atributos.
-  c.appendChild(sectionHeatmap());
-
-  // 1.5 Estrutura do diagnóstico (sunburst).
+  // 3. Estrutura do diagnóstico (sunburst) -- "como o resultado é formado?"
   c.appendChild(sectionSunburst());
 
-  // Árvore de atributos + árvore de oportunidades (adendo rodada 7, seções 1 e 4).
+  // 4. Leitura geral -- o que já está estruturado / espaços de evolução /
+  // pontos de atenção, com contagens reais.
+  c.appendChild(sectionLeituraGeral());
+
+  // 5. Árvore de atributos.
   c.appendChild(sectionAttributeTree());
-  c.appendChild(sectionOpportunityTree());
 
-  // 1.6 Atual x Meta (sessão) -- 1.7 Evolução histórica é omitida (ver nota).
-  c.appendChild(sectionMeta());
+  // 6. Capacidades -- grupos de cada dimensão como barras qualitativas.
+  c.appendChild(sectionCapacidadesBars());
 
-  // 1.8 Exploração com filtros e busca.
+  // 7. Explore seu diagnóstico -- tabela navegável.
   c.appendChild(sectionExplorar());
+
+  // 8. Zoom no diagnóstico (heatmap) -- "selecione um atributo para
+  // entender como ele aparece no resultado."
+  c.appendChild(sectionHeatmap());
 
   // 1.9 Transição para Insights.
   const bridge = el('div', { class: 'cockpit-bridge' });
@@ -297,52 +309,37 @@ function sectionOverview(){
   }
 
   card.appendChild(el('div', { class: 'cockpit-overview-divider' }));
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Como as duas capacidades se comportam' }));
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Perfil geral' }));
+  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como as capacidades Digital e Organizacional se posicionam no diagnóstico?', style: 'display:block; margin-bottom:16px;' }));
 
-  const caps = el('div', { class: 'cockpit-caps-grid' });
-
-  const scatterCol = el('div', { class: 'cockpit-caps-col' });
-  scatterCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Perfil geral' }));
-  const scatterBox = el('div', { class: 'chart-box' });
-  scatterCol.appendChild(scatterBox);
-  caps.appendChild(scatterCol);
-
-  const digCol = el('div', { class: 'cockpit-caps-col' });
-  digCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Capacidade Digital' }));
-  const digBox = el('div', { class: 'chart-box' });
-  digCol.appendChild(digBox);
-  caps.appendChild(digCol);
-
-  const orgCol = el('div', { class: 'cockpit-caps-col' });
-  orgCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Capacidade Organizacional' }));
-  const orgBox = el('div', { class: 'chart-box' });
-  orgCol.appendChild(orgBox);
-  caps.appendChild(orgCol);
-
-  card.appendChild(caps);
-
-  if(DEXI_MODEL && state.panel){
+  if(DEXI_MODEL){
     const dimDigital = DEXI_MODEL.dimensoes.find((d) => d.id === 'CAP.DIGITAL');
     const dimOrg = DEXI_MODEL.dimensoes.find((d) => d.id === 'CAP.ORGANIZACIONAL');
-    const xIdx = state.panel.capDigital ? dimDigital.niveis.indexOf(state.panel.capDigital) : null;
-    const yIdx = state.panel.capOrganizacional ? dimOrg.niveis.indexOf(state.panel.capOrganizacional) : null;
-    renderDimensionScatter(scatterBox, { xLabels: dimDigital.niveisExibicao, yLabels: dimOrg.niveisExibicao, xIdx, yIdx });
-
-    const gruposDigital = DEXI_MODEL.grupos.filter((g) => g.dimensaoId === 'CAP.DIGITAL').map((g) => {
-      const found = state.panel.grupos.find((pg) => pg.id === g.id);
-      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
-    });
-    renderGroupRadar(digBox, gruposDigital);
-
-    const gruposOrg = DEXI_MODEL.grupos.filter((g) => g.dimensaoId === 'CAP.ORGANIZACIONAL').map((g) => {
-      const found = state.panel.grupos.find((pg) => pg.id === g.id);
-      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
-    });
-    renderGroupRadar(orgBox, gruposOrg);
+    card.appendChild(qualitativeTrack('Capacidade Digital', dimDigital, state.panel ? state.panel.capDigital : null));
+    card.appendChild(qualitativeTrack('Capacidade Organizacional', dimOrg, state.panel ? state.panel.capOrganizacional : null));
   } else {
-    [scatterBox, digBox, orgBox].forEach((box) => box.appendChild(el('div', { class: 'chart-empty-note', text: 'Sem dados ainda.' })));
+    card.appendChild(el('div', { class: 'chart-empty-note', text: 'Carregando...' }));
   }
   return card;
+}
+
+// Perfil geral (rodada 9): uma faixa qualitativa horizontal por capacidade,
+// nunca um radar/eixos múltiplos nem uma escala numérica de 0-100 -- só a
+// posição real dentro da própria escala de 4 níveis, mesmo padrão visual já
+// usado para o resultado geral (.scale-track/.scale-seg).
+function qualitativeTrack(label, dim, nivelAtual){
+  const wrap = el('div', { class: 'cockpit-qual-track' });
+  const idx = (dim && nivelAtual) ? dim.niveis.indexOf(nivelAtual) : null;
+  const head = el('div', { class: 'cockpit-qual-track-head' });
+  head.appendChild(el('div', { class: 'cockpit-qual-track-label', text: label }));
+  head.appendChild(el('div', { class: 'cockpit-qual-track-level', text: (idx !== null && idx >= 0) ? dim.niveisExibicao[idx] : 'não identificado' }));
+  wrap.appendChild(head);
+  const track = el('div', { class: 'scale-track' });
+  (dim ? dim.niveisExibicao : []).forEach((lbl, i) => {
+    track.appendChild(el('div', { class: 'scale-seg' + (i === idx ? ' scale-seg-active' : ''), text: lbl }));
+  });
+  wrap.appendChild(track);
+  return wrap;
 }
 
 // 1.4 -- heatmap D3: Capacidade -> Grupo -> Atributo. Clicar numa célula
@@ -351,8 +348,9 @@ function sectionOverview(){
 function sectionHeatmap(){
   const card = el('div', { class: 'cockpit-card on-paper' });
   const head = el('div', { class: 'cockpit-section-head' });
-  head.appendChild(el('div', { class: 'cockpit-card-title', text: 'Visão integrada dos 34 atributos', style: 'margin-bottom:0;' }));
+  head.appendChild(el('div', { class: 'cockpit-card-title', text: 'Explore os detalhes do diagnóstico', style: 'margin-bottom:0;' }));
   card.appendChild(head);
+  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Selecione um atributo para entender como ele aparece no resultado.', style: 'display:block; margin-bottom:14px;' }));
 
   const wrap = el('div', { class: 'cockpit-heatmap-wrap' });
   card.appendChild(wrap);
@@ -581,8 +579,50 @@ function renderDiagnosisTree(container, { onLeafClick, emphasizeWeak }){
     .text((d) => d.data.label);
 }
 
-function sectionAttributeTree(){
+// Partição honesta e real dos 34 atributos pela posição na PRÓPRIA escala
+// (mesma leitura já usada em pontosDestaqueLists()) em três grupos que
+// somam exatamente 34 -- nunca uma classificação adicional inventada pela
+// IA: nível mais alto = "já estruturado", nível mais baixo = "atenção", os
+// dois níveis do meio = "espaço de evolução" (já tem alguma base, ainda não
+// chegou ao topo da própria escala).
+function attributeLevelBuckets(){
+  const fortes = [], atencao = [], meio = [];
+  ATTRS.forEach((a) => {
+    const val = state.answers[a.id];
+    if(!val) return;
+    const idx = a.niveis.indexOf(val);
+    if(idx === a.niveis.length - 1) fortes.push(a);
+    else if(idx === 0) atencao.push(a);
+    else meio.push(a);
+  });
+  return { fortes, atencao, meio };
+}
+
+// 4 -- Leitura geral: três blocos de leitura rápida, com contagens reais
+// (nunca um texto interpretativo da IA aqui -- essa camada é do Insights).
+function sectionLeituraGeral(){
   const card = el('div', { class: 'cockpit-card on-paper' });
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Leitura geral' }));
+  const { fortes, meio, atencao } = attributeLevelBuckets();
+
+  const grid = el('div', { class: 'cockpit-leitura-grid' });
+  const col = (icon, title, items, cls, actionLabel, onAction) => el('div', { class: 'cockpit-leitura-col ' + cls }, [
+    el('div', { class: 'cockpit-leitura-icon', text: icon }),
+    el('div', { class: 'cockpit-leitura-title', text: title }),
+    el('div', { class: 'cockpit-leitura-count', text: `${items.length} ${items.length === 1 ? 'ponto' : 'pontos'}` }),
+    el('button', { class: 'btn secondary small', text: actionLabel, style: 'margin-top:12px;', onclick: onAction }),
+  ]);
+  const scrollToTree = () => { const t = document.getElementById('cockpitAttrTree'); if(t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  grid.appendChild(col('✓', 'O que já está estruturado', fortes, 'forte', 'Ver detalhes', scrollToTree));
+  grid.appendChild(col('◐', 'Espaços de evolução', meio, 'meio', 'Entender', scrollToTree));
+  grid.appendChild(col('!', 'Pontos de atenção', atencao, 'atencao', 'Explorar nos Insights', () => goToSection('insights')));
+  card.appendChild(grid);
+  card.appendChild(el('div', { class: 'note', style: 'margin-top:14px;', text: 'Contagens reais, a partir da posição de cada atributo dentro da própria escala de 4 níveis -- nunca uma classificação adicional calculada pela IA.' }));
+  return card;
+}
+
+function sectionAttributeTree(){
+  const card = el('div', { class: 'cockpit-card on-paper', id: 'cockpitAttrTree' });
   card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Árvore de atributos' }));
   card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como os 34 atributos se distribuem, do nível mais baixo (vermelho) ao mais alto (verde)?', style: 'display:block; margin-bottom:10px;' }));
   const wrap = el('div', { class: 'cockpit-tree-wrap' });
@@ -592,6 +632,49 @@ function sectionAttributeTree(){
   } else {
     wrap.appendChild(el('div', { class: 'chart-empty-note', text: 'Carregando...' }));
   }
+  return card;
+}
+
+// 6 -- Capacidades: os grupos de cada dimensão como barras qualitativas
+// horizontais (rodada 9 -- substitui os dois radares da rodada 7: menos
+// eixos, mais legível, e evita a leitura de "avaliação de 0 a 100" que um
+// radar preenchido sugere). O comprimento da barra é só um recurso visual
+// de comparação entre categorias -- nunca uma pontuação numérica inventada.
+function qualitativeBar(label, idx, totalNiveis, levelLabel){
+  const row = el('div', { class: 'qual-bar-row' });
+  row.appendChild(el('div', { class: 'qual-bar-label', text: label }));
+  const track = el('div', { class: 'qual-bar-track' });
+  const frac = (idx !== null && idx !== undefined && idx >= 0) ? (idx + 1) / totalNiveis : 0;
+  track.appendChild(el('div', { class: 'qual-bar-fill', style: `width:${Math.round(frac * 100)}%` }));
+  row.appendChild(track);
+  row.appendChild(el('div', { class: 'qual-bar-level', text: levelLabel || 'não identificado' }));
+  return row;
+}
+
+function sectionCapacidadesBars(){
+  const card = el('div', { class: 'cockpit-card on-paper' });
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Capacidades' }));
+  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como a organização se posiciona nos grupos que formam cada capacidade?', style: 'display:block; margin-bottom:16px;' }));
+
+  const grid = el('div', { class: 'cockpit-bars-grid' });
+  const digCol = el('div', { class: 'cockpit-bars-col' });
+  digCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Capacidade Digital' }));
+  const orgCol = el('div', { class: 'cockpit-bars-col' });
+  orgCol.appendChild(el('div', { class: 'cockpit-caps-col-title', text: 'Capacidade Organizacional' }));
+
+  if(DEXI_MODEL){
+    DEXI_MODEL.grupos.filter((g) => g.dimensaoId === 'CAP.DIGITAL').forEach((g) => {
+      const found = state.panel ? state.panel.grupos.find((pg) => pg.id === g.id) : null;
+      digCol.appendChild(qualitativeBar(g.label, found ? g.niveis.indexOf(found.nivel) : null, g.niveis.length, found ? found.nivelLabel : null));
+    });
+    DEXI_MODEL.grupos.filter((g) => g.dimensaoId === 'CAP.ORGANIZACIONAL').forEach((g) => {
+      const found = state.panel ? state.panel.grupos.find((pg) => pg.id === g.id) : null;
+      orgCol.appendChild(qualitativeBar(g.label, found ? g.niveis.indexOf(found.nivel) : null, g.niveis.length, found ? found.nivelLabel : null));
+    });
+  }
+  grid.appendChild(digCol);
+  grid.appendChild(orgCol);
+  card.appendChild(grid);
   return card;
 }
 
@@ -680,7 +763,6 @@ function sectionExplorar(){
   filters.appendChild(search);
   card.appendChild(filters);
 
-  const results = el('div', { class: 'explore-results' });
   const busca = state.exploreFilters.busca.trim().toLowerCase();
   const matched = ATTRS.filter((a) => {
     if(state.exploreFilters.grupo && a.grupoTop !== state.exploreFilters.grupo) return false;
@@ -692,20 +774,39 @@ function sectionExplorar(){
     if(busca && !humanizeAttrId(a.id).toLowerCase().includes(busca)) return false;
     return true;
   });
+
   if(!matched.length){
-    results.appendChild(el('div', { class: 'explore-empty', text: 'Nenhum atributo encontrado com esses filtros.' }));
-  } else {
-    matched.slice(0, 40).forEach((a) => {
-      const val = state.answers[a.id];
-      const idx = val ? a.niveis.indexOf(val) : -1;
-      const label = idx >= 0 && a.niveisExibicao ? a.niveisExibicao[idx] : 'não respondido';
-      results.appendChild(el('button', { class: 'explore-result-item', onclick: () => { state.selectedAttrId = a.id; render(); } }, [
-        el('div', { class: 'eri-name', text: humanizeAttrId(a.id) }),
-        el('div', { class: 'eri-val', text: label }),
-      ]));
-    });
+    card.appendChild(el('div', { class: 'explore-empty', text: 'Nenhum atributo encontrado com esses filtros.' }));
+    return card;
   }
-  card.appendChild(results);
+
+  // Tabela navegável (rodada 9) -- Capacidade / Grupo / Atributo / Nível,
+  // em vez de uma matriz de cards; clicar numa linha abre a mesma
+  // exploração de atributo (overlay global).
+  const tableWrap = el('div', { class: 'explore-table-wrap' });
+  const table = el('table', { class: 'explore-table' });
+  const thead = el('thead');
+  thead.appendChild(el('tr', {}, ['Capacidade', 'Grupo', 'Atributo', 'Nível'].map((h) => el('th', { text: h }))));
+  table.appendChild(thead);
+  const tbody = el('tbody');
+  matched.slice(0, 60).forEach((a) => {
+    const grupo = DEXI_MODEL ? DEXI_MODEL.grupos.find((g) => g.id === a.grupoTop) : null;
+    const val = state.answers[a.id];
+    const idx = val ? a.niveis.indexOf(val) : -1;
+    const label = idx >= 0 && a.niveisExibicao ? a.niveisExibicao[idx] : 'não respondido';
+    tbody.appendChild(el('tr', { onclick: () => { state.selectedAttrId = a.id; render(); } }, [
+      el('td', { text: a.dimensao }),
+      el('td', { text: grupo ? grupo.label : '—' }),
+      el('td', { class: 'explore-table-attr', text: humanizeAttrId(a.id) }),
+      el('td', { class: 'explore-table-level', text: label }),
+    ]));
+  });
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  card.appendChild(tableWrap);
+  if(matched.length > 60){
+    card.appendChild(el('div', { class: 'note', style: 'margin-top:10px;', text: `Mostrando 60 de ${matched.length} resultados -- refine os filtros ou a busca para ver os demais.` }));
+  }
   return card;
 }
 
@@ -733,6 +834,7 @@ async function ensureSynthesis(){
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
     state.synthesis = data;
+    seedInsightsOpening();
   } catch(err){
     state.synthesisError = 'Não consegui gerar a síntese agora (' + err.message + ').';
   }
@@ -740,7 +842,43 @@ async function ensureSynthesis(){
   render();
 }
 
-async function insightsTurn(userMessage, seedQuestion){
+// A dimensão em pior posição no resultado real -- só para montar os
+// próximos passos da mensagem de abertura do consultor (nomes/grupos reais,
+// nunca calculados/inventados: é só um "min()" sobre o que já veio do DEXi).
+function computeWeakestDimension(){
+  if(!DEXI_MODEL || !state.panel) return null;
+  const candidatos = DEXI_MODEL.dimensoes
+    .map((d) => {
+      const nivel = d.id === 'CAP.DIGITAL' ? state.panel.capDigital : state.panel.capOrganizacional;
+      return { dim: d, idx: nivel ? d.niveis.indexOf(nivel) : null };
+    })
+    .filter((x) => x.idx !== null && x.idx >= 0);
+  if(!candidatos.length) return null;
+  candidatos.sort((a, b) => a.idx - b.idx);
+  return candidatos[0].dim;
+}
+
+// Abertura contextual do consultor (rodada 9): assim que a síntese carrega,
+// a primeira mensagem do chat já parte do resultado (reaproveita
+// state.synthesis.interpretacao, já gerado e já natural -- nenhuma chamada
+// nova à IA só para o texto de abertura), com caminhos concretos reais
+// (grupos da dimensão mais fraca) calculados aqui, nunca inventados. Só
+// preenche uma vez -- se o chat já tiver mensagens (usuário já perguntou
+// algo, ou uma sessão anterior), não sobrescreve nada.
+function seedInsightsOpening(){
+  if(state.insightsChat.length || !state.synthesis) return;
+  const weakDim = computeWeakestDimension();
+  const nextSteps = [];
+  if(weakDim && DEXI_MODEL){
+    DEXI_MODEL.grupos.filter((g) => g.dimensaoId === weakDim.id).forEach((g) => {
+      nextSteps.push({ label: g.label, question: `Como está o grupo ${g.label}?` });
+    });
+  }
+  nextSteps.push({ label: 'Como chegamos aqui?', question: 'Como esse resultado foi formado, do geral até os atributos?' });
+  state.insightsChat.push({ role: 'assistant', text: state.synthesis.interpretacao, nextSteps });
+}
+
+async function insightsTurn(userMessage){
   userMessage = (userMessage || '').trim();
   if(!userMessage || state.insightsThinking) return;
   state.insightsChat.push({ role: 'user', text: userMessage });
@@ -760,7 +898,7 @@ async function insightsTurn(userMessage, seedQuestion){
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
-    state.insightsChat.push({ role: 'assistant', text: data.message });
+    state.insightsChat.push({ role: 'assistant', text: data.message, nextSteps: data.nextSteps || [] });
   } catch(err){
     state.insightsError = 'Não consegui gerar a resposta: ' + err.message;
   }
@@ -779,6 +917,10 @@ function screenInsights(){
   c.appendChild(sectionInsightChat());
   c.appendChild(sectionTraceability());
   c.appendChild(sectionForcasAtencao());
+  // Árvore de oportunidades -- migrada do Panorama para cá: "onde estão as
+  // oportunidades" já é leitura interpretativa (o que significa), não
+  // descritiva (o que foi encontrado).
+  c.appendChild(sectionOpportunityTree());
 
   return c;
 }
@@ -822,7 +964,8 @@ function sectionSynthesis(){
 
 function sectionInsightChat(){
   const card = el('div', { class: 'insight-chat-card' });
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: '💬 Converse com seu diagnóstico', style: 'color:var(--green); margin-bottom:6px;' }));
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Vamos entender esse resultado.', style: 'color:var(--green); margin-bottom:4px;' }));
+  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Explore o diagnóstico com um consultor que conhece os resultados, as evidências e a estrutura da avaliação.', style: 'display:block; margin-bottom:16px;' }));
 
   const suggestions = ['Por que chegamos a esse resultado?', 'Quais são nossos pontos de força?', 'Onde estão nossos pontos de atenção?', 'Explique nossa Capacidade Digital.', 'Explique nossa Capacidade Organizacional.', 'O que podemos explorar a partir daqui?'];
   if(!state.insightsChat.length){
@@ -833,7 +976,17 @@ function sectionInsightChat(){
 
   if(state.insightsChat.length){
     const chatBox = el('div', { class: 'chat-log', style: 'margin-bottom:16px;' });
-    state.insightsChat.forEach((m) => chatBox.appendChild(el('div', { class: 'bubble report-body ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text })));
+    state.insightsChat.forEach((m) => {
+      chatBox.appendChild(el('div', { class: 'bubble report-body ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text }));
+      // Caminhos concretos e nomeados (rodada 8+9) -- nunca "como prefere
+      // seguir?": chips reais (validados no servidor ou calculados aqui a
+      // partir do dado real), clicar já envia a pergunta correspondente.
+      if(m.role === 'assistant' && Array.isArray(m.nextSteps) && m.nextSteps.length && !state.insightsThinking){
+        const stepsRow = el('div', { class: 'insight-next-steps' });
+        m.nextSteps.forEach((s) => stepsRow.appendChild(el('button', { class: 'insight-chip', text: s.label, onclick: () => insightsTurn(s.question) })));
+        chatBox.appendChild(stepsRow);
+      }
+    });
     card.appendChild(chatBox);
   }
   if(state.insightsThinking){
@@ -1173,6 +1326,10 @@ function screenRoadmap(){
   actions.appendChild(el('button', { class: 'btn secondary', text: state.roadmapGenerating ? 'Gerando…' : '✨ Criar roadmap com IA', disabled: state.roadmapGenerating, onclick: generateRoadmap }));
   hero.appendChild(actions);
   c.appendChild(hero);
+
+  // Atual x Meta -- migrada do Panorama: "que nível queremos alcançar" já é
+  // uma pergunta de gestão/futuro, não de leitura do diagnóstico.
+  c.appendChild(sectionMeta());
 
   if(state.roadmapGenerateError){
     c.appendChild(el('div', { class: 'error-box', text: state.roadmapGenerateError }));
