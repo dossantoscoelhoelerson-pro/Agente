@@ -24,6 +24,15 @@ function handleAnthropicError(err, res) {
   if (err instanceof Anthropic.APIError) {
     return res.status(502).json({ error: `Erro na API da Anthropic: ${err.message}` });
   }
+  // client.messages.parse() (respostas em formato estruturado/JSON, usado em
+  // vários endpoints via zodOutputFormat) lança um Anthropic.AnthropicError
+  // "solto" (não um APIError) quando a resposta veio truncada (max_tokens
+  // baixo demais) ou não bateu byte a byte com o schema esperado -- nesses
+  // casos o texto de err.message já traz o motivo real, então vale mostrar
+  // (a mensagem nunca contém segredo nenhum, só o JSON/erro de validação).
+  if (err instanceof Anthropic.AnthropicError) {
+    return res.status(502).json({ error: `A IA retornou uma resposta em formato inesperado: ${err.message}` });
+  }
   return res.status(500).json({ error: 'Erro inesperado ao consultar a IA.' });
 }
 

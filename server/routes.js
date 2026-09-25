@@ -36,8 +36,14 @@ const ATTR_INDEX = new Map(ATTRS.map((a) => [a.id, a]));
 const GROUP_INDEX = new Map(GRUPOS.map((g) => [g.id, g]));
 const DIMENSAO_INDEX = new Map(DIMENSOES.map((d) => [d.id, d]));
 
+// "action" é z.string() e não z.enum(...) -- o helper zodOutputFormat da SDK
+// (0.127.0) não converte a palavra-chave JSON Schema "enum" para o formato
+// estrito da Anthropic (vira só uma descrição em texto, sem restrição real
+// aplicada pela API); um z.enum() aqui faz a resposta inteira falhar com
+// erro genérico sempre que a IA escrever algo fora dos 2 valores esperados,
+// mesmo a mensagem sendo válida. Normalizado explicitamente abaixo.
 const TurnSchema = z.object({
-  action: z.enum(['reply', 'register']),
+  action: z.string(),
   message: z.string(),
   chosen: z.string().optional(),
 });
@@ -168,7 +174,10 @@ router.post('/collect/turn', async (req, res) => {
       });
     }
 
-    res.json({ action: parsed.action, message: parsed.message, chosen: parsed.chosen });
+    // "action" só pode ser 'register' quando de fato bateu na validação
+    // acima -- qualquer outro valor (inclusive um que a IA tenha escrito
+    // fora dos 2 esperados) vira 'reply', nunca repassado cru ao cliente.
+    res.json({ action: parsed.action === 'register' ? 'register' : 'reply', message: parsed.message, chosen: parsed.chosen });
   } catch (err) {
     handleAnthropicError(err, res);
   }
@@ -359,7 +368,11 @@ router.post('/insights/synthesis', async (req, res) => {
   try {
     const response = await client.messages.parse({
       model: MODEL,
-      max_tokens: 700,
+      // 700 truncava com alguma frequência o texto consultivo mais longo
+      // (rodada 8/9, tom natural/não-robótico) antes de fechar o JSON --
+      // resposta cortada = JSON inválido = falha na estrutura, nunca no
+      // conteúdo. 1400 dá folga real para os dois campos.
+      max_tokens: 1400,
       system: [{ type: 'text', text: SYNTHESIS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: buildSynthesisUserPrompt({
         orgName, orgContext: String(orgContext || ''), nivelFinalLabel, capDigitalLabel, capOrganizacionalLabel,
@@ -425,15 +438,20 @@ router.post('/roadmap/generate', async (req, res) => {
   const pontosAtencao = buildPontosAtencao({ answers, capDigital, capOrganizacional, grupos });
   const pontoLabels = pontosAtencao.map((p) => p.label);
 
+  // "horizonte" é z.string() e não z.enum(...) -- mesma limitação do helper
+  // zodOutputFormat da SDK (0.127.0) documentada acima em TurnSchema;
+  // normalizado explicitamente abaixo em vez de deixar a validação estrita
+  // do enum derrubar a geração inteira do roadmap.
   const RoadmapSchema = z.object({
     acoes: z.array(z.object({
       titulo: z.string(),
       origemLabel: z.string().nullable(),
       objetivo: z.string(),
-      horizonte: z.enum(['0-3', '3-6', '6-12']),
+      horizonte: z.string(),
       indicadorSugerido: z.string(),
     })),
   });
+  const HORIZONTES_VALIDOS = ['0-3', '3-6', '6-12'];
 
   try {
     const response = await client.messages.parse({
@@ -450,6 +468,7 @@ router.post('/roadmap/generate', async (req, res) => {
     const acoes = parsed.acoes.map((a) => ({
       ...a,
       origemLabel: a.origemLabel && pontoLabels.includes(a.origemLabel) ? a.origemLabel : null,
+      horizonte: HORIZONTES_VALIDOS.includes(a.horizonte) ? a.horizonte : '0-3',
     }));
     res.json({ acoes });
   } catch (err) {
@@ -541,11 +560,22 @@ router.post('/interpret/turn', async (req, res) => {
   // virar chip clicável na UI -- validados aqui contra os nomes reais de
   // dimensão/grupo/atributo (mesmo padrão defensivo do resto do projeto),
   // nunca confiando que a IA não inventou um nome parecido.
+  // "kind" é z.string() aqui, não z.enum(...) -- limitação confirmada do
+  // helper zodOutputFormat/transformJSONSchema da SDK (0.127.0): ele não
+  // sabe converter a palavra-chave JSON Schema "enum" para o formato
+  // estrito da Anthropic, então um enum vira só uma DESCRIÇÃO em texto (não
+  // uma restrição real aplicada pela API). Como o enum não é garantido do
+  // lado da API, um z.enum() aqui rejeita a resposta inteira (erro genérico
+  // "Erro inesperado ao consultar a IA") sempre que a IA escrever um valor
+  // que não bata 100% com os 3 esperados -- mesmo a mensagem em si sendo
+  // perfeitamente válida. Com string solta, a validação passa e o filtro
+  // abaixo (que já existia) descarta silenciosamente qualquer "kind" que
+  // não seja um dos três valores reais -- falha graciosa em vez de erro.
   const InterpretTurnSchema = z.object({
     message: z.string(),
     nextSteps: z.array(z.object({
       label: z.string(),
-      kind: z.enum(['dimensao', 'grupo', 'atributo']),
+      kind: z.string(),
       question: z.string(),
     })).max(5),
   });
