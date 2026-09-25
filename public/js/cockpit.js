@@ -79,7 +79,7 @@ function pdfTemasFromRoadmap(){
 
 function attrById(id){ return ATTRS.find((a) => a.id === id); }
 
-// ---------- tooltip flutuante compartilhado (heatmap + sunburst) ----------
+// ---------- tooltip flutuante compartilhado (sunburst + árvores D3) ----------
 
 function ensureVizTooltipEl(){
   let t = document.getElementById('vizTooltip');
@@ -221,8 +221,8 @@ function screenPanorama(){
   }
   c.appendChild(hero);
 
-  // Estado geral -> Perfil -> Estrutura -> Leitura geral -> Árvore de
-  // atributos -> Capacidades -> Explorar -> Zoom no diagnóstico -> Insights.
+  // Estado geral -> Perfil -> Estrutura -> Árvore de atributos ->
+  // Capacidades -> Explorar -> Insights.
   // 2. Resultado + perfil geral (duas faixas qualitativas), num único
   // cartão coeso.
   c.appendChild(sectionOverview());
@@ -230,24 +230,16 @@ function screenPanorama(){
   // 3. Estrutura do diagnóstico (sunburst) -- "como o resultado é formado?"
   c.appendChild(sectionSunburst());
 
-  // 4. Leitura geral -- o que já está estruturado / espaços de evolução /
-  // pontos de atenção, com contagens reais.
-  c.appendChild(sectionLeituraGeral());
-
-  // 5. Árvore de atributos.
+  // 4. Árvore de atributos.
   c.appendChild(sectionAttributeTree());
 
-  // 6. Capacidades -- grupos de cada dimensão como barras qualitativas.
+  // 5. Capacidades -- grupos de cada dimensão como barras qualitativas.
   c.appendChild(sectionCapacidadesBars());
 
-  // 7. Explore seu diagnóstico -- tabela navegável.
+  // 6. Explore seu diagnóstico -- tabela navegável.
   c.appendChild(sectionExplorar());
 
-  // 8. Zoom no diagnóstico (heatmap) -- "selecione um atributo para
-  // entender como ele aparece no resultado."
-  c.appendChild(sectionHeatmap());
-
-  // 1.9 Transição para Insights.
+  // 1.7 Transição para Insights.
   const bridge = el('div', { class: 'cockpit-bridge' });
   bridge.appendChild(el('div', { class: 'cockpit-bridge-title', text: 'Quer entender o que está por trás desses resultados?' }));
   const bridgeActions = el('div', { class: 'cockpit-bridge-actions' });
@@ -340,76 +332,6 @@ function qualitativeTrack(label, dim, nivelAtual){
   });
   wrap.appendChild(track);
   return wrap;
-}
-
-// 1.4 -- heatmap D3: Capacidade -> Grupo -> Atributo. Clicar numa célula
-// abre a exploração daquele atributo (overlay global, funciona a partir de
-// qualquer seção -- ver attributeDetailOverlay()).
-function sectionHeatmap(){
-  const card = el('div', { class: 'cockpit-card on-paper' });
-  const head = el('div', { class: 'cockpit-section-head' });
-  head.appendChild(el('div', { class: 'cockpit-card-title', text: 'Explore os detalhes do diagnóstico', style: 'margin-bottom:0;' }));
-  card.appendChild(head);
-  card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Selecione um atributo para entender como ele aparece no resultado.', style: 'display:block; margin-bottom:14px;' }));
-
-  const wrap = el('div', { class: 'cockpit-heatmap-wrap' });
-  card.appendChild(wrap);
-
-  if(DEXI_MODEL){
-    renderHeatmap(wrap, (attrId) => { state.selectedAttrId = attrId; render(); });
-  } else {
-    wrap.appendChild(el('div', { class: 'chart-empty-note', text: 'Carregando...' }));
-  }
-
-  const legend = el('div', { class: 'heatmap-legend' });
-  legend.appendChild(document.createTextNode('Posição na própria escala do atributo:'));
-  ['#DCEEF5', '#8FCBE0', '#3E9BC1', '#123F63'].forEach((color, i) => {
-    legend.appendChild(el('span', { class: 'heatmap-legend-swatch', style: `background:${color};` }));
-  });
-  legend.appendChild(document.createTextNode('mais baixo → mais alto · clique numa célula para explorar'));
-  card.appendChild(legend);
-  return card;
-}
-
-function renderHeatmap(container, onCellClick){
-  container.innerHTML = '';
-  if(typeof d3 === 'undefined' || !DEXI_MODEL) return;
-  const grupos = DEXI_MODEL.grupos;
-  const cell = 26, gap = 5, labelW = 180, rowH = cell + 12, topPad = 26;
-  const attrsByGroup = grupos.map((g) => ATTRS.filter((a) => a.grupoTop === g.id));
-  const maxCols = Math.max(1, ...attrsByGroup.map((l) => l.length));
-  const W = labelW + maxCols * (cell + gap);
-  const H = grupos.length * rowH + topPad + 12;
-
-  const colorScale = d3.scaleLinear().domain([0, 1, 2, 3]).range(['#DCEEF5', '#8FCBE0', '#3E9BC1', '#123F63']).interpolate(d3.interpolateRgb);
-
-  const svg = d3.select(container).append('svg')
-    .attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%')
-    .attr('role', 'img').attr('aria-label', 'Mapa de calor dos 34 atributos, agrupados por grupo e capacidade');
-
-  let lastDim = null;
-  grupos.forEach((g, gi) => {
-    const y = gi * rowH + topPad;
-    if(g.dimensaoId !== lastDim){
-      lastDim = g.dimensaoId;
-      const dim = DEXI_MODEL.dimensoes.find((d) => d.id === g.dimensaoId);
-      svg.append('text').attr('x', 0).attr('y', y - 10).attr('class', 'heatmap-group-label').text(dim ? dim.label : '');
-    }
-    svg.append('text').attr('x', 0).attr('y', y + cell * 0.68).attr('class', 'heatmap-row-label').text(g.label);
-    attrsByGroup[gi].forEach((a, ai) => {
-      const val = state.answers[a.id];
-      const idx = val ? a.niveis.indexOf(val) : null;
-      const x = labelW + ai * (cell + gap);
-      svg.append('rect')
-        .attr('class', 'heatmap-cell')
-        .attr('x', x).attr('y', y).attr('width', cell).attr('height', cell).attr('rx', 6)
-        .attr('fill', idx === null ? '#E7E3DA' : colorScale(idx))
-        .on('mouseenter', (ev) => showVizTooltip(ev, `<b>${escapeXml(humanizeAttrId(a.id))}</b>${idx !== null ? escapeXml(a.niveisExibicao[idx]) : 'sem resposta'}`))
-        .on('mousemove', moveVizTooltip)
-        .on('mouseleave', hideVizTooltip)
-        .on('click', () => onCellClick(a.id));
-    });
-  });
 }
 
 // 1.5 -- sunburst D3 com drill-down: Maturidade Digital -> Capacidade ->
@@ -579,50 +501,8 @@ function renderDiagnosisTree(container, { onLeafClick, emphasizeWeak }){
     .text((d) => d.data.label);
 }
 
-// Partição honesta e real dos 34 atributos pela posição na PRÓPRIA escala
-// (mesma leitura já usada em pontosDestaqueLists()) em três grupos que
-// somam exatamente 34 -- nunca uma classificação adicional inventada pela
-// IA: nível mais alto = "já estruturado", nível mais baixo = "atenção", os
-// dois níveis do meio = "espaço de evolução" (já tem alguma base, ainda não
-// chegou ao topo da própria escala).
-function attributeLevelBuckets(){
-  const fortes = [], atencao = [], meio = [];
-  ATTRS.forEach((a) => {
-    const val = state.answers[a.id];
-    if(!val) return;
-    const idx = a.niveis.indexOf(val);
-    if(idx === a.niveis.length - 1) fortes.push(a);
-    else if(idx === 0) atencao.push(a);
-    else meio.push(a);
-  });
-  return { fortes, atencao, meio };
-}
-
-// 4 -- Leitura geral: três blocos de leitura rápida, com contagens reais
-// (nunca um texto interpretativo da IA aqui -- essa camada é do Insights).
-function sectionLeituraGeral(){
-  const card = el('div', { class: 'cockpit-card on-paper' });
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Leitura geral' }));
-  const { fortes, meio, atencao } = attributeLevelBuckets();
-
-  const grid = el('div', { class: 'cockpit-leitura-grid' });
-  const col = (icon, title, items, cls, actionLabel, onAction) => el('div', { class: 'cockpit-leitura-col ' + cls }, [
-    el('div', { class: 'cockpit-leitura-icon', text: icon }),
-    el('div', { class: 'cockpit-leitura-title', text: title }),
-    el('div', { class: 'cockpit-leitura-count', text: `${items.length} ${items.length === 1 ? 'ponto' : 'pontos'}` }),
-    el('button', { class: 'btn secondary small', text: actionLabel, style: 'margin-top:12px;', onclick: onAction }),
-  ]);
-  const scrollToTree = () => { const t = document.getElementById('cockpitAttrTree'); if(t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  grid.appendChild(col('✓', 'O que já está estruturado', fortes, 'forte', 'Ver detalhes', scrollToTree));
-  grid.appendChild(col('◐', 'Espaços de evolução', meio, 'meio', 'Entender', scrollToTree));
-  grid.appendChild(col('!', 'Pontos de atenção', atencao, 'atencao', 'Explorar nos Insights', () => goToSection('insights')));
-  card.appendChild(grid);
-  card.appendChild(el('div', { class: 'note', style: 'margin-top:14px;', text: 'Contagens reais, a partir da posição de cada atributo dentro da própria escala de 4 níveis -- nunca uma classificação adicional calculada pela IA.' }));
-  return card;
-}
-
 function sectionAttributeTree(){
-  const card = el('div', { class: 'cockpit-card on-paper', id: 'cockpitAttrTree' });
+  const card = el('div', { class: 'cockpit-card on-paper' });
   card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Árvore de atributos' }));
   card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como os 34 atributos se distribuem, do nível mais baixo (vermelho) ao mais alto (verde)?', style: 'display:block; margin-bottom:10px;' }));
   const wrap = el('div', { class: 'cockpit-tree-wrap' });

@@ -465,15 +465,6 @@ body.cockpit-screen .wrap{max-width:1180px;}
   background:none; border:none; padding:0; font-family:var(--font-body); font-weight:600;
 }
 
-/* Heatmap (D3) -- 34 atributos, Capacidade -> Grupo -> Atributo. */
-.cockpit-heatmap-wrap{overflow-x:auto; padding-bottom:6px;}
-.heatmap-cell{cursor:pointer; stroke:var(--paper); stroke-width:2; transition:opacity .1s;}
-.heatmap-cell:hover{opacity:.82;}
-.heatmap-row-label{font-size:10.5px; fill:var(--ink-soft); font-family:var(--font-body);}
-.heatmap-group-label{font-size:10px; fill:var(--ink-soft); font-family:var(--font-body); text-transform:uppercase; letter-spacing:.02em;}
-.heatmap-legend{display:flex; align-items:center; gap:8px; margin-top:14px; font-size:11.5px; color:var(--ink-soft);}
-.heatmap-legend-swatch{width:14px; height:14px; border-radius:3px; display:inline-block;}
-
 /* Sunburst (D3) -- estrutura hierárquica com drill-down. */
 .sunburst-wrap{display:flex; justify-content:center;}
 .sunburst-path{cursor:pointer; stroke:var(--paper); stroke-width:1.5; transition:opacity .1s;}
@@ -481,7 +472,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .sunburst-center-label{font-family:var(--font-body); font-size:12px; fill:var(--ink); text-anchor:middle; font-weight:600;}
 .sunburst-center-sub{font-family:var(--font-body); font-size:10px; fill:var(--ink-soft); text-anchor:middle;}
 
-/* Tooltip flutuante compartilhado pelo heatmap e pelo sunburst. */
+/* Tooltip flutuante compartilhado pelo sunburst e pelas árvores D3. */
 .viz-tooltip{
   position:fixed; pointer-events:none; background:var(--ink); color:var(--paper);
   font-family:var(--font-body); font-size:12.5px; padding:9px 13px; border-radius:9px; z-index:80;
@@ -633,8 +624,8 @@ body.cockpit-screen .wrap{max-width:1180px;}
 
 /* ==========================================================================
    Rodada 9 -- reestruturação do Panorama (estado geral -> perfil ->
-   estrutura -> leitura geral -> árvore de atributos -> capacidades ->
-   explorar -> zoom) e consultor do Insights.
+   estrutura -> árvore de atributos -> capacidades -> explorar) e consultor
+   do Insights.
    ========================================================================== */
 
 /* Perfil geral -- faixas qualitativas (substituem o mapa de dispersão +
@@ -644,17 +635,6 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-qual-track-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:8px;}
 .cockpit-qual-track-label{font-size:13.5px; font-weight:600; color:var(--ink);}
 .cockpit-qual-track-level{font-size:13.5px; font-weight:600; color:var(--ink);}
-
-/* Leitura geral -- três blocos de leitura rápida com contagens reais. */
-.cockpit-leitura-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:6px;}
-@media (max-width:860px){ .cockpit-leitura-grid{grid-template-columns:1fr;} }
-.cockpit-leitura-col{border-radius:14px; padding:20px; text-align:center; background:var(--paper-raised); box-shadow:0 1px 3px rgba(18,63,99,.06);}
-.cockpit-leitura-col.forte{border-top:3px solid var(--blue);}
-.cockpit-leitura-col.meio{border-top:3px solid var(--yellow);}
-.cockpit-leitura-col.atencao{border-top:3px solid var(--yellow-strong);}
-.cockpit-leitura-icon{font-size:20px; margin-bottom:8px;}
-.cockpit-leitura-title{font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:6px; min-height:36px;}
-.cockpit-leitura-count{font-family:var(--font-display); font-size:22px; color:var(--ink);}
 
 /* Capacidades -- barras qualitativas horizontais (substituem os radares). */
 .cockpit-bars-grid{display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:6px;}
