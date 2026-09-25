@@ -33,49 +33,63 @@ e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_roda
   significa?", interpretar/explorar) e **Roadmap** ("O que vamos fazer?", agir). Todas
   partem do mesmo resultado oficial extraído do DEXi (`POST /api/interpret/extract`, nunca
   recalculado). Detalhes de cada seção em `public/js/cockpit.js`:
-  - **Panorama** (refinado na rodada 7 -- ver `adendo_especificacao_rodada7.md`):
-    resultado de maturidade em destaque com indicador circular unificado ao selo de
-    classificação (preenchimento é sempre a posição do nível oficial na própria escala de 4
-    níveis, nunca um percentual calculado), e logo abaixo, **num único cartão coeso** (não
-    mais cartões grandes empilhados -- consolidação pedida pelo pesquisador para reduzir a
-    sensação de dispersão), o mapa das duas capacidades e **dois radares D3 lado a lado**
-    (Capacidade Digital e Capacidade Organizacional, cada um só com os grupos da própria
-    dimensão -- nunca mais um radar único misturando as duas escalas). Depois: **heatmap
-    D3** dos 34 atributos (Capacidade → Grupo → Atributo), **sunburst D3** com drill-down da
-    estrutura completa, **árvore de atributos** (dendrograma D3, raiz em Maturidade Digital,
-    nós coloridos num gradiente vermelho→verde conforme o nível real na própria escala --
-    exceção pontual e funcional à paleta de marca, documentada em `treeLevelColor()` no
-    código) e **árvore de oportunidades** (mesma estrutura e mesmo dado, com os nós de nível
-    mais baixo visualmente destacados e os já desenvolvidos discretos -- nunca uma
-    priorização calculada à parte). "Atual × Meta" (meta escolhida pelo usuário nesta
-    sessão, nunca inventada nem persistida) e exploração com filtros e busca. Comparação
-    com mercado/benchmark foi avaliada e **descartada deliberadamente** -- não existe dado
-    real disponível no projeto para isso.
-  - **Insights** (postura conversacional refinada na rodada 8 -- ver
-    `adendo_especificacao_rodada8.md`): síntese de abertura gerada por IA com três blocos visualmente distintos
-    (Resultado -- montado no cliente a partir do dado real, nunca da IA --, Interpretação e
-    Possibilidades), chat integrado "Converse com seu diagnóstico" com perguntas sugeridas
-    (mesma engine do antigo centro de dúvidas), visualização de rastreabilidade com um
-    exemplo real da própria coleta, cards de pontos fortes/pontos de atenção, exploração de
-    atributo individual (reaproveita a explicação do Bloco 2 já gerada na Etapa 1 quando
-    disponível, sem chamada nova). **Postura do chat** (rodada 8, `server/prompts.js`,
-    `INTERPRET_SYSTEM_PROMPT`): consultor ORBE, nunca auditor/FAQ -- responde primeiro a
-    partir do resultado oficial, em texto corrido natural; nunca abre com alerta de
-    inconsistência (a divergência de dado só aparece, curta e contextual, quando é relevante
-    para a pergunta feita, e só interrompe a resposta quando impede responder com segurança);
-    nunca termina com uma pergunta genérica de fechamento -- sempre nomeia os caminhos
-    concretos disponíveis (grupos/atributos reais, vindos da estrutura do modelo passada no
-    contexto da conversa, nunca inventados). Nenhuma regra de fidelidade ao resultado do
-    DEXi muda -- é só o comportamento conversacional que é refinado.
-  - **Roadmap**: timeline de 12 meses (0-3/3-6/6-12), ações criadas manualmente ou propostas
+  - **Panorama** (`screenPanorama()` em `public/js/cockpit.js` -- estrutura consolidada na
+    rodada 9, refino visual da rodada 7): "estado geral → perfil → estrutura → leitura geral
+    → árvore de atributos → capacidades → explorar → zoom", oito seções que se sucedem como
+    uma leitura progressiva, não gráficos concorrendo por atenção. (1) Abertura com nome,
+    contexto da organização (texto literal da coleta, nunca decomposto/inferido em
+    setor/porte/local por IA) e indicadores reais. (2) Resultado em destaque com indicador
+    circular unificado ao selo de classificação (a posição do nível oficial na própria
+    escala de 4 níveis, nunca um percentual calculado), e logo abaixo, no mesmo cartão,
+    **duas faixas qualitativas horizontais** para as capacidades Digital e Organizacional
+    (substituíram o mapa de dispersão + radares da rodada 7 -- menos elementos, nenhuma
+    leitura de "escala 0-100"). (3) **Sunburst D3** da estrutura completa. (4) **Leitura
+    geral**: três blocos com contagens reais dos 34 atributos pela posição na própria escala
+    (nível mais alto = já estruturado, nível mais baixo = ponto de atenção, os dois níveis do
+    meio = espaço de evolução -- nunca uma classificação extra inventada pela IA). (5)
+    **Árvore de atributos** (dendrograma D3, raiz em Maturidade Digital, nós coloridos num
+    gradiente vermelho→verde conforme o nível real -- exceção pontual e funcional à paleta de
+    marca, documentada em `treeLevelColor()`). (6) **Capacidades**: os grupos de cada
+    dimensão como barras qualitativas horizontais lado a lado. (7) **Explore seu
+    diagnóstico**: tabela navegável (Capacidade/Grupo/Atributo/Nível) com filtros e busca,
+    clicar numa linha abre a exploração do atributo. (8) **Heatmap D3** dos 34 atributos
+    ("selecione um atributo para entender como ele aparece no resultado"). "Atual × Meta" e
+    "árvore de oportunidades" migraram para Roadmap e Insights respectivamente (ver abaixo --
+    são leitura de futuro/interpretação, não descrição do que foi encontrado). Comparação com
+    mercado/benchmark foi avaliada e **descartada deliberadamente** -- não existe dado real
+    disponível no projeto para isso.
+  - **Insights** (`screenInsights()`; postura conversacional refinada nas rodadas 8-9 -- ver
+    `adendo_especificacao_rodada8.md`): síntese de abertura gerada por IA com três blocos
+    visualmente distintos (Resultado -- montado no cliente a partir do dado real, nunca da IA
+    --, Interpretação e Possibilidades), **árvore de oportunidades** (dendrograma D3 com os
+    pontos de atenção em destaque -- migrada do Panorama, por ser leitura interpretativa),
+    cards de pontos fortes/pontos de atenção, exploração de atributo individual (reaproveita
+    a explicação do Bloco 2 já gerada na Etapa 1 quando disponível, sem chamada nova). **O
+    consultor ORBE** ("Vamos entender esse resultado.") é o coração desta seção: a primeira
+    mensagem do chat já abre contextualizada (reaproveita a síntese já gerada, sem chamada
+    nova à IA só para o texto de abertura) com **caminhos concretos como chips clicáveis**
+    (os grupos reais da dimensão mais fraca no resultado). A cada resposta do agente
+    (`POST /api/interpret/turn`, saída estruturada validada contra os nomes reais de
+    dimensão/grupo/atributo -- nunca um nome inventado), novos chips aparecem para continuar
+    a conversa sem reformular a pergunta do zero. Postura definida em
+    `INTERPRET_SYSTEM_PROMPT` (`server/prompts.js`): consultor, nunca auditor/FAQ -- responde
+    primeiro a partir do resultado oficial em texto corrido natural; nunca abre com alerta de
+    inconsistência (só aparece, curta e contextual, quando relevante para a pergunta feita, e
+    só interrompe a resposta quando impede responder com segurança); nunca termina com
+    pergunta genérica de fechamento; usa o histórico da conversa para resolver referências
+    implícitas ao que já foi discutido. Nenhuma regra de fidelidade ao resultado do DEXi
+    muda -- é só o comportamento conversacional que é refinado.
+  - **Roadmap** (`screenRoadmap()`): "Atual × Meta" (meta escolhida pelo usuário nesta
+    sessão -- migrada do Panorama, por ser pergunta de gestão/futuro, nunca inventada nem
+    persistida), timeline de 12 meses (0-3/3-6/6-12), ações criadas manualmente ou propostas
     pela IA a partir dos pontos de atenção (sempre rotuladas "Sugestão da IA", nunca
     autoaceitas), conversa contextual por ação, status (não iniciada/em andamento/
     concluída/pausada). **Funciona só com estado de sessão** (igual ao resto da aplicação
     hoje -- nada persiste entre sessões): revisões de 3/6/12 meses, comparação com uma
     avaliação anterior real e retomar o roadmap numa visita futura exigiriam um banco de
     dados e um mecanismo de identificação de organização entre sessões -- mudança estrutural
-    deliberadamente **não implementada nesta rodada** (ver nota explícita na própria tela do
-    Roadmap e na seção 0 do adendo rodada 6).
+    deliberadamente **não implementada** (ver nota explícita na própria tela do Roadmap e na
+    seção 0 do adendo rodada 6).
   - **D3.js** é servido localmente (`public/js/vendor/d3.min.js`, ver o README ao lado) --
     não por CDN externo, para não depender de um serviço de terceiros no host de deploy.
   - Exportação do Cockpit inteiro como PDF continua disponível (`pdfkit`, server-side) --
@@ -216,7 +230,7 @@ Endpoints (`server/routes.js`):
 | `POST /api/extract-pdf` | extrai texto de um PDF enviado (Etapa 3) |
 | `POST /api/interpret/extract` | status + dimensões + grupos, extraídos do resultado do DEXi (base de todo o Cockpit) |
 | `POST /api/interpret/learning` | mantido por compatibilidade (não usado pelo Cockpit atual) |
-| `POST /api/interpret/turn` | Insights -- "Converse com seu diagnóstico" |
+| `POST /api/interpret/turn` | Insights -- consultor ORBE ("Vamos entender esse resultado."); retorna `message` + `nextSteps` (caminhos concretos validados) |
 | `POST /api/interpret/export-pdf` | exporta o Cockpit completo como PDF |
 | `POST /api/insights/synthesis` | Insights -- síntese de abertura (interpretação + possibilidades) |
 | `POST /api/insights/attribute-explore` | Insights -- possibilidades de evolução de um atributo (exploração individual) |

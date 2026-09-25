@@ -568,3 +568,59 @@ body.cockpit-screen .wrap{max-width:1180px;}
   .cockpit-result-title{font-size:26px;}
   .cockpit-nav-item{padding:8px 14px 8px 8px; font-size:13px;}
 }
+
+/* ==========================================================================
+   Rodada 9 -- reestruturação do Panorama (estado geral -> perfil ->
+   estrutura -> leitura geral -> árvore de atributos -> capacidades ->
+   explorar -> zoom) e consultor do Insights.
+   ========================================================================== */
+
+/* Perfil geral -- faixas qualitativas (substituem o mapa de dispersão +
+   radares da rodada 7: menos elementos, mais legível, sem parecer 0-100). */
+.cockpit-qual-track{margin-top:18px;}
+.cockpit-qual-track:first-of-type{margin-top:0;}
+.cockpit-qual-track-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:8px;}
+.cockpit-qual-track-label{font-size:13.5px; font-weight:600; color:var(--ink);}
+.cockpit-qual-track-level{font-size:13.5px; font-weight:600; color:var(--blue-strong);}
+
+/* Leitura geral -- três blocos de leitura rápida com contagens reais. */
+.cockpit-leitura-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:6px;}
+@media (max-width:860px){ .cockpit-leitura-grid{grid-template-columns:1fr;} }
+.cockpit-leitura-col{border-radius:14px; padding:20px; text-align:center; border:1px solid var(--line); background:var(--paper-raised);}
+.cockpit-leitura-col.forte{border-top:3px solid var(--blue);}
+.cockpit-leitura-col.meio{border-top:3px solid var(--yellow);}
+.cockpit-leitura-col.atencao{border-top:3px solid var(--yellow-strong);}
+.cockpit-leitura-icon{font-size:20px; margin-bottom:8px;}
+.cockpit-leitura-title{font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:6px; min-height:36px;}
+.cockpit-leitura-count{font-family:var(--font-display); font-size:22px; color:var(--ink);}
+
+/* Capacidades -- barras qualitativas horizontais (substituem os radares). */
+.cockpit-bars-grid{display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:6px;}
+@media (max-width:860px){ .cockpit-bars-grid{grid-template-columns:1fr;} }
+.qual-bar-row{display:grid; grid-template-columns:150px 1fr 110px; align-items:center; gap:10px; margin-top:12px;}
+.qual-bar-row:first-of-type{margin-top:0;}
+.qual-bar-label{font-size:13px; color:var(--ink); font-weight:600;}
+.qual-bar-track{height:8px; background:var(--line); border-radius:99px; overflow:hidden;}
+.qual-bar-fill{height:100%; background:var(--blue); border-radius:99px;}
+.qual-bar-level{font-size:12px; color:var(--ink-soft); text-align:right;}
+@media (max-width:520px){
+  .qual-bar-row{grid-template-columns:1fr; gap:4px;}
+  .qual-bar-level{text-align:left;}
+}
+
+/* Explore seu diagnóstico -- tabela navegável (substitui a matriz de cards). */
+.explore-table-wrap{overflow-x:auto;}
+.explore-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+.explore-table th{
+  text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+  color:var(--ink-soft); padding:8px 12px; border-bottom:1px solid var(--line);
+}
+.explore-table td{padding:10px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft);}
+.explore-table tbody tr{cursor:pointer; transition:background .1s;}
+.explore-table tbody tr:hover{background:var(--paper-raised);}
+.explore-table-attr{color:var(--ink); font-weight:600;}
+.explore-table-level{text-align:right; white-space:nowrap;}
+
+/* Consultor do Insights -- próximos passos como chip clicável por mensagem. */
+.insight-next-steps{display:flex; gap:8px; flex-wrap:wrap; margin:-6px 0 6px 0;}
+.insight-next-steps .insight-chip{font-size:12.5px; padding:7px 13px;}
