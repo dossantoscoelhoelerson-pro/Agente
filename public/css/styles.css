@@ -19,18 +19,67 @@
    branco sobre fundo sólido (o tom oficial não passa em contraste AA com
    texto normal em cima). --state-bg/--state-text são a "cor de estado
    neutra" pedida para erros/avisos, propositalmente fora da família do
-   vermelho de identidade. */
+   vermelho de identidade.
+
+   ---- Tokens 60/30/10 (passe de design, sem alterar nenhum matiz da
+   identidade nem o logo -- só a estrutura/uso) ----
+     60% dominante neutra  --paper / --paper-raised / --line / --ink
+                            (superfícies e leitura principal)
+     30% secundária/apoio  --ink-soft / --blue / --blue-soft
+                            (texto de apoio, navegação, estrutura)
+     10% destaque/conversão --green (Insights/IA) e --yellow (oportunidade),
+                            sempre pontuais -- nunca preenchimento amplo.
+
+   ---- Auditoria WCAG AAA (contraste de texto) ----
+   --ink-soft escurecido de #4D6F8A para #405C73 (tom neutro, não é uma das
+   4 cores de identidade acima) para chegar a AAA (7:1) sobre --paper.
+   --green-strong é novo, seguindo exatamente o mesmo padrão já usado pelo
+   --blue-strong (variante só para texto branco sobre preenchimento sólido);
+   o --green oficial continua idêntico, sem nenhuma superfície própria trocada.
+   Badges/rótulos que usavam a cor de expressão como COR DO TEXTO sobre o
+   próprio "-soft" (ex.: texto azul em fundo azul-claro) foram trocados para
+   texto --ink -- o tom "-soft" de fundo continua carregando o sinal de
+   identidade, só o texto passou a ser 100% legível (ink sobre qualquer
+   "-soft" mede >9:1, folga confortável acima do mínimo AAA).
+   Duas exceções documentadas, onde manter a cor de identidade exatamente
+   como está pesa mais que atingir AAA literal (pedido explícito do
+   usuário -- "não mude a identidade/cores/logo"):
+     1) .eyebrow.brand -- o único texto que É a própria cor de marca
+        (Vermelho Identidade); trocar a cor descaracterizaria o toque de
+        marca que essa linha existe para fazer.
+     2) Botões de preenchimento sólido com texto branco (.btn.chat-send) --
+        AAA (7:1) só seria alcançável escurecendo a cor base a ponto de
+        deixar de parecer Azul Digital/Verde Inteligência; mantém-se o piso
+        AA (>=4.5:1, já cumprido). .cockpit-chat-trigger passou a usar
+        --green-strong (mesmo --green, só mais escuro) porque a versão
+        anterior não passava nem em AA (2.44:1) -- correção de bug, não
+        exceção.
+     3) Links de texto sublinhado em --blue-strong (.cockpit-result-link) --
+        o sublinhado já é o sinal de interatividade, então a cor não precisa
+        sozinha carregar o contraste AAA; mantém-se AA. */
 :root{
   --paper:#FFFFFF; --paper-raised:#DFECF2;
-  --ink:#123F63; --ink-soft:#4D6F8A;
+  --ink:#123F63; --ink-soft:#405C73;
   --line:#D9E1E8;
 
   --blue:#3E9BC1; --blue-soft:#E3F1F6; --blue-strong:#2C7B99;
-  --green:#43B7AA; --green-soft:#E1F4F1;
+  --green:#43B7AA; --green-soft:#E1F4F1; --green-strong:#308279;
   --yellow:#F7C84B; --yellow-soft:#FCF1D8; --yellow-strong:#8A6D1E;
   --red:#D96F72; --red-soft:#F8E5E5;
 
   --state-bg:#E7E3DA; --state-text:#3A3F44;
+
+  --ease-smooth:cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Escala tipográfica geométrica (Major Third, razão 1.25) -- aplicada à
+     hierarquia principal de leitura (títulos e corpo de texto), não a cada
+     rótulo utilitário pequeno do produto. */
+  --text-xs:11.2px; --text-sm:14px; --text-base:16px; --text-md:20px;
+  --text-lg:25px; --text-xl:31px; --text-2xl:39px;
+
+  /* Ritmo de espaçamento -- espaço entre seções é sempre o dobro do
+     espaçamento interno dos componentes. */
+  --space-component:24px; --space-section:48px;
 
   /* Fundo específico da Etapa 1 (abertura + as 34 perguntas + revisão +
      conclusão da coleta) -- pedido do usuário: #F2F2F2 em vez do
@@ -91,7 +140,7 @@
 }
 body{
   margin:0; background:var(--paper); color:var(--ink);
-  font-family:var(--font-body); line-height:1.5;
+  font-family:var(--font-body); line-height:1.6;
   min-height:100vh;
 }
 /* Etapa 1 (abertura, as 34 perguntas, revisão, conclusão da coleta) usa um
@@ -130,15 +179,15 @@ body.etapa-1{--paper:var(--etapa1-bg);}
 /* toque de marca (identidade visual) -- só no cabeçalho da tela de abertura */
 .eyebrow.brand{color:var(--red); font-weight:600;}
 h1{
-  font-family:var(--font-display); font-weight:500; font-size:34px;
+  font-family:var(--font-display); font-weight:500; font-size:var(--text-xl);
   line-height:1.15; margin:0 0 14px; letter-spacing:-0.01em;
 }
 h2{
-  font-family:var(--font-display); font-weight:500; font-size:24px;
+  font-family:var(--font-display); font-weight:500; font-size:var(--text-lg);
   margin:0 0 10px; letter-spacing:-0.01em;
 }
-p{color:var(--ink-soft); font-size:16px; margin:0 0 16px;}
-.lede{font-size:18px; max-width:56ch;}
+p{color:var(--ink-soft); font-size:var(--text-base); margin:0 0 16px;}
+.lede{font-size:var(--text-md); max-width:56ch; line-height:1.6;}
 .caption-line{font-size:14px; color:var(--ink-soft); font-style:italic; margin:0 0 16px;}
 .example-box{
   background:var(--paper); border:1px solid var(--line); border-radius:10px;
@@ -151,22 +200,26 @@ p{color:var(--ink-soft); font-size:16px; margin:0 0 16px;}
 .example-box .example-text{font-size:14px; font-style:italic; color:var(--ink-soft); line-height:1.6;}
 
 .card{
-  background:var(--paper-raised); border:1px solid var(--line);
-  border-radius:14px; padding:28px; margin-top:24px;
+  background:var(--paper-raised); border-radius:14px; padding:var(--space-component);
+  margin-top:var(--space-component); box-shadow:0 1px 3px rgba(18,63,99,.06);
 }
 .btn{
   font-family:var(--font-body); font-weight:600; font-size:15px;
   border-radius:9px; padding:13px 22px; border:none; cursor:pointer;
-  background:var(--ink); color:var(--paper); transition:opacity .15s;
+  background:var(--ink); color:var(--paper);
+  transition:box-shadow .2s var(--ease-smooth), transform .2s var(--ease-smooth), opacity .15s;
 }
-.btn:hover{opacity:.85;}
+.btn:hover{box-shadow:0 6px 16px rgba(18,63,99,.22); transform:scale(1.02);}
+.btn:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
+.btn:active{transform:scale(0.99);}
 .btn.secondary{
   background:transparent; color:var(--ink); border:1px solid var(--line);
 }
+.btn.secondary:hover{box-shadow:0 4px 12px rgba(18,63,99,.1);}
 /* elementos interativos de conversa (campo de conversa/enviar) em Azul Digital */
 .btn.chat-send{background:var(--blue-strong); color:#fff;}
 .btn.small{padding:8px 14px; font-size:13px;}
-.btn:disabled{opacity:.35; cursor:not-allowed;}
+.btn:disabled{opacity:.35; cursor:not-allowed; box-shadow:none; transform:none;}
 .btn-row{display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;}
 
 input[type=text]{
@@ -197,19 +250,22 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   color:var(--ink-soft); margin-bottom:10px;
 }
 .block-official-text{
-  font-family:var(--font-display); font-size:19px; line-height:1.45; color:var(--ink);
+  font-family:var(--font-display); font-size:var(--text-md); line-height:1.6; color:var(--ink);
 }
-/* elementos interativos (escolher, conversar) -> Azul Digital no rótulo */
+/* Rótulo em --ink para contraste AAA (o azul continua sendo o sinal de
+   interatividade nos elementos que de fato reagem ao toque -- botões,
+   links, bordas de hover/foco -- este era só o texto do rótulo). */
 .card.block-options .block-label,
-.card.panel-duvidas .block-label{color:var(--blue);}
+.card.panel-duvidas .block-label{color:var(--ink);}
 .block-explain-text{font-size:15px; line-height:1.65; color:var(--ink-soft);}
-/* Bloco 2 e centro de aprendizado: conteúdo gerado pela IA -> Verde Inteligência */
+/* Bloco 2 e centro de aprendizado: conteúdo gerado pela IA -> Verde Inteligência
+   (o fundo -soft continua carregando o sinal; texto do rótulo em --ink para AAA) */
 .card.block-explain{background:var(--green-soft); border-color:transparent;}
-.card.block-explain .block-label{color:var(--green);}
+.card.block-explain .block-label{color:var(--ink);}
 .card.block-explain .block-explain-text{color:var(--ink);}
 
 .group-tag{
-  display:inline-block; font-size:12px; color:var(--blue);
+  display:inline-block; font-size:12px; color:var(--ink);
   background:var(--blue-soft); padding:4px 10px; border-radius:99px;
   margin-bottom:14px;
 }
@@ -219,9 +275,12 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   text-align:left; font-family:var(--font-body); font-size:15.5px;
   color:var(--ink); background:var(--paper-raised); border:1.5px solid var(--line);
   border-radius:10px; padding:15px 18px; cursor:pointer;
-  display:flex; align-items:center; gap:14px; transition:border-color .12s, background .12s;
+  display:flex; align-items:center; gap:14px;
+  transition:border-color .2s var(--ease-smooth), background .2s var(--ease-smooth),
+    box-shadow .2s var(--ease-smooth), transform .2s var(--ease-smooth);
 }
-.opt:hover{border-color:var(--blue);}
+.opt:hover{border-color:var(--blue); box-shadow:0 4px 14px rgba(62,155,193,.16); transform:scale(1.01);}
+.opt:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
 .opt-selected{border-color:var(--blue); background:var(--blue-soft);}
 .opt-selected .num{background:var(--blue); color:#fff;}
 .opt .num{
@@ -232,7 +291,7 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
 
 .chat-log{display:flex; flex-direction:column; gap:12px; margin-bottom:6px;}
 .bubble{
-  max-width:86%; padding:12px 16px; border-radius:14px; font-size:15.5px; line-height:1.5;
+  max-width:86%; padding:12px 16px; border-radius:14px; font-size:15.5px; line-height:1.6;
   white-space:pre-wrap;
 }
 /* falas da IA no chat = conteúdo gerado pela IA -> Verde Inteligência */
@@ -272,17 +331,19 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
 .review-list li:last-child{border-bottom:none;}
 .review-list .rl-name{color:var(--ink); flex:1;}
 .review-list .rl-val{color:var(--ink-soft); text-align:right;}
-/* pendência a resolver = oportunidade -> Amarelo Evolução, com moderação (só o texto) */
-.review-list .rl-val.empty{color:var(--yellow-strong);}
+/* pendência a resolver = oportunidade -> Amarelo Evolução; o sinal de cor
+   vira um marcador (não o texto inteiro) para o texto ficar em AAA. */
+.review-list .rl-val.empty{color:var(--ink);}
+.review-list .rl-val.empty::before{content:'● '; color:var(--yellow-strong); font-size:9px;}
 
 .upload-zone{
   border:2px dashed var(--line); border-radius:14px; padding:32px;
-  text-align:center; cursor:pointer; transition:border-color .15s;
+  text-align:center; cursor:pointer; transition:border-color .2s var(--ease-smooth), background .2s var(--ease-smooth);
 }
 .upload-zone:hover, .upload-zone.drag{border-color:var(--blue);}
 .upload-zone input{display:none;}
 .upload-zone .icon{font-size:28px; margin-bottom:8px;}
-.file-ok{color:var(--blue-strong); font-size:14px; margin-top:10px;}
+.file-ok{color:var(--ink); font-size:14px; margin-top:10px;}
 
 .report-body{white-space:pre-wrap; font-size:15.5px; line-height:1.65; color:var(--ink);}
 .report-body strong{color:var(--ink); font-weight:600;}
@@ -333,8 +394,11 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-nav-item{
   display:flex; align-items:center; gap:9px; padding:9px 18px 9px 9px; border-radius:99px;
   font-family:var(--font-body); font-weight:600; font-size:14px; color:var(--ink-soft);
-  background:transparent; border:1px solid var(--line); cursor:pointer; transition:all .15s;
+  background:transparent; border:1px solid var(--line); cursor:pointer;
+  transition:border-color .2s var(--ease-smooth), background .2s var(--ease-smooth),
+    color .2s var(--ease-smooth), box-shadow .2s var(--ease-smooth);
 }
+.cockpit-nav-item:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
 .cockpit-nav-item .cni-step{
   width:24px; height:24px; border-radius:50%; background:var(--paper-raised); color:var(--ink-soft);
   font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
@@ -346,40 +410,43 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-chat-trigger{
   margin-left:auto; display:flex; align-items:center; gap:8px; padding:9px 16px; border-radius:99px;
   font-family:var(--font-body); font-weight:600; font-size:13.5px; color:#fff;
-  background:var(--green); border:none; cursor:pointer;
+  background:var(--green-strong); border:none; cursor:pointer;
+  transition:box-shadow .2s var(--ease-smooth), transform .2s var(--ease-smooth), opacity .15s;
 }
-.cockpit-chat-trigger:hover{opacity:.88;}
+.cockpit-chat-trigger:hover{box-shadow:0 6px 16px rgba(48,130,121,.35); transform:scale(1.02);}
+.cockpit-chat-trigger:focus-visible{outline:2px solid var(--green-strong); outline-offset:2px;}
 
 /* Abertura de cada seção -- hero, forte hierarquia, poucos elementos. */
 .cockpit-hero{padding:4px 0 8px;}
 .cockpit-hero-eyebrow{font-size:13px; color:var(--ink-soft); margin-bottom:8px; font-weight:600;}
-.cockpit-hero-title{font-family:var(--font-display); font-size:36px; font-weight:500; margin:0 0 10px; letter-spacing:-.01em;}
-.cockpit-hero-sub{font-size:15.5px; color:var(--ink-soft); max-width:64ch; margin:0 0 18px;}
+.cockpit-hero-title{font-family:var(--font-display); font-size:var(--text-2xl); font-weight:500; margin:0 0 10px; letter-spacing:-.01em;}
+.cockpit-hero-sub{font-size:15.5px; line-height:1.6; color:var(--ink-soft); max-width:64ch; margin:0 0 18px;}
 .cockpit-hero-meta{display:flex; gap:22px; flex-wrap:wrap; margin:4px 0 22px; font-size:13px; color:var(--ink-soft);}
 .cockpit-hero-meta b{color:var(--ink); font-weight:700;}
 .cockpit-hero-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
 
-.cockpit-section{margin-top:40px;}
+.cockpit-section{margin-top:var(--space-section);}
 .cockpit-section:first-of-type{margin-top:0;}
 .cockpit-section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
-.cockpit-section-title{font-family:var(--font-display); font-size:22px; font-weight:500; margin:0;}
+.cockpit-section-title{font-family:var(--font-display); font-size:var(--text-lg); font-weight:500; margin:0;}
 .cockpit-section-question{font-size:13px; color:var(--ink-soft); font-style:italic;}
 
 .cockpit-grid-2{display:grid; grid-template-columns:1.1fr 1fr; gap:22px; align-items:stretch;}
 @media (max-width:900px){ .cockpit-grid-2{grid-template-columns:1fr;} }
 .cockpit-card{
-  background:var(--paper-raised); border:1px solid var(--line); border-radius:16px; padding:26px;
-  margin-top:22px;
+  background:var(--paper-raised); border-radius:16px; padding:var(--space-component);
+  margin-top:22px; box-shadow:0 1px 3px rgba(18,63,99,.06);
 }
 .cockpit-card.on-paper{background:var(--paper);}
+/* Título de cartão -- não tinha regra própria (herdava só o padrão do
+   navegador); recebe a escala tipográfica aqui. */
+.cockpit-card-title{font-family:var(--font-display); font-size:var(--text-md); font-weight:500; color:var(--ink); margin-bottom:14px;}
 
 /* Consolidação do layout (adendo rodada 7, seção 3) -- resultado geral e as
    duas capacidades viram UM cartão coeso em vez de cartões grandes
    empilhados; divisor sutil entre as duas partes do mesmo cartão, nunca uma
    borda/sombra pesada de novo bloco. */
 .cockpit-overview-divider{height:1px; background:var(--line); margin:24px 0 20px;}
-.cockpit-caps-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-top:14px;}
-@media (max-width:900px){ .cockpit-caps-grid{grid-template-columns:1fr;} }
 .cockpit-caps-col-title{font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:8px; text-align:center;}
 
 /* Árvore de atributos / árvore de oportunidades (D3) -- dendrograma
@@ -392,7 +459,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 
 /* Resultado de maturidade em destaque + indicador circular unificado. */
 .cockpit-result-row{display:flex; align-items:center; gap:26px; flex-wrap:wrap;}
-.cockpit-result-title{font-family:var(--font-display); font-size:32px; margin:2px 0 8px; line-height:1.1;}
+.cockpit-result-title{font-family:var(--font-display); font-size:var(--text-xl); margin:2px 0 8px; line-height:1.1;}
 .cockpit-result-link{
   font-size:13px; color:var(--blue-strong); cursor:pointer; text-decoration:underline;
   background:none; border:none; padding:0; font-family:var(--font-body); font-weight:600;
@@ -443,14 +510,6 @@ body.cockpit-screen .wrap{max-width:1180px;}
   border-radius:9px; background:var(--paper); color:var(--ink);
 }
 .explore-filters input[type=text]{flex:1; min-width:160px;}
-.explore-results{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px;}
-.explore-result-item{
-  padding:13px 15px; border:1px solid var(--line); border-radius:11px; background:var(--paper);
-  cursor:pointer; font-size:13.5px; text-align:left;
-}
-.explore-result-item:hover{border-color:var(--blue);}
-.explore-result-item .eri-name{color:var(--ink); font-weight:600; margin-bottom:3px;}
-.explore-result-item .eri-val{color:var(--ink-soft); font-size:12.5px;}
 .explore-empty{color:var(--ink-soft); font-size:13.5px; padding:12px 0;}
 
 /* Transição para Insights -- convite, não fim de relatório. */
@@ -466,13 +525,10 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .synthesis-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px;}
 @media (max-width:900px){ .synthesis-grid{grid-template-columns:1fr;} }
 .synthesis-block{border-radius:14px; padding:20px;}
-.synthesis-block.resultado{background:var(--paper-raised); border:1px solid var(--line);}
+.synthesis-block.resultado{background:var(--paper-raised); box-shadow:0 1px 3px rgba(18,63,99,.06);}
 .synthesis-block.interpretacao{background:var(--green-soft);}
 .synthesis-block.possibilidades{background:var(--yellow-soft);}
-.synthesis-block-label{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-bottom:10px;}
-.synthesis-block.resultado .synthesis-block-label{color:var(--ink);}
-.synthesis-block.interpretacao .synthesis-block-label{color:var(--green);}
-.synthesis-block.possibilidades .synthesis-block-label{color:var(--yellow-strong);}
+.synthesis-block-label{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-bottom:10px; color:var(--ink);}
 .synthesis-block-text{font-size:14.5px; line-height:1.6; color:var(--ink);}
 
 .insight-chat-card{background:var(--green-soft); border-radius:18px; padding:26px; margin-top:12px;}
@@ -480,8 +536,10 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .insight-chip{
   font-size:13px; padding:9px 15px; border-radius:99px; background:var(--paper); border:1px solid var(--line);
   cursor:pointer; color:var(--ink); font-family:var(--font-body);
+  transition:border-color .2s var(--ease-smooth), box-shadow .2s var(--ease-smooth), transform .2s var(--ease-smooth);
 }
-.insight-chip:hover{border-color:var(--green);}
+.insight-chip:hover{border-color:var(--green); box-shadow:0 4px 12px rgba(67,183,170,.18); transform:scale(1.02);}
+.insight-chip:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
 
 .trace-chain{display:flex; flex-direction:column; margin-top:10px;}
 .trace-step{display:flex; gap:14px; align-items:flex-start;}
@@ -493,7 +551,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .trace-evidence{font-size:13px; color:var(--ink-soft); margin-top:4px; font-style:italic;}
 
 .insight-cards-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:18px;}
-.insight-card{border-radius:14px; padding:18px; border:1px solid var(--line); background:var(--paper);}
+.insight-card{border-radius:14px; padding:18px; background:var(--paper); box-shadow:0 1px 4px rgba(18,63,99,.08);}
 .insight-card.forte{border-left:4px solid var(--blue);}
 .insight-card.atencao{border-left:4px solid var(--yellow);}
 .insight-card-title{font-weight:600; color:var(--ink); margin-bottom:4px; font-size:15px;}
@@ -512,8 +570,8 @@ body.cockpit-screen .wrap{max-width:1180px;}
 }
 .attr-detail-close:hover{color:var(--ink);}
 .attr-detail-eyebrow{font-size:12px; color:var(--ink-soft); margin-bottom:6px;}
-.attr-detail-title{font-family:var(--font-display); font-size:26px; margin:0 0 4px; padding-right:40px;}
-.attr-detail-level{display:inline-block; font-size:13px; font-weight:600; color:var(--blue-strong); background:var(--blue-soft); padding:4px 12px; border-radius:99px; margin-top:8px;}
+.attr-detail-title{font-family:var(--font-display); font-size:var(--text-lg); margin:0 0 4px; padding-right:40px;}
+.attr-detail-level{display:inline-block; font-size:13px; font-weight:600; color:var(--ink); background:var(--blue-soft); padding:4px 12px; border-radius:99px; margin-top:8px;}
 .attr-detail-section{margin-top:20px;}
 .attr-detail-section-label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:6px;}
 .attr-detail-section-text{font-size:14.5px; line-height:1.6; color:var(--ink);}
@@ -526,20 +584,24 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .roadmap-col-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:14px;}
 .roadmap-col-empty{font-size:13px; color:var(--ink-soft); padding:10px 0;}
 .roadmap-action-card{
-  background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:15px 17px; margin-bottom:10px; cursor:pointer;
+  background:var(--paper); border-radius:12px; padding:15px 17px; margin-bottom:10px; cursor:pointer;
+  box-shadow:0 1px 3px rgba(18,63,99,.07);
+  transition:box-shadow .2s var(--ease-smooth), transform .2s var(--ease-smooth);
 }
-.roadmap-action-card:hover{border-color:var(--blue);}
+.roadmap-action-card:hover{box-shadow:0 6px 16px rgba(18,63,99,.14); transform:scale(1.01);}
+.roadmap-action-card:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
 .roadmap-action-title{font-weight:600; color:var(--ink); margin-bottom:7px; font-size:14.5px;}
 .roadmap-action-meta{font-size:12px; color:var(--ink-soft); display:flex; flex-wrap:wrap; gap:6px 10px; margin-bottom:8px;}
 .roadmap-ai-tag{
-  display:inline-block; font-size:10.5px; font-weight:700; color:var(--green); background:var(--green-soft);
+  display:inline-block; font-size:10.5px; font-weight:700; color:var(--ink); background:var(--green-soft);
   padding:3px 9px; border-radius:99px; margin-bottom:8px;
 }
-.roadmap-status-badge{font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px;}
-.roadmap-status-badge.nao-iniciada{background:var(--line); color:var(--ink-soft);}
-.roadmap-status-badge.em-andamento{background:var(--blue-soft); color:var(--blue-strong);}
-.roadmap-status-badge.concluida{background:var(--green-soft); color:var(--green);}
-.roadmap-status-badge.pausada{background:var(--yellow-soft); color:var(--yellow-strong);}
+.roadmap-ai-tag::before{content:'● '; color:var(--green);}
+.roadmap-status-badge{font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px; color:var(--ink);}
+.roadmap-status-badge.nao-iniciada{background:var(--line);}
+.roadmap-status-badge.em-andamento{background:var(--blue-soft);}
+.roadmap-status-badge.concluida{background:var(--green-soft);}
+.roadmap-status-badge.pausada{background:var(--yellow-soft);}
 
 .roadmap-suggestions-list{display:flex; flex-direction:column; gap:12px; margin-top:16px;}
 .roadmap-suggestion-card{
@@ -559,7 +621,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
    referência sem meta definida) -- nunca escondido, sempre explícito. */
 .persistence-note{
   background:var(--state-bg); color:var(--state-text); border-radius:12px; padding:18px 20px; margin-top:24px;
-  font-size:13.5px; line-height:1.55;
+  font-size:13.5px; line-height:1.6;
 }
 .persistence-note b{display:block; margin-bottom:4px; color:var(--ink);}
 
@@ -581,12 +643,12 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-qual-track:first-of-type{margin-top:0;}
 .cockpit-qual-track-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:8px;}
 .cockpit-qual-track-label{font-size:13.5px; font-weight:600; color:var(--ink);}
-.cockpit-qual-track-level{font-size:13.5px; font-weight:600; color:var(--blue-strong);}
+.cockpit-qual-track-level{font-size:13.5px; font-weight:600; color:var(--ink);}
 
 /* Leitura geral -- três blocos de leitura rápida com contagens reais. */
 .cockpit-leitura-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:6px;}
 @media (max-width:860px){ .cockpit-leitura-grid{grid-template-columns:1fr;} }
-.cockpit-leitura-col{border-radius:14px; padding:20px; text-align:center; border:1px solid var(--line); background:var(--paper-raised);}
+.cockpit-leitura-col{border-radius:14px; padding:20px; text-align:center; background:var(--paper-raised); box-shadow:0 1px 3px rgba(18,63,99,.06);}
 .cockpit-leitura-col.forte{border-top:3px solid var(--blue);}
 .cockpit-leitura-col.meio{border-top:3px solid var(--yellow);}
 .cockpit-leitura-col.atencao{border-top:3px solid var(--yellow-strong);}
@@ -616,8 +678,9 @@ body.cockpit-screen .wrap{max-width:1180px;}
   color:var(--ink-soft); padding:8px 12px; border-bottom:1px solid var(--line);
 }
 .explore-table td{padding:10px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft);}
-.explore-table tbody tr{cursor:pointer; transition:background .1s;}
+.explore-table tbody tr{cursor:pointer; transition:background .2s var(--ease-smooth);}
 .explore-table tbody tr:hover{background:var(--paper-raised);}
+.explore-table tbody tr:focus-visible{outline:2px solid var(--blue); outline-offset:-2px;}
 .explore-table-attr{color:var(--ink); font-weight:600;}
 .explore-table-level{text-align:right; white-space:nowrap;}
 
