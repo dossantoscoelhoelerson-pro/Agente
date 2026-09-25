@@ -237,6 +237,38 @@ Endpoints (`server/routes.js`):
 | `POST /api/roadmap/generate` | Roadmap -- proposta inicial de ações a partir dos pontos de atenção ("Sugestão da IA") |
 | `POST /api/roadmap/action-turn` | Roadmap -- conversa contextual sobre uma ação específica |
 
+## Sistema de design
+
+Passe de refinamento visual sobre a identidade ORBE já existente -- cores, logo e
+conceito de marca não mudaram (pedido explícito), só a estrutura/uso e a execução:
+
+- **Tokens de cor 60/30/10** (`public/css/styles.css`, bloco `:root`): 60% neutra
+  dominante (`--paper`/`--paper-raised`/`--line`/`--ink`), 30% apoio/navegação
+  (`--ink-soft`/`--blue`), 10% destaque pontual (`--green`/`--yellow`, nunca
+  preenchimento amplo).
+- **Auditoria WCAG AAA**: `--ink-soft` escurecido (#4D6F8A -> #405C73, tom neutro,
+  não é uma das 4 cores de identidade) para 7:1 sobre `--paper`. Badges/rótulos que
+  usavam a cor de expressão como cor do próprio texto (ex. texto azul sobre azul
+  claro) passaram a usar `--ink` sobre o mesmo fundo "-soft" -- o tom de fundo
+  continua carregando o sinal de identidade, só o texto ficou 100% legível.
+  `--green-strong` é novo (mesmo padrão já usado por `--blue-strong`: variante só
+  para texto branco sobre preenchimento sólido) e corrigiu um bug real de
+  contraste no botão "Converse com seu diagnóstico" (2.44:1, nem AA). Duas
+  exceções documentadas no CSS (o toque de marca do Vermelho Identidade e links
+  sublinhados) mantêm AA em vez de AAA para não descaracterizar a cor de marca.
+- **Tipografia**: escala geométrica Major Third (razão 1.25, `--text-xs` a
+  `--text-2xl`) aplicada à hierarquia principal de título/leitura; `line-height`
+  1.6 em blocos de texto; espaçamento entre seções sempre o dobro do espaçamento
+  interno dos componentes (`--space-component`/`--space-section`).
+  `.cockpit-card-title` (usado por todos os títulos de cartão do Cockpit) ganhou
+  sua primeira regra própria -- antes herdava só o padrão do navegador.
+- **Menos bordas, mais espaço**: cartões cujo fundo já os distingue da página
+  (`.card`, `.cockpit-card`, `.roadmap-action-card`, `.insight-card`, etc.)
+  trocaram a borda de 1px por uma sombra suave.
+- **Micro-interações**: `--ease-smooth: cubic-bezier(0.25, 1, 0.5, 1)` em botões,
+  opções de resposta, itens de navegação, chips e cartões de ação -- hover com
+  leve elevação (sombra) e escala até 1.02, `:focus-visible` visível em todos.
+
 ## O que ainda falta (pendências conhecidas da especificação)
 
 - **Persistência entre sessões (decisão em aberto, adendo rodada 6, seção 0)**: hoje nada

@@ -964,7 +964,7 @@ function sectionSynthesis(){
 
 function sectionInsightChat(){
   const card = el('div', { class: 'insight-chat-card' });
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Vamos entender esse resultado.', style: 'color:var(--green); margin-bottom:4px;' }));
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Vamos entender esse resultado.', style: 'margin-bottom:4px;' }));
   card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Explore o diagnóstico com um consultor que conhece os resultados, as evidências e a estrutura da avaliação.', style: 'display:block; margin-bottom:16px;' }));
 
   const suggestions = ['Por que chegamos a esse resultado?', 'Quais são nossos pontos de força?', 'Onde estão nossos pontos de atenção?', 'Explique nossa Capacidade Digital.', 'Explique nossa Capacidade Organizacional.', 'O que podemos explorar a partir daqui?'];
