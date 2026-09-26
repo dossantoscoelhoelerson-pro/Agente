@@ -9,9 +9,9 @@
 // texto e traços estruturais usam Azul Profundo. SVG é gerado como string
 // (sem acesso a variáveis CSS), por isso os hex ficam fixos aqui -- mantidos
 // em paridade com public/css/styles.css.
-const CHART_INK = '#123F63';
+const CHART_INK = '#003F69';
 const CHART_LINE = '#D9E1E8';
-const CHART_ACCENT = '#3E9BC1';
+const CHART_ACCENT = '#1E8FC8';
 
 function escapeXml(s){
   return String(s).replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));

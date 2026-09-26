@@ -16,9 +16,9 @@ const LOGO_PATH = path.join(__dirname, '..', 'public', 'assets', 'brand', 'orbe_
 // de Azul Digital/Verde Inteligência falham contraste AA como texto em
 // fundo branco, então usamos variantes mais escuras da mesma família (mesma
 // lógica do --blue-strong/--yellow-strong em public/css/styles.css).
-const PDF_INK = '#123F63';       // Azul Profundo -- estrutural
-const PDF_INK_SOFT = '#4D6F8A';
-const PDF_GREEN_STRONG = '#2F8077'; // Verde Inteligência escurecido -- centro de aprendizado
+const PDF_INK = '#003F69';       // Azul Profundo -- estrutural (rodada 9)
+const PDF_INK_SOFT = '#245A7E';
+const PDF_GREEN_STRONG = '#1E847C'; // Verde Inteligência escurecido -- centro de aprendizado
 const PDF_STATE_TEXT = '#3A3F44';   // cor de estado neutra -- nunca vermelho para aviso/erro
 
 function h1(doc, text) {

@@ -36,6 +36,12 @@ const state = {
   pdfExporting: false,
   pdfExportError: '',
 
+  // Caminho 3 da Home ("Já tenho um diagnóstico", adendo rodada 9) -- pula
+  // toda a Etapa 1, então não existe registro_completo para essa avaliação.
+  // Controla só o texto de aviso discreto em screenUpload(); nunca bloqueia
+  // o fluxo.
+  skipCollection: false,
+
   // O resto do estado do Cockpit (Panorama/Insights/Roadmap) é adicionado a
   // este objeto por public/js/cockpit.js, carregado depois deste arquivo --
   // mantém app.js só com o que é comum a toda a aplicação.
@@ -92,6 +98,9 @@ function renderOnce(){
   // Cockpit (adendo rodada 6) usa um layout mais largo que o --wrap de
   // 720px da coleta -- produto/dashboard, não formulário de leitura linear.
   document.body.classList.toggle('cockpit-screen', state.screen === 'report');
+  // Home e "Conhecer a ORBE" (adendo rodada 9) usam sidebar fixa própria em
+  // vez do cabeçalho sticky simples das demais telas.
+  document.body.classList.toggle('home-screen', state.screen === 'home' || state.screen === 'about');
 
   const app = document.getElementById('app');
   app.innerHTML = '';
@@ -104,6 +113,8 @@ function renderOnce(){
   void app.offsetWidth;
   app.classList.add('screen-fade');
   if(state.screen === 'loading') app.appendChild(screenLoading());
+  else if(state.screen === 'home') app.appendChild(screenHome());
+  else if(state.screen === 'about') app.appendChild(screenAbout());
   else if(state.screen === 'intro') app.appendChild(screenIntro());
   else if(state.screen === 'collect') app.appendChild(screenCollect());
   else if(state.screen === 'review') app.appendChild(screenReview());
@@ -139,6 +150,223 @@ function screenLoading(){
   const c = el('div');
   c.appendChild(el('p', {text:'Carregando...'}));
   return c;
+}
+
+// ---------- Home e os três caminhos (adendo rodada 9) ----------
+//
+// A Home é a nova porta de entrada da aplicação (antes o primeiro estado
+// era direto a tela de abertura da coleta). Três caminhos, cada um levando
+// a uma lógica já existente ou a uma tela nova simples:
+//   Card 1 "Conhecer a ORBE"      -> tela nova (screenAbout), só explicativa.
+//   Card 2 "Diagnóstico de Maturidade Digital" -> fluxo já existente
+//     (screenIntro -> coleta -> DEXi manual -> upload -> Panorama), sem
+//     nenhuma mudança de lógica -- só uma porta de entrada nova.
+//   Card 3 "Já tenho um diagnóstico" -> pula a Etapa 1 inteira e vai direto
+//     para a tela de upload/colagem já existente (ver screenUpload() e
+//     state.skipCollection).
+
+function goToHome(){ state.screen = 'home'; render(); }
+
+// Item "Diagnóstico" da sidebar -- retoma de onde a pessoa estiver: painel
+// já carregado -> Panorama; coleta em andamento -> próxima pergunta não
+// respondida; nada em andamento -> mesma porta de entrada do Card 2.
+function goToDiagnostico(){
+  if(state.panel){ state.screen = 'report'; render(); return; }
+  const next = nextUnansweredIndex();
+  if(next > 0 && next < ATTRS.length){ goToAttribute(next); return; }
+  state.screen = 'intro';
+  render();
+}
+
+function sidebarNav(active){
+  const nav = el('nav', {class:'home-sidebar-nav'});
+  const items = [
+    {id:'home', label:'Início', icon:'⌂', onclick: goToHome, enabled: true},
+    {id:'diagnostico', label:'Diagnóstico', icon:'◎', onclick: goToDiagnostico, enabled: true},
+    {id:'insights', label:'Insights', icon:'✦', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('insights'), 0); }, enabled: !!state.panel},
+    {id:'roadmap', label:'Roadmap', icon:'▤', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('roadmap'), 0); }, enabled: !!state.panel},
+  ];
+  items.forEach((it) => {
+    const cls = 'home-sidebar-item' + (it.id === active ? ' active' : '') + (it.enabled ? '' : ' disabled');
+    nav.appendChild(el('button', {
+      class: cls,
+      disabled: !it.enabled,
+      onclick: it.enabled ? it.onclick : null,
+      title: it.enabled ? '' : 'Disponível depois de carregar um diagnóstico',
+    }, [
+      el('span', {class:'home-sidebar-icon', text: it.icon}),
+      el('span', {text: it.label}),
+    ]));
+  });
+  return nav;
+}
+
+// Cabeçalho da Home/Sobre -- sidebar fixa + área de conteúdo. Substitui o
+// cabeçalho sticky simples usado nas demais telas (ver body.home-screen em
+// styles.css); mesma identidade (logo oficial, nunca redesenhado).
+function homeShell(active, contentChildren){
+  const shell = el('div', {class:'home-shell'});
+
+  const sidebar = el('aside', {class:'home-sidebar'});
+  const logoWrap = el('div', {class:'home-sidebar-logo'});
+  logoWrap.appendChild(el('img', {src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Visão integrada'}));
+  sidebar.appendChild(logoWrap);
+  sidebar.appendChild(sidebarNav(active));
+
+  // Teaser decorativo (mesma composição da referência visual enviada) --
+  // só texto de apoio, nenhum dado real.
+  const teaser = el('div', {class:'home-sidebar-teaser'});
+  teaser.appendChild(el('div', {class:'home-sidebar-teaser-title', text:'Sua jornada com a ORBE'}));
+  teaser.appendChild(el('div', {class:'home-sidebar-teaser-text', text:'Mais clareza, melhores decisões, evolução contínua.'}));
+  sidebar.appendChild(teaser);
+
+  shell.appendChild(sidebar);
+
+  const main = el('div', {class:'home-main'});
+  const topbar = el('div', {class:'home-topbar'});
+  topbar.appendChild(el('span', {class:'home-topbar-bell', text:'🔔'}));
+  const identity = el('div', {class:'home-topbar-identity'});
+  identity.appendChild(el('div', {class:'home-topbar-avatar', text:'V'}));
+  identity.appendChild(el('span', {text:'Visitante'}));
+  topbar.appendChild(identity);
+  main.appendChild(topbar);
+
+  const content = el('div', {class:'home-content'});
+  contentChildren.forEach((c) => c && content.appendChild(c));
+  main.appendChild(content);
+  shell.appendChild(main);
+
+  return shell;
+}
+
+// Elemento gráfico orbital (linhas orbitais + pontos de conexão) -- própria
+// linguagem gráfica pedida no adendo, construída em SVG puro a partir da
+// paleta oficial. Não é uma foto (nenhum arquivo de foto foi fornecido) --
+// o símbolo real da ORBE aparece sobreposto, nunca redesenhado.
+function orbitGraphic(){
+  const wrap = el('div', {class:'home-orbit-graphic'});
+  wrap.innerHTML = `
+    <svg viewBox="0 0 440 360" width="100%" height="100%" role="img" aria-label="Ilustração orbital ORBE" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="220" cy="180" rx="200" ry="80" fill="none" stroke="var(--blue)" stroke-width="1.2" opacity="0.35"/>
+      <ellipse cx="220" cy="180" rx="150" ry="150" fill="none" stroke="var(--green)" stroke-width="1.2" opacity="0.3"/>
+      <ellipse cx="220" cy="180" rx="200" ry="80" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.25" transform="rotate(35 220 180)"/>
+      <circle cx="20" cy="180" r="6" fill="var(--blue)"/>
+      <circle cx="420" cy="180" r="6" fill="var(--red)"/>
+      <circle cx="220" cy="30" r="6" fill="var(--yellow)"/>
+      <circle cx="220" cy="330" r="6" fill="var(--green)"/>
+      <circle cx="90" cy="90" r="5" fill="var(--yellow)"/>
+      <circle cx="350" cy="270" r="5" fill="var(--blue)"/>
+    </svg>`;
+  const logo = el('img', {class:'home-orbit-logo', src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'Símbolo ORBE'});
+  wrap.appendChild(logo);
+  return wrap;
+}
+
+function homeCard({icon, title, text, ctaLabel, onClick, featured}){
+  const card = el('div', {class:'home-card' + (featured ? ' featured' : '')});
+  if(featured) card.appendChild(el('div', {class:'home-card-tag', text:'Caminho principal'}));
+  card.appendChild(el('div', {class:'home-card-icon', text: icon}));
+  card.appendChild(el('div', {class:'home-card-title', text: title}));
+  card.appendChild(el('div', {class:'home-card-text', text: text}));
+  card.appendChild(el('button', {class:'btn' + (featured ? '' : ' secondary'), text: ctaLabel, onclick: onClick}));
+  return card;
+}
+
+function screenHome(){
+  const hero = el('div', {class:'home-hero'});
+  const heroText = el('div', {class:'home-hero-text'});
+  heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'✨ Seu diagnóstico, com mais inteligência.'}));
+  heroText.appendChild(el('h1', {class:'home-hero-title', text:'Bem-vindo à ORBE'}));
+  heroText.appendChild(el('div', {class:'home-hero-sub', text:'Sua parceira na jornada da transformação digital.'}));
+  heroText.appendChild(el('p', {class:'home-hero-body', text:'Aqui você encontra uma experiência completa para entender onde sua organização está, o que isso significa e como evoluir com base em dados, insights e ação.'}));
+  hero.appendChild(heroText);
+
+  const heroVisual = el('div', {class:'home-hero-visual'});
+  heroVisual.appendChild(orbitGraphic());
+  heroVisual.appendChild(el('div', {class:'home-hero-annotation', text:'Mais do que um diagnóstico. Um caminho para o futuro.'}));
+  hero.appendChild(heroVisual);
+
+  const entrySection = el('div', {class:'home-entry-section'});
+  entrySection.appendChild(el('div', {class:'home-entry-eyebrow', text:'ESCOLHA O QUE VOCÊ PRECISA'}));
+  entrySection.appendChild(el('h2', {class:'home-entry-title', text:'Como podemos te ajudar hoje?'}));
+  entrySection.appendChild(el('p', {class:'home-entry-sub', text:'Cada caminho foi pensado para a sua jornada. Escolha por onde você quer começar.'}));
+
+  const cardsGrid = el('div', {class:'home-cards-grid'});
+  cardsGrid.appendChild(homeCard({
+    icon:'👥', title:'Conhecer a ORBE',
+    text:'Entenda quem somos, nossa metodologia e como ajudamos organizações a evoluírem na jornada digital.',
+    ctaLabel:'Saiba mais →',
+    onClick: () => { state.screen = 'about'; render(); },
+  }));
+  cardsGrid.appendChild(homeCard({
+    icon:'📊', title:'Diagnóstico de Maturidade Digital',
+    text:'Responda 34 perguntas e descubra o estágio de maturidade digital da sua organização. Em poucos minutos, você terá um diagnóstico completo com base no modelo DEXi.',
+    ctaLabel:'Começar diagnóstico →', featured: true,
+    onClick: () => { state.screen = 'intro'; render(); },
+  }));
+  cardsGrid.appendChild(homeCard({
+    icon:'🧭', title:'Já tenho um diagnóstico',
+    text:'Se você já possui um diagnóstico DEXi, acesse aqui para visualizar seus resultados, explorar insights e planejar sua evolução.',
+    ctaLabel:'Acessar meu diagnóstico →',
+    onClick: () => { state.skipCollection = true; state.uploadError = ''; state.screen = 'upload'; render(); },
+  }));
+  entrySection.appendChild(cardsGrid);
+
+  const capBar = el('div', {class:'home-capabilities'});
+  [
+    {icon:'🛡️', title:'Metodologia DEXi', text:'Modelo reconhecido internacionalmente'},
+    {icon:'✨', title:'Inteligência Artificial', text:'Para análises mais profundas e personalizadas'},
+    {icon:'🤝', title:'Consultoria especializada', text:'Com foco em resultados reais para o seu negócio'},
+  ].forEach((it) => {
+    const item = el('div', {class:'home-cap-item'});
+    item.appendChild(el('span', {class:'home-cap-icon', text: it.icon}));
+    const txt = el('div');
+    txt.appendChild(el('div', {class:'home-cap-title', text: it.title}));
+    txt.appendChild(el('div', {class:'home-cap-text', text: it.text}));
+    item.appendChild(txt);
+    capBar.appendChild(item);
+  });
+
+  return homeShell('home', [hero, entrySection, capBar]);
+}
+
+// Card 1 -- "Conhecer a ORBE": explicação simples do que é a ferramenta, o
+// problema que resolve, o papel da IA e a base metodológica, com uma
+// camada opcional mais detalhada (adendo rodada 9, seção 3).
+function screenAbout(){
+  const c = el('div');
+  c.appendChild(el('div', {class:'home-hero-eyebrow', text:'CONHECER A ORBE'}));
+  c.appendChild(el('h1', {class:'home-hero-title', text:'Mais do que um diagnóstico.'}));
+  c.appendChild(el('p', {class:'home-hero-body', text:'A ORBE é uma parceira digital que ajuda organizações a entender onde estão na jornada de transformação digital -- e o que fazer a partir disso. Ela junta um modelo de avaliação estruturado, uma leitura interpretativa apoiada por IA e um espaço para transformar isso em ação.'}));
+
+  const card1 = el('div', {class:'card'});
+  card1.appendChild(el('h2', {text:'O problema que a ORBE resolve'}));
+  card1.appendChild(el('p', {text:'Muitas organizações sabem que precisam evoluir digitalmente, mas não têm um retrato claro de onde estão hoje -- nem por onde começar. Avaliações informais tendem a ser subjetivas, difíceis de comparar ao longo do tempo, e raramente conectam o diagnóstico a passos concretos.'}));
+  c.appendChild(card1);
+
+  const card2 = el('div', {class:'card'});
+  card2.appendChild(el('h2', {text:'O papel da inteligência artificial'}));
+  card2.appendChild(el('p', {text:'A IA nunca calcula o resultado da sua organização -- isso é sempre feito pelo modelo DEXi, de forma determinística e rastreável. O papel da IA é conduzir a coleta de forma conversacional, ajudar a interpretar o que o resultado oficial significa na prática, e sugerir possibilidades de evolução -- sempre separando claramente o que é dado oficial do que é interpretação ou sugestão.'}));
+  c.appendChild(card2);
+
+  const card3 = el('div', {class:'card'});
+  card3.appendChild(el('h2', {text:'A base metodológica'}));
+  card3.appendChild(el('p', {text:'A avaliação segue o modelo de maturidade digital proposto por Kljajić Borštnar e Pucihar (2021), estruturado com a metodologia DEX e processado na ferramenta DEXi -- um método de apoio à decisão multicritério, hierárquico e qualitativo, amplamente usado em pesquisa aplicada.'}));
+
+  const details = el('details', {class:'home-about-details'});
+  details.appendChild(el('summary', {text:'Quero entender melhor (camada opcional, mais técnica)'}));
+  const detailsBody = el('div', {class:'home-about-details-body'});
+  detailsBody.appendChild(el('p', {text:'O modelo organiza a maturidade digital em duas capacidades -- Capacidade Digital e Capacidade Organizacional -- cada uma formada por grupos intermediários (ex.: Tecnologia Digital, Papel da TI, Recursos Humanos, Cultura Organizacional), que por sua vez agregam 34 atributos básicos avaliados diretamente com a organização. Cada atributo e cada nível agregado tem uma escala qualitativa própria (ex.: "Baixo / Médio-baixo / Médio-alto / Alto"), definida em tabelas de decisão dentro do DEXi -- nunca um número calculado por fora. Essa é a razão pela qual o resultado final é sempre extraído do DEXi, nunca recalculado por IA: a metodologia depende dessas tabelas para ser consistente e comparável.'}));
+  details.appendChild(detailsBody);
+  card3.appendChild(details);
+  c.appendChild(card3);
+
+  const btnRow = el('div', {class:'btn-row'});
+  btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar à Início', onclick: goToHome}));
+  btnRow.appendChild(el('button', {class:'btn', text:'Começar diagnóstico →', onclick: () => { state.screen = 'intro'; render(); }}));
+  c.appendChild(btnRow);
+
+  return homeShell(null, [c]);
 }
 
 // ---------- Etapa 1: coleta conversacional ----------
@@ -272,9 +500,12 @@ function screenCollect(){
   block3.appendChild(renderAlternatives(attr));
   c.appendChild(block3);
 
-  // Bloco 4 -- campo de conversa livre (dúvida ou resposta em texto).
+  // Bloco 4 -- campo de conversa livre (dúvida ou resposta em texto). Texto
+  // mais humano (adendo rodada 9, seção 4) -- só o texto ao redor do campo
+  // muda, a lógica de interpretação da resposta livre continua a mesma.
   const block4 = el('div', {class:'card panel-duvidas'});
-  block4.appendChild(el('div', {class:'block-label', text:'Dúvida ou resposta livre'}));
+  block4.appendChild(el('div', {class:'block-label', text:'Ficou em dúvida sobre essa pergunta?'}));
+  block4.appendChild(el('p', {class:'block-explain-text', style:'margin-bottom:14px;', text:'Você pode explicar com suas próprias palavras. A ORBE ajuda a entender sua resposta.'}));
   const chatLog = state.chatLogs[attr.id] || (state.chatLogs[attr.id] = []);
   if(chatLog.length){
     const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
@@ -557,14 +788,29 @@ async function extractPdfText(file, okMsgEl, textareaEl){
 
 function screenUpload(){
   const c = el('div');
-  c.appendChild(stepsNav(2));
-  c.appendChild(el('h1', {text:'Carregue o resultado do DEXi.'}));
+  // Caminho 3 da Home pula a Etapa 1 inteira -- os "3 passos" (Coleta/Rodar
+  // no DEXi/Resultado) não se aplicam a essa entrada direta.
+  if(!state.skipCollection) c.appendChild(stepsNav(2));
+  c.appendChild(el('h1', {text: state.skipCollection ? 'Acesse seu diagnóstico.' : 'Carregue o resultado do DEXi.'}));
   c.appendChild(el('p', {class:'lede', text:'Cole o texto do relatório, ou carregue um arquivo .txt/.json/.csv/.pdf com o resultado -- inclusive o PDF exportado direto pelo DEXi.'}));
+
+  // Etapa 1 é pulada nesse caminho -- é onde o nome da organização normalmente
+  // seria coletado, então precisa de um campo próprio aqui.
+  let orgNameInput = null;
+  if(state.skipCollection){
+    const orgCard = el('div', {class:'card'});
+    orgCard.appendChild(el('label', {text:'Nome da organização'}));
+    orgNameInput = el('input', {type:'text', placeholder:'ex.: MetalLamina Indústria Ltda.', value: state.orgName});
+    orgCard.appendChild(orgNameInput);
+    c.appendChild(orgCard);
+  }
 
   const card = el('div', {class:'card'});
 
   if(!hasFullCollectionData()){
-    card.appendChild(el('label', {text:'Sessão nova — carregue também o JSON da coleta (baixado ao final da Etapa 1)'}));
+    card.appendChild(el('label', {text: state.skipCollection
+      ? 'Se você também tiver o JSON da coleta desta avaliação, pode carregar aqui (opcional -- enriquece a leitura no Insights)'
+      : 'Sessão nova — carregue também o JSON da coleta (baixado ao final da Etapa 1)'}));
     const collZone = el('div', {class:'upload-zone'});
     collZone.appendChild(el('div', {class:'icon', text:'⇪'}));
     collZone.appendChild(el('div', {text:'Clique para escolher o JSON da coleta'}));
@@ -635,15 +881,35 @@ function screenUpload(){
     c.appendChild(el('div', {class:'error-box', text: state.uploadError}));
   }
 
+  // Aviso discreto (nunca um alerta de abertura, adendo rodada 9, seção 3):
+  // sem a coleta, o Insights ainda explica o resultado oficial do DEXi
+  // normalmente, só não consegue cruzar com "o que a organização
+  // respondeu" na rastreabilidade -- some sozinho se um JSON de coleta
+  // acabar sendo carregado de qualquer forma.
+  if(state.skipCollection && !hasFullCollectionData()){
+    c.appendChild(el('div', {class:'note', text:'Sem o registro da coleta, o Insights explica o resultado oficial do DEXi normalmente, mas não consegue mostrar as respostas e evidências originais da organização na rastreabilidade.'}));
+  }
+
   const btnRow = el('div', {class:'btn-row'});
-  btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar', onclick: () => { state.screen = 'manual'; render(); }}));
-  const canProceed = () => hasFullCollectionData();
+  btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar', onclick: () => {
+    state.screen = state.skipCollection ? 'home' : 'manual';
+    render();
+  }}));
+  const canProceed = () => hasFullCollectionData() || state.skipCollection;
   const genBtn = el('button', {class:'btn', text:'Ver relatório →'});
   genBtn.addEventListener('click', () => {
+    // Sincroniza com o state ANTES de qualquer validação -- uma falha de
+    // validação chama render(), que recria os campos do zero a partir do
+    // state; sem isso, o texto colado (ou o nome digitado) some da tela a
+    // cada tentativa que falhar, mesmo sem nenhum erro do usuário nesse
+    // campo específico (bug real, pego ao testar o nome da organização).
     const text = textarea.value.trim();
+    state.dexiText = text;
+    if(orgNameInput) state.orgName = orgNameInput.value.trim();
+
+    if(orgNameInput && !state.orgName){ state.uploadError = 'Informe o nome da organização antes de continuar.'; render(); return; }
     if(!text){ state.uploadError = 'Cole o resultado do DEXi ou carregue um arquivo antes de continuar.'; render(); return; }
     if(!canProceed()){ state.uploadError = 'Carregue o JSON da coleta desta organização antes de continuar — ele não está disponível nesta sessão.'; render(); return; }
-    state.dexiText = text;
     state.uploadError = '';
     state.panel = null; state.panelError = '';
     if(typeof resetCockpitState === 'function') resetCockpitState();
@@ -793,7 +1059,7 @@ async function boot(){
     document.getElementById('app').appendChild(el('div', {class:'error-box', text:'Não consegui carregar os dados do servidor. Recarregue a página.'}));
     return;
   }
-  state.screen = 'intro';
+  state.screen = 'home';
   render();
 }
 

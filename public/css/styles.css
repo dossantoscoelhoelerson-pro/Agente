@@ -1,28 +1,28 @@
-/* Paleta de cores oficial do produto (adendo_especificacao_rodada4.md,
-   seção 2), com dois ajustes a pedido do usuário: o Off-white trocado por
-   #DFECF2 (mesma função de fundo estrutural principal) e depois --paper /
-   --paper-raised invertidos entre si -- o fundo de página das Etapas 2 e 3
-   é branco (#FFFFFF) e os cards são azul claro (#DFECF2). --etapa1-bg
-   (cinza #F2F2F2 da Etapa 1) não faz parte dessa inversão.
-   Estruturais: branco/azul claro + Azul Profundo. Expressão (sempre com
-   função semântica, nunca decorativas):
-     --blue   Azul Digital     #3E9BC1  tecnologia/interação: elementos
-              clicáveis, links, progresso.
-     --green  Verde Inteligência #43B7AA  IA: interpretação, insights --
-              usada só onde o conteúdo é de fato gerado pela IA (Bloco 2,
-              centro de aprendizado, falas da IA no chat).
-     --yellow Amarelo Evolução #F7C84B  evolução/oportunidade -- com
-              moderação, nunca como cor dominante.
-     --red    Vermelho Identidade #D96F72  identidade visual/marca --
-              NUNCA usada para erro (ver --state-*).
-   --blue-strong é uma variante mais escura do Azul Digital só para texto
+/* Paleta de cores oficial do produto -- rodada 9 (adendo_especificacao_
+   rodada9.md, seção 1): substitui a paleta da rodada 4 em TODA a aplicação
+   (Home, coleta, Panorama, Insights, Roadmap, PDF exportado), não só na Home.
+     --ink   Azul Profundo      #003F69  estrutura, títulos, navegação, confiança
+     --blue  Azul Digital       #1E8FC8  tecnologia/interação: elementos
+             clicáveis, links, progresso.
+     --green Verde Inteligência #2BBFB3  IA: interpretação, insights --
+             usada só onde o conteúdo é de fato gerado pela IA (Bloco 2,
+             centro de aprendizado, falas da IA no chat).
+     --yellow Amarelo Evolução  #FDC350  evolução/oportunidade -- com
+             moderação, nunca como cor dominante.
+     --red   Vermelho Identidade #DF5266 identidade visual/marca --
+             NUNCA usada para erro (ver --state-*).
+   Off-white (#F5F3ED, "sem mudança" no adendo) vira --home-bg, usado só no
+   novo fundo da Home -- os fundos já estabelecidos em rodadas anteriores
+   (--paper branco / --paper-raised #DFECF2 azul claro nas Etapas 2-3,
+   --etapa1-bg #F2F2F2 cinza na Etapa 1) foram ajustes explícitos pedidos
+   pelo usuário em rodadas passadas e o adendo 9 não pede pra desfazê-los.
+   --blue-strong/--green-strong são variantes mais escuras só para texto
    branco sobre fundo sólido (o tom oficial não passa em contraste AA com
    texto normal em cima). --state-bg/--state-text são a "cor de estado
    neutra" pedida para erros/avisos, propositalmente fora da família do
    vermelho de identidade.
 
-   ---- Tokens 60/30/10 (passe de design, sem alterar nenhum matiz da
-   identidade nem o logo -- só a estrutura/uso) ----
+   ---- Tokens 60/30/10 (passe de design da rodada anterior, mantido) ----
      60% dominante neutra  --paper / --paper-raised / --line / --ink
                             (superfícies e leitura principal)
      30% secundária/apoio  --ink-soft / --blue / --blue-soft
@@ -30,42 +30,26 @@
      10% destaque/conversão --green (Insights/IA) e --yellow (oportunidade),
                             sempre pontuais -- nunca preenchimento amplo.
 
-   ---- Auditoria WCAG AAA (contraste de texto) ----
-   --ink-soft escurecido de #4D6F8A para #405C73 (tom neutro, não é uma das
-   4 cores de identidade acima) para chegar a AAA (7:1) sobre --paper.
-   --green-strong é novo, seguindo exatamente o mesmo padrão já usado pelo
-   --blue-strong (variante só para texto branco sobre preenchimento sólido);
-   o --green oficial continua idêntico, sem nenhuma superfície própria trocada.
-   Badges/rótulos que usavam a cor de expressão como COR DO TEXTO sobre o
-   próprio "-soft" (ex.: texto azul em fundo azul-claro) foram trocados para
-   texto --ink -- o tom "-soft" de fundo continua carregando o sinal de
-   identidade, só o texto passou a ser 100% legível (ink sobre qualquer
-   "-soft" mede >9:1, folga confortável acima do mínimo AAA).
-   Duas exceções documentadas, onde manter a cor de identidade exatamente
-   como está pesa mais que atingir AAA literal (pedido explícito do
-   usuário -- "não mude a identidade/cores/logo"):
-     1) .eyebrow.brand -- o único texto que É a própria cor de marca
-        (Vermelho Identidade); trocar a cor descaracterizaria o toque de
-        marca que essa linha existe para fazer.
-     2) Botões de preenchimento sólido com texto branco (.btn.chat-send) --
-        AAA (7:1) só seria alcançável escurecendo a cor base a ponto de
-        deixar de parecer Azul Digital/Verde Inteligência; mantém-se o piso
-        AA (>=4.5:1, já cumprido). .cockpit-chat-trigger passou a usar
-        --green-strong (mesmo --green, só mais escuro) porque a versão
-        anterior não passava nem em AA (2.44:1) -- correção de bug, não
-        exceção.
-     3) Links de texto sublinhado em --blue-strong (.cockpit-result-link) --
-        o sublinhado já é o sinal de interatividade, então a cor não precisa
-        sozinha carregar o contraste AAA; mantém-se AA. */
+   ---- Auditoria WCAG AAA recalculada para os novos tons (adendo rodada 9,
+   seção 1: "reavaliar... ou recalcular") ----
+   --ink-soft, --blue-soft/-strong, --green-soft/-strong, --yellow-soft/
+   -strong, --red-soft foram todos recalculados a partir dos novos hex,
+   mantendo a mesma lógica de contraste já documentada nas rodadas
+   anteriores (ink sobre qualquer "-soft" mede >9:1; badges usam --ink como
+   cor do texto, nunca a cor de expressão, deixando o tom "-soft" carregar
+   o sinal de identidade). As mesmas três exceções documentadas antes
+   continuam valendo (marca em --red no .eyebrow.brand, botões sólidos com
+   texto branco em AA, link sublinhado em --blue-strong). */
 :root{
   --paper:#FFFFFF; --paper-raised:#DFECF2;
-  --ink:#123F63; --ink-soft:#405C73;
+  --ink:#003F69; --ink-soft:#245A7E;
   --line:#D9E1E8;
+  --home-bg:#F5F3ED;
 
-  --blue:#3E9BC1; --blue-soft:#E3F1F6; --blue-strong:#2C7B99;
-  --green:#43B7AA; --green-soft:#E1F4F1; --green-strong:#308279;
-  --yellow:#F7C84B; --yellow-soft:#FCF1D8; --yellow-strong:#8A6D1E;
-  --red:#D96F72; --red-soft:#F8E5E5;
+  --blue:#1E8FC8; --blue-soft:#DEEFF7; --blue-strong:#1A7EB0;
+  --green:#2BBFB3; --green-soft:#DDF5F3; --green-strong:#1E847C;
+  --yellow:#FDC350; --yellow-soft:#FFF2D9; --yellow-strong:#6D5422;
+  --red:#DF5266; --red-soft:#F9E0E3;
 
   --state-bg:#E7E3DA; --state-text:#3A3F44;
 
@@ -88,8 +72,13 @@
      modo escuro não muda -- só existe essa variação na tela clara. */
   --etapa1-bg:#F2F2F2;
 
-  --font-display:'Fraunces', Georgia, serif;
-  --font-body:'Inter', -apple-system, Segoe UI, sans-serif;
+  /* Manrope substitui Fraunces + Inter em toda a aplicação (adendo rodada
+     9, seção 1) -- uma família única para título e corpo; a hierarquia
+     visual que antes vinha da troca serifada/sem-serifa agora vem só do
+     peso (ExtraBold/Bold nos títulos, Regular no corpo -- ver font-weight
+     em cada seletor abaixo). */
+  --font-display:'Manrope', -apple-system, Segoe UI, sans-serif;
+  --font-body:'Manrope', -apple-system, Segoe UI, sans-serif;
 }
 /* Modo escuro: não faz parte da paleta oficial (pensada para tela clara) --
    é uma extensão minha, mantendo os mesmos matizes (só ajustados de
@@ -179,11 +168,11 @@ body.etapa-1{--paper:var(--etapa1-bg);}
 /* toque de marca (identidade visual) -- só no cabeçalho da tela de abertura */
 .eyebrow.brand{color:var(--red); font-weight:600;}
 h1{
-  font-family:var(--font-display); font-weight:500; font-size:var(--text-xl);
+  font-family:var(--font-display); font-weight:800; font-size:var(--text-xl);
   line-height:1.15; margin:0 0 14px; letter-spacing:-0.01em;
 }
 h2{
-  font-family:var(--font-display); font-weight:500; font-size:var(--text-lg);
+  font-family:var(--font-display); font-weight:700; font-size:var(--text-lg);
   margin:0 0 10px; letter-spacing:-0.01em;
 }
 p{color:var(--ink-soft); font-size:var(--text-base); margin:0 0 16px;}
@@ -250,7 +239,7 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   color:var(--ink-soft); margin-bottom:10px;
 }
 .block-official-text{
-  font-family:var(--font-display); font-size:var(--text-md); line-height:1.6; color:var(--ink);
+  font-family:var(--font-display); font-weight:600; font-size:var(--text-md); line-height:1.6; color:var(--ink);
 }
 /* Rótulo em --ink para contraste AAA (o azul continua sendo o sinal de
    interatividade nos elementos que de fato reagem ao toque -- botões,
@@ -419,7 +408,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 /* Abertura de cada seção -- hero, forte hierarquia, poucos elementos. */
 .cockpit-hero{padding:4px 0 8px;}
 .cockpit-hero-eyebrow{font-size:13px; color:var(--ink-soft); margin-bottom:8px; font-weight:600;}
-.cockpit-hero-title{font-family:var(--font-display); font-size:var(--text-2xl); font-weight:500; margin:0 0 10px; letter-spacing:-.01em;}
+.cockpit-hero-title{font-family:var(--font-display); font-size:var(--text-2xl); font-weight:800; margin:0 0 10px; letter-spacing:-.01em;}
 .cockpit-hero-sub{font-size:15.5px; line-height:1.6; color:var(--ink-soft); max-width:64ch; margin:0 0 18px;}
 .cockpit-hero-meta{display:flex; gap:22px; flex-wrap:wrap; margin:4px 0 22px; font-size:13px; color:var(--ink-soft);}
 .cockpit-hero-meta b{color:var(--ink); font-weight:700;}
@@ -428,7 +417,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-section{margin-top:var(--space-section);}
 .cockpit-section:first-of-type{margin-top:0;}
 .cockpit-section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
-.cockpit-section-title{font-family:var(--font-display); font-size:var(--text-lg); font-weight:500; margin:0;}
+.cockpit-section-title{font-family:var(--font-display); font-size:var(--text-lg); font-weight:700; margin:0;}
 .cockpit-section-question{font-size:13px; color:var(--ink-soft); font-style:italic;}
 
 .cockpit-grid-2{display:grid; grid-template-columns:1.1fr 1fr; gap:22px; align-items:stretch;}
@@ -440,7 +429,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-card.on-paper{background:var(--paper);}
 /* Título de cartão -- não tinha regra própria (herdava só o padrão do
    navegador); recebe a escala tipográfica aqui. */
-.cockpit-card-title{font-family:var(--font-display); font-size:var(--text-md); font-weight:500; color:var(--ink); margin-bottom:14px;}
+.cockpit-card-title{font-family:var(--font-display); font-size:var(--text-md); font-weight:700; color:var(--ink); margin-bottom:14px;}
 
 /* Consolidação do layout (adendo rodada 7, seção 3) -- resultado geral e as
    duas capacidades viram UM cartão coeso em vez de cartões grandes
@@ -459,7 +448,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 
 /* Resultado de maturidade em destaque + indicador circular unificado. */
 .cockpit-result-row{display:flex; align-items:center; gap:26px; flex-wrap:wrap;}
-.cockpit-result-title{font-family:var(--font-display); font-size:var(--text-xl); margin:2px 0 8px; line-height:1.1;}
+.cockpit-result-title{font-family:var(--font-display); font-weight:800; font-size:var(--text-xl); margin:2px 0 8px; line-height:1.1;}
 .cockpit-result-link{
   font-size:13px; color:var(--blue-strong); cursor:pointer; text-decoration:underline;
   background:none; border:none; padding:0; font-family:var(--font-body); font-weight:600;
@@ -491,7 +480,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .meta-compare{display:flex; align-items:center; gap:14px; margin-top:16px; flex-wrap:wrap;}
 .meta-compare-item{text-align:center;}
 .meta-compare-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px;}
-.meta-compare-value{font-family:var(--font-display); font-size:17px; color:var(--ink);}
+.meta-compare-value{font-family:var(--font-display); font-weight:700; font-size:17px; color:var(--ink);}
 .meta-compare-arrow{color:var(--ink-soft); font-size:18px;}
 
 /* Exploração -- filtros + busca + resultados. */
@@ -508,7 +497,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
   margin-top:40px; padding:30px; border-radius:18px; background:var(--green-soft);
   text-align:center;
 }
-.cockpit-bridge-title{font-family:var(--font-display); font-size:22px; margin:0 0 18px;}
+.cockpit-bridge-title{font-family:var(--font-display); font-weight:700; font-size:22px; margin:0 0 18px;}
 .cockpit-bridge-actions{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
 
 /* ---------- Insights ---------- */
@@ -561,7 +550,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 }
 .attr-detail-close:hover{color:var(--ink);}
 .attr-detail-eyebrow{font-size:12px; color:var(--ink-soft); margin-bottom:6px;}
-.attr-detail-title{font-family:var(--font-display); font-size:var(--text-lg); margin:0 0 4px; padding-right:40px;}
+.attr-detail-title{font-family:var(--font-display); font-weight:700; font-size:var(--text-lg); margin:0 0 4px; padding-right:40px;}
 .attr-detail-level{display:inline-block; font-size:13px; font-weight:600; color:var(--ink); background:var(--blue-soft); padding:4px 12px; border-radius:99px; margin-top:8px;}
 .attr-detail-section{margin-top:20px;}
 .attr-detail-section-label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:6px;}
@@ -667,3 +656,112 @@ body.cockpit-screen .wrap{max-width:1180px;}
 /* Consultor do Insights -- próximos passos como chip clicável por mensagem. */
 .insight-next-steps{display:flex; gap:8px; flex-wrap:wrap; margin:-6px 0 6px 0;}
 .insight-next-steps .insight-chip{font-size:12.5px; padding:7px 13px;}
+
+/* ==========================================================================
+   adendo_especificacao_rodada9.md -- Home (nova porta de entrada), sidebar
+   fixa e os três caminhos. body.home-screen desliga o cabeçalho sticky
+   simples usado nas demais telas (a sidebar tem o próprio logo) e libera o
+   #app.wrap de sua largura de leitura de 720px.
+   ========================================================================== */
+body.home-screen .site-header{display:none;}
+body.home-screen .wrap{max-width:none; padding:0; margin:0;}
+
+.home-shell{display:flex; align-items:stretch; min-height:100vh; background:var(--home-bg);}
+.home-sidebar{
+  width:252px; flex-shrink:0; background:var(--paper); border-right:1px solid var(--line);
+  padding:24px 18px; display:flex; flex-direction:column; gap:26px; position:sticky; top:0; height:100vh;
+}
+.home-sidebar-logo img{height:26px; width:auto; display:block;}
+.home-sidebar-nav{display:flex; flex-direction:column; gap:4px;}
+.home-sidebar-item{
+  display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px; border:none;
+  background:transparent; font-family:var(--font-body); font-weight:600; font-size:14.5px; color:var(--ink-soft);
+  cursor:pointer; text-align:left; width:100%;
+  transition:background .2s var(--ease-smooth), color .2s var(--ease-smooth);
+}
+.home-sidebar-item:hover{background:var(--paper-raised); color:var(--ink);}
+.home-sidebar-item.active{background:var(--ink); color:#fff;}
+.home-sidebar-item.disabled{opacity:.4; cursor:not-allowed;}
+.home-sidebar-item.disabled:hover{background:transparent; color:var(--ink-soft);}
+.home-sidebar-icon{font-size:16px; width:20px; text-align:center; flex-shrink:0;}
+.home-sidebar-teaser{margin-top:auto; background:var(--paper-raised); border-radius:14px; padding:16px;}
+.home-sidebar-teaser-title{font-family:var(--font-display); font-weight:700; font-size:14px; color:var(--ink); margin-bottom:6px;}
+.home-sidebar-teaser-text{font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
+
+.home-main{flex:1; min-width:0; display:flex; flex-direction:column;}
+.home-topbar{display:flex; justify-content:flex-end; align-items:center; gap:16px; padding:16px 32px;}
+.home-topbar-bell{font-size:17px; opacity:.7;}
+.home-topbar-identity{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ink);}
+.home-topbar-avatar{
+  width:30px; height:30px; border-radius:50%; background:var(--blue-soft); color:var(--blue-strong);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;
+}
+.home-content{padding:0 40px 56px; max-width:1180px;}
+
+.home-hero{display:grid; grid-template-columns:1.1fr 1fr; gap:40px; align-items:center; padding:20px 0 48px;}
+.home-hero-eyebrow{
+  display:inline-block; font-size:13px; font-weight:700; color:var(--blue-strong); background:var(--blue-soft);
+  padding:6px 14px; border-radius:99px; margin-bottom:16px;
+}
+.home-hero-title{font-size:44px; margin:0 0 12px; line-height:1.08;}
+.home-hero-sub{font-size:26px; font-weight:700; color:var(--blue); margin:0 0 18px; line-height:1.25;}
+.home-hero-body{font-size:16px; color:var(--ink-soft); line-height:1.6; max-width:46ch; margin:0;}
+.home-hero-visual{position:relative; display:flex; align-items:center; justify-content:center; min-height:260px;}
+.home-orbit-graphic{position:relative; width:100%; max-width:380px;}
+.home-orbit-logo{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:auto;
+  border-radius:14px; box-shadow:0 6px 18px rgba(0,63,105,.18);
+}
+.home-hero-annotation{
+  position:absolute; top:2px; right:6px; font-size:12.5px; font-style:italic; color:var(--ink-soft);
+  max-width:150px; text-align:right; line-height:1.4;
+}
+
+.home-entry-section{padding:32px 0 8px;}
+.home-entry-eyebrow{font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:8px;}
+.home-entry-title{margin:0 0 8px;}
+.home-entry-sub{color:var(--ink-soft); margin:0 0 24px;}
+
+.home-cards-grid{display:grid; grid-template-columns:1fr 1.15fr 1fr; gap:20px; align-items:stretch;}
+.home-card{
+  background:var(--paper); border-radius:18px; padding:26px; display:flex; flex-direction:column;
+  box-shadow:0 1px 3px rgba(0,63,105,.08); position:relative;
+}
+.home-card.featured{background:var(--ink); color:#fff; box-shadow:0 12px 28px rgba(0,63,105,.24);}
+.home-card.featured .home-card-title, .home-card.featured .home-card-text{color:#fff;}
+.home-card.featured .home-card-text{opacity:.85;}
+.home-card-tag{
+  position:absolute; top:-11px; left:20px; background:var(--yellow); color:var(--ink); font-size:11px;
+  font-weight:700; padding:4px 12px; border-radius:99px;
+}
+.home-card-icon{font-size:26px; margin-bottom:14px;}
+.home-card-title{font-family:var(--font-display); font-weight:700; font-size:18px; margin-bottom:8px; color:var(--ink);}
+.home-card-text{font-size:14px; color:var(--ink-soft); line-height:1.55; margin-bottom:20px; flex:1;}
+.home-card .btn{align-self:flex-start;}
+.home-card.featured .btn{background:#fff; color:var(--ink);}
+
+.home-capabilities{display:flex; gap:28px; flex-wrap:wrap; padding:28px 0 40px; border-top:1px solid var(--line); margin-top:16px;}
+.home-cap-item{display:flex; align-items:center; gap:10px; flex:1; min-width:220px;}
+.home-cap-icon{font-size:18px;}
+.home-cap-title{font-size:13.5px; font-weight:700; color:var(--ink);}
+.home-cap-text{font-size:12px; color:var(--ink-soft);}
+
+.home-about-details{margin-top:16px; font-size:13.5px;}
+.home-about-details summary{cursor:pointer; color:var(--blue-strong); font-weight:600;}
+.home-about-details-body{margin-top:10px; color:var(--ink-soft); line-height:1.6;}
+
+@media (max-width:900px){
+  .home-cards-grid{grid-template-columns:1fr;}
+  .home-hero{grid-template-columns:1fr;}
+  .home-hero-visual{order:-1; min-height:200px;}
+}
+@media (max-width:760px){
+  .home-shell{flex-direction:column;}
+  .home-sidebar{width:100%; height:auto; position:static; flex-direction:row; align-items:center; gap:16px; padding:14px 16px; overflow-x:auto;}
+  .home-sidebar-nav{flex-direction:row;}
+  .home-sidebar-item span:last-child{display:none;}
+  .home-sidebar-teaser{display:none;}
+  .home-content{padding:0 18px 40px;}
+  .home-hero-title{font-size:32px;}
+  .home-hero-sub{font-size:20px;}
+}

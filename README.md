@@ -25,6 +25,23 @@ e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_roda
   oficiais, sempre visíveis como botões, rotuladas com o texto de exibição final em
   `mapeamento_exibicao.json` (adendo rodada 4 -- o valor técnico que vai para CSV/.dxi nunca
   muda); (4) um campo de conversa livre para dúvida ou resposta em texto.
+- **Home é a porta de entrada** (`screenHome()`/`screenAbout()` em `public/js/app.js`,
+  adendo rodada 9) -- sidebar fixa (Início/Diagnóstico/Insights/Roadmap; os dois últimos
+  só ficam clicáveis depois de um diagnóstico carregado, `state.panel`), hero com
+  ilustração orbital em SVG (nenhuma foto foi fornecida como asset) e três caminhos:
+  1. **"Conhecer a ORBE"** -- tela nova e só explicativa (`screenAbout()`): o que é a
+     ferramenta, o papel da IA, a base metodológica (Kljajić Borštnar & Pucihar, 2021 /
+     DEX/DEXi), com uma camada `<details>` opcional mais técnica.
+  2. **"Diagnóstico de Maturidade Digital"** -- fluxo já existente (`screenIntro()` →
+     coleta → DEXi manual → upload → Panorama), sem nenhuma mudança de lógica.
+  3. **"Já tenho um diagnóstico"** -- pula a Etapa 1 inteira direto para
+     `screenUpload()` (`state.skipCollection = true`), pedindo só o nome da organização
+     (que normalmente viria da Etapa 1). Sem `registro_completo`, a rastreabilidade do
+     Insights mostra uma nota breve e discreta em vez do atributo/resposta específicos --
+     nunca um alerta de abertura, e nunca bloqueia o fluxo.
+  O topo direito (notificação/avatar "Visitante") é um placeholder estático coerente com
+  a identidade visual -- a aplicação não tem sistema de login nesta fase (decisão em
+  aberto desde a rodada 6, junto com a persistência do Roadmap).
 - **Etapa 3 aceita o resultado do DEXi** por upload de PDF (texto extraído no backend com
   `pdf-parse`) ou `.txt/.json/.csv` colado/carregado.
 - **Etapa 3 é o "Cockpit de Evolução Digital"** (adendo rodada 6, substitui o painel das
@@ -199,8 +216,9 @@ server/
 public/
   index.html
   css/styles.css
-  js/app.js               estado compartilhado, roteador de telas, Etapa 1 (4 blocos por
-                            atributo), extração do resultado do DEXi (ensurePanel)
+  js/app.js               estado compartilhado, roteador de telas, Home e os três
+                            caminhos (adendo rodada 9), Etapa 1 (4 blocos por atributo),
+                            extração do resultado do DEXi (ensurePanel)
   js/cockpit.js             Cockpit de Evolução Digital -- Panorama/Insights/Roadmap
                             (adendo rodada 6)
   js/dxi.js               decodeTemplate/fillDxi/splitKeepEnds/validateDxi
@@ -239,32 +257,42 @@ Endpoints (`server/routes.js`):
 
 ## Sistema de design
 
-Passe de refinamento visual sobre a identidade ORBE já existente -- cores, logo e
-conceito de marca não mudaram (pedido explícito), só a estrutura/uso e a execução:
+Dois passes sobre a mesma base estrutural (`public/css/styles.css`, bloco `:root`):
+um primeiro refinando estrutura/uso sem alterar nenhum matiz de identidade, e a
+rodada 9 (`adendo_especificacao_rodada9.md`) trocando os próprios hex da paleta e a
+tipografia em toda a aplicação -- Home, coleta, Panorama, Insights, Roadmap e PDF.
 
-- **Tokens de cor 60/30/10** (`public/css/styles.css`, bloco `:root`): 60% neutra
-  dominante (`--paper`/`--paper-raised`/`--line`/`--ink`), 30% apoio/navegação
-  (`--ink-soft`/`--blue`), 10% destaque pontual (`--green`/`--yellow`, nunca
-  preenchimento amplo).
-- **Auditoria WCAG AAA**: `--ink-soft` escurecido (#4D6F8A -> #405C73, tom neutro,
-  não é uma das 4 cores de identidade) para 7:1 sobre `--paper`. Badges/rótulos que
-  usavam a cor de expressão como cor do próprio texto (ex. texto azul sobre azul
-  claro) passaram a usar `--ink` sobre o mesmo fundo "-soft" -- o tom de fundo
-  continua carregando o sinal de identidade, só o texto ficou 100% legível.
-  `--green-strong` é novo (mesmo padrão já usado por `--blue-strong`: variante só
-  para texto branco sobre preenchimento sólido) e corrigiu um bug real de
-  contraste no botão "Converse com seu diagnóstico" (2.44:1, nem AA). Duas
-  exceções documentadas no CSS (o toque de marca do Vermelho Identidade e links
-  sublinhados) mantêm AA em vez de AAA para não descaracterizar a cor de marca.
-- **Tipografia**: escala geométrica Major Third (razão 1.25, `--text-xs` a
-  `--text-2xl`) aplicada à hierarquia principal de título/leitura; `line-height`
-  1.6 em blocos de texto; espaçamento entre seções sempre o dobro do espaçamento
-  interno dos componentes (`--space-component`/`--space-section`).
-  `.cockpit-card-title` (usado por todos os títulos de cartão do Cockpit) ganhou
-  sua primeira regra própria -- antes herdava só o padrão do navegador.
+- **Paleta oficial (rodada 9)**: `--ink` Azul Profundo `#003F69`, `--blue` Azul
+  Digital `#1E8FC8`, `--green` Verde Inteligência `#2BBFB3`, `--yellow` Amarelo
+  Evolução `#FDC350`, `--red` Vermelho Identidade `#DF5266` -- mesma função
+  semântica de sempre (ver comentário no topo do CSS), só os hex mudaram. O logo
+  não muda nunca (arquivo original, sem redesenho). Os fundos estruturais
+  (`--paper`/`--paper-raised`/`--etapa1-bg`) são ajustes explícitos de rodadas
+  anteriores a pedido do usuário e não foram desfeitos; `--home-bg` (`#F5F3ED`,
+  "Off-white" do adendo) é novo, usado só no fundo da Home.
+- **Tokens de cor 60/30/10**: 60% neutra dominante (`--paper`/`--paper-raised`/
+  `--line`/`--ink`), 30% apoio/navegação (`--ink-soft`/`--blue`), 10% destaque
+  pontual (`--green`/`--yellow`, nunca preenchimento amplo).
+- **Auditoria WCAG AAA recalculada para os novos tons** (pedido explícito do
+  adendo 9): `--ink-soft`, `--blue-soft`/`-strong`, `--green-soft`/`-strong`,
+  `--yellow-soft`/`-strong` e `--red-soft` foram todos recalculados a partir dos
+  hex novos, mantendo a mesma lógica já estabelecida (badges usam `--ink` como
+  cor do texto sobre o próprio fundo "-soft", nunca a cor de expressão; as
+  mesmas três exceções documentadas no CSS continuam valendo). Valores de cor
+  fixos fora de variável CSS (gráficos em `public/js/charts.js`, gradiente das
+  árvores D3 em `public/js/cockpit.js`, PDF exportado em `server/exportPdf.js`)
+  foram atualizados manualmente para os novos hex, como o adendo pediu.
+- **Tipografia**: Manrope substitui Fraunces + Inter em toda a aplicação --
+  uma família única para título e corpo; a hierarquia visual que antes vinha da
+  troca serifada/sem-serifa agora vem só do peso (ExtraBold/Bold nos títulos,
+  SemiBold em subtítulos, Regular no corpo). Escala geométrica Major Third
+  (razão 1.25, `--text-xs` a `--text-2xl`) continua aplicada à hierarquia
+  principal de título/leitura; `line-height` 1.6 em blocos de texto; espaçamento
+  entre seções sempre o dobro do espaçamento interno dos componentes
+  (`--space-component`/`--space-section`).
 - **Menos bordas, mais espaço**: cartões cujo fundo já os distingue da página
-  (`.card`, `.cockpit-card`, `.roadmap-action-card`, `.insight-card`, etc.)
-  trocaram a borda de 1px por uma sombra suave.
+  (`.card`, `.cockpit-card`, `.roadmap-action-card`, `.insight-card`, `.home-card`
+  etc.) usam sombra suave em vez de borda de 1px.
 - **Micro-interações**: `--ease-smooth: cubic-bezier(0.25, 1, 0.5, 1)` em botões,
   opções de resposta, itens de navegação, chips e cartões de ação -- hover com
   leve elevação (sombra) e escala até 1.02, `:focus-visible` visível em todos.

@@ -254,10 +254,13 @@ function screenPanorama(){
 // Reinicia a sessão inteira -- coleta, resultado do DEXi e todo o estado do
 // Cockpit -- para começar uma nova avaliação sem recarregar a página.
 function startNewEvaluation(){
-  state.screen = 'intro'; state.idx = 0; state.answers = {}; state.registro = {}; state.chatLogs = {};
+  // Volta pra Home (adendo rodada 9) -- "Nova avaliação" não presume mais
+  // qual dos três caminhos a pessoa quer usar dessa vez.
+  state.screen = 'home'; state.idx = 0; state.answers = {}; state.registro = {}; state.chatLogs = {};
   state.explanations = {}; state.explainErrors = {};
   state.orgName = ''; state.orgContext = ''; state.dexiText = ''; state.collectionSourceLoaded = false;
   state.panel = null; state.panelError = '';
+  state.skipCollection = false;
   resetCockpitState();
   render();
 }
@@ -390,7 +393,7 @@ function renderSunburst(container, onLeafClick){
   const size = 440, radius = size / 2 - 6;
   d3.partition().size([2 * Math.PI, radius])(root);
 
-  const color = d3.scaleOrdinal().domain(['CAP.DIGITAL', 'CAP.ORGANIZACIONAL']).range(['#3E9BC1', '#123F63']);
+  const color = d3.scaleOrdinal().domain(['CAP.DIGITAL', 'CAP.ORGANIZACIONAL']).range(['#1E8FC8', '#003F69']);
 
   const arcGen = d3.arc()
     .startAngle((d) => d.x0).endAngle((d) => d.x1)
@@ -427,7 +430,7 @@ function renderSunburst(container, onLeafClick){
 // substitui a paleta no resto da interface). Reaproveita os próprios tons
 // oficiais (--red/--yellow/--green) como paradas do gradiente, em vez de
 // inventar cores novas -- cinza neutro (--line) para "sem dado".
-const TREE_COLOR_STOPS = ['#D96F72', '#F7C84B', '#43B7AA'];
+const TREE_COLOR_STOPS = ['#DF5266', '#FDC350', '#2BBFB3'];
 function treeLevelColor(idx){
   if(idx === null || idx === undefined) return '#D9E1E8';
   return d3.scaleLinear().domain([0, 1.5, 3]).range(TREE_COLOR_STOPS).interpolate(d3.interpolateRgb)(idx);
@@ -909,7 +912,7 @@ function sectionTraceability(){
   const steps = [
     { label: 'Maturidade Digital', value: (state.panel && state.panel.nivelFinalLabel) || 'não identificado' },
     { label: 'Capacidade', value: grupoFraco ? (DEXI_MODEL.grupos.find((g) => g.id === grupoFraco.id).dimensaoId === 'CAP.DIGITAL' ? 'Capacidade Digital' : 'Capacidade Organizacional') : '—' },
-    { label: 'Grupo', value: grupoFraco ? grupoFraco.label + ' (' + grupoFraco.nivelLabel + ')' : '—' },
+    { label: 'Grupo', value: grupoFraco ? DEXI_MODEL.grupos.find((g) => g.id === grupoFraco.id).label + ' (' + grupoFraco.nivelLabel + ')' : '—' },
     { label: 'Atributo', value: attrExemplo ? humanizeAttrId(attrExemplo.attr.id) : '—' },
     { label: 'Resposta', value: attrExemplo ? attrExemplo.label : '—' },
   ];
@@ -926,6 +929,12 @@ function sectionTraceability(){
   box.appendChild(chain);
   if(!grupoFraco){
     box.appendChild(el('div', { class: 'note', style: 'margin-top:14px;', text: 'Sem pontos de atenção identificados para ilustrar a cadeia com um exemplo concreto.' }));
+  } else if(!hasFullCollectionData()){
+    // Caminho 3 da Home (adendo rodada 9) -- sem coleta, não há como
+    // mostrar o atributo/resposta específicos que compuseram o grupo mais
+    // fraco (essa informação vem de state.answers, preenchido só na Etapa
+    // 1); nota breve, nunca um alerta.
+    box.appendChild(el('div', { class: 'note', style: 'margin-top:14px;', text: 'Atributo e resposta não aparecem aqui porque esta avaliação não passou pela coleta -- a cadeia continua válida a partir do resultado oficial do DEXi.' }));
   }
   box.appendChild(el('button', { class: 'btn secondary small', text: 'Perguntar à IA: por que chegamos a esse resultado? →', style: 'margin-top:16px;', onclick: () => insightsTurn('Por que chegamos a esse resultado? Explique a cadeia completa, da maturidade digital até as respostas da coleta.') }));
   card.appendChild(box);
