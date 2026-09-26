@@ -296,9 +296,24 @@ tipografia em toda a aplicação -- Home, coleta, Panorama, Insights, Roadmap e 
 - **Micro-interações**: `--ease-smooth: cubic-bezier(0.25, 1, 0.5, 1)` em botões,
   opções de resposta, itens de navegação, chips e cartões de ação -- hover com
   leve elevação (sombra) e escala até 1.02, `:focus-visible` visível em todos.
+- **Ícones chapados/sólidos** (adendo rodada 10, seção 6): substituem os emojis da
+  Home (cartões, barra de capacidades, sidebar, notificação) -- `ICON_PATHS`/`icon()`
+  em `public/js/app.js`, um único fill sólido nas cores oficiais da marca.
+- **Navegação sempre disponível** (rodada 10, seção 1): o logo do cabeçalho fica
+  clicável em todas as telas fora da Home, sempre voltando para a Início.
 
 ## O que ainda falta (pendências conhecidas da especificação)
 
+- **Logo em PNG com fundo transparente (adendo rodada 10, seção 3, bloqueado)**: o adendo
+  pede a troca da assinatura "Visão integrada" -> "Maturidade Digital" e o novo arquivo do
+  logo em todos os pontos já mapeados (Home, cabeçalho, favicon, PDF). O pesquisador enviou
+  uma imagem colada direto na conversa, mas o arquivo que chega por esse caminho é
+  reconvertido para `.webp` e perde o canal alfa -- o que sobrou tem o padrão xadrez de
+  "fundo transparente" do próprio visualizador gravado como pixel opaco (confirmado
+  inspecionando o arquivo: sem canal alfa, tons de cinza em grade regular exatamente onde
+  deveria estar vazio). Usar esse arquivo deixaria um quadriculado visível atrás do logo em
+  toda a aplicação. Precisa do arquivo `.png` original enviado como anexo de arquivo (não
+  colado inline) para preservar a transparência real.
 - **Persistência entre sessões (decisão em aberto, adendo rodada 6, seção 0)**: hoje nada
   na aplicação sobrevive a um recarregamento de página -- nem a coleta, nem o resultado do
   DEXi, nem o Roadmap. Isso é suficiente para Panorama e Insights (visualizar/interpretar um

@@ -161,7 +161,11 @@ function screenReport(){
     c.appendChild(el('div', { class: 'error-box', text: 'Divergência de consistência encontrada — ' + parts.join(' · ') }));
   }
 
-  if(state.panelLoading && !state.panel){
+  if(!state.panel && !state.panelError){
+    // Cobre tanto "carregando de fato" quanto o instante entre entrar nesta
+    // tela e o setTimeout(ensurePanel) mais abaixo disparar -- sem isso,
+    // esse instante mostrava o Panorama vazio por um frame antes do spinner
+    // aparecer (adendo rodada 10, seção 2: nunca ficar sem feedback visual).
     c.appendChild(el('div', { class: 'cockpit-card', style: 'text-align:center; padding:70px 20px;' }, [
       el('span', { class: 'spinner' }), el('span', { text: ' Analisando o resultado do DEXi...', style: 'margin-left:10px; color:var(--ink-soft);' }),
     ]));
@@ -340,9 +344,16 @@ function qualitativeTrack(label, dim, nivelAtual){
 // 1.5 -- sunburst D3 com drill-down: Maturidade Digital -> Capacidade ->
 // Grupo -> Atributo, hierarquia real (nunca inventada).
 function sectionSunburst(){
-  const card = el('div', { class: 'cockpit-card on-paper' });
+  // Fundo cinza claro e conteúdo alinhado à esquerda (adendo rodada 10,
+  // seção 9) -- verde/amarelo já têm significado semântico específico no
+  // resto da aplicação (níveis bons / oportunidade, nas árvores e na
+  // tabela), então um fundo genérico aqui usaria a mesma cor com um
+  // sentido diferente; cinza claro evita essa confusão. Reaproveita
+  // --etapa1-bg (mesmo tom já usado como fundo neutro na Etapa 1) em vez
+  // de introduzir um cinza novo só para isto.
+  const card = el('div', { class: 'cockpit-card discreet-gray' });
   card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Estrutura do diagnóstico' }));
-  const wrap = el('div', { class: 'sunburst-wrap' });
+  const wrap = el('div', { class: 'sunburst-wrap left-aligned' });
   card.appendChild(wrap);
   if(DEXI_MODEL){
     renderSunburst(wrap, (attrId) => { state.selectedAttrId = attrId; render(); });

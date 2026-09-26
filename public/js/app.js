@@ -178,13 +178,38 @@ function goToDiagnostico(){
   render();
 }
 
+// Ícones chapados/sólidos nas cores oficiais da marca (adendo rodada 10,
+// seção 6) -- substituem os emojis usados até aqui na Home. Um único fill
+// sólido por ícone (currentColor, controlado via CSS color no elemento
+// pai), formas geométricas simples, sem contorno -- estilo "tecnológico e
+// contemporâneo", nunca desenhado à mão.
+const ICON_PATHS = {
+  home: 'M12 3.2 3 10.5V21h6.2v-6.3h5.6V21H21V10.5L12 3.2Z',
+  target: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 3.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z',
+  spark: 'M12 2c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Zm7 11c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z',
+  list: 'M4 5.5h16V8H4V5.5Zm0 5.25h16v2.5H4v-2.5ZM4 16h16v2.5H4V16Z',
+  people: 'M8.5 12a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Zm7-.6a2.9 2.9 0 1 0 0-5.8 2.9 2.9 0 0 0 0 5.8ZM2.2 19c.5-3.3 2.9-5.3 6.3-5.3s5.8 2 6.3 5.3H2.2Zm12.8-.3c-.2-1.7-.8-3.1-1.8-4.2 3-.2 5.3 1.7 5.8 4.5h-4Z',
+  chart: 'M4 20V10h4v10H4Zm6 0V4h4v16h-4Zm6 0v-7h4v7h-4Z',
+  compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm3.6 5.6-2 5.2-5.2 2 2-5.2 5.2-2Z',
+  shield: 'M12 2.5 19.5 6v6c0 5-3.2 8.6-7.5 9.5C7.7 20.6 4.5 17 4.5 12V6L12 2.5Z',
+  chat: 'M4 4h16v11H8.5L4 18.5V4Z',
+  bell: 'M12 2.5a1.6 1.6 0 0 1 1.6 1.6v.6c2.6.7 4.4 3 4.4 5.9v4.6l1.7 2.3H4.3L6 15.2v-4.6c0-2.9 1.8-5.2 4.4-5.9v-.6A1.6 1.6 0 0 1 12 2.5Zm-2.3 17.4h4.6a2.3 2.3 0 0 1-4.6 0Z',
+};
+function icon(name, opts){
+  opts = opts || {};
+  const size = opts.size || 18;
+  const span = el('span', {class:'icon-svg' + (opts.class ? ' ' + opts.class : ''), style: opts.color ? `color:${opts.color};` : ''});
+  span.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[name]}"/></svg>`;
+  return span;
+}
+
 function sidebarNav(active){
   const nav = el('nav', {class:'home-sidebar-nav'});
   const items = [
-    {id:'home', label:'Início', icon:'⌂', onclick: goToHome, enabled: true},
-    {id:'diagnostico', label:'Diagnóstico', icon:'◎', onclick: goToDiagnostico, enabled: true},
-    {id:'insights', label:'Insights', icon:'✦', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('insights'), 0); }, enabled: !!state.panel},
-    {id:'roadmap', label:'Roadmap', icon:'▤', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('roadmap'), 0); }, enabled: !!state.panel},
+    {id:'home', label:'Início', icon:'home', onclick: goToHome, enabled: true},
+    {id:'diagnostico', label:'Diagnóstico', icon:'target', onclick: goToDiagnostico, enabled: true},
+    {id:'insights', label:'Insights', icon:'spark', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('insights'), 0); }, enabled: !!state.panel},
+    {id:'roadmap', label:'Roadmap', icon:'list', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('roadmap'), 0); }, enabled: !!state.panel},
   ];
   items.forEach((it) => {
     const cls = 'home-sidebar-item' + (it.id === active ? ' active' : '') + (it.enabled ? '' : ' disabled');
@@ -194,7 +219,7 @@ function sidebarNav(active){
       onclick: it.enabled ? it.onclick : null,
       title: it.enabled ? '' : 'Disponível depois de carregar um diagnóstico',
     }, [
-      el('span', {class:'home-sidebar-icon', text: it.icon}),
+      icon(it.icon, {class:'home-sidebar-icon'}),
       el('span', {text: it.label}),
     ]));
   });
@@ -224,7 +249,7 @@ function homeShell(active, contentChildren){
 
   const main = el('div', {class:'home-main'});
   const topbar = el('div', {class:'home-topbar'});
-  topbar.appendChild(el('span', {class:'home-topbar-bell', text:'🔔'}));
+  topbar.appendChild(icon('bell', {class:'home-topbar-bell', color:'var(--yellow-strong)', size: 19}));
   const identity = el('div', {class:'home-topbar-identity'});
   identity.appendChild(el('div', {class:'home-topbar-avatar', text:'V'}));
   identity.appendChild(el('span', {text:'Visitante'}));
@@ -262,10 +287,10 @@ function orbitGraphic(){
   return wrap;
 }
 
-function homeCard({icon, title, text, ctaLabel, onClick, featured}){
+function homeCard({iconName, iconColor, title, text, ctaLabel, onClick, featured}){
   const card = el('div', {class:'home-card' + (featured ? ' featured' : '')});
   if(featured) card.appendChild(el('div', {class:'home-card-tag', text:'Caminho principal'}));
-  card.appendChild(el('div', {class:'home-card-icon', text: icon}));
+  card.appendChild(icon(iconName, {class:'home-card-icon', color: iconColor, size: 30}));
   card.appendChild(el('div', {class:'home-card-title', text: title}));
   card.appendChild(el('div', {class:'home-card-text', text: text}));
   card.appendChild(el('button', {class:'btn' + (featured ? '' : ' secondary'), text: ctaLabel, onclick: onClick}));
@@ -275,15 +300,16 @@ function homeCard({icon, title, text, ctaLabel, onClick, featured}){
 function screenHome(){
   const hero = el('div', {class:'home-hero'});
   const heroText = el('div', {class:'home-hero-text'});
-  heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'✨ Seu diagnóstico, com mais inteligência.'}));
+  heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'Seu diagnóstico, com mais inteligência.'}));
   heroText.appendChild(el('h1', {class:'home-hero-title', text:'Bem-vindo à ORBE'}));
   heroText.appendChild(el('div', {class:'home-hero-sub', text:'Sua parceira na jornada da transformação digital.'}));
   heroText.appendChild(el('p', {class:'home-hero-body', text:'Aqui você encontra uma experiência completa para entender onde sua organização está, o que isso significa e como evoluir com base em dados, insights e ação.'}));
   hero.appendChild(heroText);
 
+  // Sem o emoji no selo e sem a frase de apoio abaixo do gráfico orbital
+  // (adendo rodada 10, seções 7 e 8).
   const heroVisual = el('div', {class:'home-hero-visual'});
   heroVisual.appendChild(orbitGraphic());
-  heroVisual.appendChild(el('div', {class:'home-hero-annotation', text:'Mais do que um diagnóstico. Um caminho para o futuro.'}));
   hero.appendChild(heroVisual);
 
   const entrySection = el('div', {class:'home-entry-section'});
@@ -293,41 +319,64 @@ function screenHome(){
 
   const cardsGrid = el('div', {class:'home-cards-grid'});
   cardsGrid.appendChild(homeCard({
-    icon:'👥', title:'Conhecer a ORBE',
+    iconName:'people', iconColor:'var(--blue)', title:'Conhecer a ORBE',
     text:'Entenda quem somos, nossa metodologia e como ajudamos organizações a evoluírem na jornada digital.',
     ctaLabel:'Saiba mais →',
     onClick: () => { state.screen = 'about'; render(); },
   }));
   cardsGrid.appendChild(homeCard({
-    icon:'📊', title:'Diagnóstico de Maturidade Digital',
+    iconName:'chart', iconColor:'var(--yellow)', title:'Diagnóstico de Maturidade Digital',
     text:'Responda 34 perguntas e descubra o estágio de maturidade digital da sua organização. Em poucos minutos, você terá um diagnóstico completo com base no modelo DEXi.',
     ctaLabel:'Começar diagnóstico →', featured: true,
     onClick: () => { state.screen = 'intro'; render(); },
   }));
   cardsGrid.appendChild(homeCard({
-    icon:'🧭', title:'Já tenho um diagnóstico',
+    iconName:'compass', iconColor:'var(--green)', title:'Já tenho um diagnóstico',
     text:'Se você já possui um diagnóstico DEXi, acesse aqui para visualizar seus resultados, explorar insights e planejar sua evolução.',
     ctaLabel:'Acessar meu diagnóstico →',
     onClick: () => { state.skipCollection = true; state.uploadError = ''; state.screen = 'upload'; render(); },
   }));
   entrySection.appendChild(cardsGrid);
 
+  // Seção rediagramada (adendo rodada 10, seção 5) -- antes era só uma linha
+  // simples de ícone+texto sob uma borda, com sensação de "jogada"; agora é
+  // um cartão com o símbolo da ORBE grande, integrado como elemento gráfico
+  // de fundo (a versão em PNG com fundo transparente entra aqui assim que
+  // disponível -- ver nota no topo do arquivo/README), acompanhado das
+  // linhas orbitais que já são a linguagem gráfica da Home.
+  const capSection = el('div', {class:'home-cap-section'});
+  const capDecor = el('div', {class:'home-cap-decor'});
+  capDecor.innerHTML = `<svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true">
+    <ellipse cx="100" cy="100" rx="95" ry="38" fill="none" stroke="var(--blue)" stroke-width="1" opacity="0.4" transform="rotate(-10 100 100)"/>
+    <ellipse cx="100" cy="100" rx="70" ry="70" fill="none" stroke="var(--green)" stroke-width="1" opacity="0.35"/>
+    <circle cx="12" cy="70" r="4" fill="var(--yellow)"/>
+    <circle cx="188" cy="130" r="4" fill="var(--red)"/>
+  </svg>`;
+  capDecor.appendChild(el('img', {class:'home-cap-logo', src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'Símbolo ORBE'}));
+  capSection.appendChild(capDecor);
+
+  const capContent = el('div', {class:'home-cap-content'});
+  capContent.appendChild(el('div', {class:'home-cap-eyebrow', text:'POR QUE A ORBE'}));
   const capBar = el('div', {class:'home-capabilities'});
+  // Terceiro item reescrito (adendo rodada 10, seção 4) -- reflete um
+  // agente de IA conversacional, não uma consultoria tradicional.
   [
-    {icon:'🛡️', title:'Metodologia DEXi', text:'Modelo reconhecido internacionalmente'},
-    {icon:'✨', title:'Inteligência Artificial', text:'Para análises mais profundas e personalizadas'},
-    {icon:'🤝', title:'Consultoria especializada', text:'Com foco em resultados reais para o seu negócio'},
+    {icon:'shield', color:'var(--ink)', title:'Metodologia DEXi', text:'Modelo reconhecido internacionalmente'},
+    {icon:'spark', color:'var(--green)', title:'Inteligência Artificial', text:'Para análises mais profundas e personalizadas'},
+    {icon:'chat', color:'var(--blue)', title:'Diálogo conversacional', text:'Um agente de IA que interpreta e conversa sobre o diagnóstico com você.'},
   ].forEach((it) => {
     const item = el('div', {class:'home-cap-item'});
-    item.appendChild(el('span', {class:'home-cap-icon', text: it.icon}));
+    item.appendChild(icon(it.icon, {class:'home-cap-icon', color: it.color, size: 24}));
     const txt = el('div');
     txt.appendChild(el('div', {class:'home-cap-title', text: it.title}));
     txt.appendChild(el('div', {class:'home-cap-text', text: it.text}));
     item.appendChild(txt);
     capBar.appendChild(item);
   });
+  capContent.appendChild(capBar);
+  capSection.appendChild(capContent);
 
-  return homeShell('home', [hero, entrySection, capBar]);
+  return homeShell('home', [hero, entrySection, capSection]);
 }
 
 // Card 1 -- "Conhecer a ORBE": explicação simples do que é a ferramenta, o
@@ -853,7 +902,11 @@ function screenUpload(){
     if(!f) return;
     const isPdf = f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf';
     if(isPdf){
-      okMsg.textContent = 'Extraindo texto de ' + f.name + '...';
+      // Feedback de carregamento (adendo rodada 10, seção 2) -- mesmo padrão
+      // spinner + texto já usado no resto da aplicação.
+      okMsg.innerHTML = '';
+      okMsg.appendChild(el('span', {class:'spinner'}));
+      okMsg.appendChild(el('span', {text:' Extraindo texto de ' + f.name + '...', style:'margin-left:8px;'}));
       extractPdfText(f, okMsg, textarea);
       return;
     }
@@ -1062,5 +1115,11 @@ async function boot(){
   state.screen = 'home';
   render();
 }
+
+// Logo do cabeçalho sempre clicável -> Início (adendo rodada 10, seção 1:
+// navegação coerente e sempre disponível, padrão comum de "clicar no logo
+// volta pra home"). O cabeçalho é HTML estático (não recriado a cada
+// render()), então o listener é preso uma única vez aqui.
+document.getElementById('siteHeader').addEventListener('click', goToHome);
 
 boot();
