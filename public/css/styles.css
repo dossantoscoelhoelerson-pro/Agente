@@ -297,7 +297,14 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   background:var(--green-soft); color:var(--ink); align-self:flex-start;
   border-bottom-left-radius:4px;
 }
-.bubble-user{
+/* Seletor de duas classes (em vez de só .bubble-user) de propósito (adendo
+   rodada 14, seção 6): a marcação real dessa bolha também leva a classe
+   .report-body (que fixa color:var(--ink), mais abaixo neste arquivo) --
+   com a mesma especificidade de um seletor de uma classe só, .report-body
+   ganhava por vir depois no arquivo, deixando o texto do usuário (Azul
+   Profundo) sobre o próprio fundo Azul Profundo da bolha, praticamente
+   ilegível. Duas classes aqui garante a especificidade maior. */
+.bubble.bubble-user{
   background:var(--ink); color:var(--paper); align-self:flex-end;
   border-bottom-right-radius:4px;
 }
@@ -451,6 +458,9 @@ body.cockpit-screen .wrap{max-width:1180px;}
 /* Árvore de atributos / árvore de oportunidades (D3) -- dendrograma
    horizontal, cor vermelho->verde por nível real (exceção pontual à
    paleta de marca, ver comentário em treeLevelColor no JS). */
+.cockpit-tree-legend{display:flex; flex-wrap:wrap; gap:14px; margin-bottom:14px;}
+.cockpit-tree-legend-item{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft);}
+.cockpit-tree-legend-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
 .cockpit-tree-wrap{overflow-x:auto; padding-bottom:6px;}
 .tree-link{transition:stroke-opacity .15s, stroke-width .15s;}
 .tree-leaf-label{font-size:11px; font-family:var(--font-body); fill:var(--ink); transition:opacity .15s;}
@@ -845,4 +855,54 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
   .home-content{padding:0 18px 40px;}
   .home-hero-title{font-size:32px;}
   .home-hero-sub{font-size:20px;}
+}
+
+/* Rodapé institucional (adendo rodada 14, seção 1) -- fundo Azul Profundo
+   sólido, largura cheia, presente em todas as telas (estático em
+   index.html, fora do #app). Composição limpa, bastante respiro, nunca
+   mais chamativo que o logo/textos. */
+.site-footer{background:var(--ink); color:#fff; padding:56px 40px 0;}
+.site-footer-main{
+  max-width:1180px; margin:0 auto; display:grid;
+  grid-template-columns:auto 1px minmax(0,1fr) 1px auto; gap:36px; align-items:center;
+}
+.site-footer-divider{width:1px; align-self:stretch; background:rgba(255,255,255,.14);}
+.site-footer-brand{display:flex; align-items:center; gap:16px;}
+.site-footer-symbol{width:60px; height:auto; display:block; flex-shrink:0;}
+/* Wordmark em texto vivo, branco -- o PNG do lockup tem o texto em Azul
+   Profundo (feito para fundo claro); sobre o fundo escuro do rodapé ficaria
+   ilegível. O símbolo (arquivo à parte) continua sem nenhuma alteração. */
+.site-footer-wordmark-orbe{font-family:var(--font-display); font-weight:800; font-size:28px; letter-spacing:-.01em; color:#fff; line-height:1;}
+.site-footer-wordmark-sub{font-family:var(--font-display); font-weight:600; font-size:15px; color:rgba(255,255,255,.85); margin-top:3px;}
+.site-footer-product-title, .site-footer-contact-title{
+  display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:800;
+  font-size:15px; margin:0 0 10px; color:#fff;
+}
+/* Só "AGENTE DE IA" é maiúsculo (pedido/peça de referência) -- "Contato"
+   fica em caixa de título normal, como o resto dos rótulos da aplicação. */
+.site-footer-product-title{letter-spacing:.03em; text-transform:uppercase; font-size:14.5px;}
+.site-footer-accent{color:var(--blue);}
+.site-footer-icon{display:inline-flex; color:var(--blue); flex-shrink:0;}
+.site-footer-product-text{font-size:14.5px; line-height:1.55; color:rgba(255,255,255,.78); max-width:40ch; margin:0;}
+.site-footer-product-text strong{color:#fff;}
+.site-footer-contact-email{display:block; font-size:14.5px; color:rgba(255,255,255,.78); text-decoration:none;}
+.site-footer-contact-email:hover{color:#fff; text-decoration:underline;}
+/* Linha em degradê sutil nas 4 cores da marca (pedido do pesquisador) --
+   no lugar de uma linha sólida azul-claro. Opacidade reduzida em vez de
+   tons dessaturados: mantém a relação de cores da paleta oficial intacta,
+   só "abaixa o volume" pra não competir com logo/texto. */
+.site-footer-hairline{
+  max-width:1180px; margin:40px auto 0; height:1px;
+  background:linear-gradient(90deg, var(--blue), var(--green), var(--yellow), var(--red));
+  opacity:.35;
+}
+.site-footer-bottom{
+  max-width:1180px; margin:0 auto; padding:18px 0 28px; display:flex; justify-content:space-between; gap:12px;
+  font-size:12px; color:rgba(255,255,255,.5); letter-spacing:.02em;
+}
+@media (max-width:900px){
+  .site-footer{padding:40px 24px 0;}
+  .site-footer-main{grid-template-columns:1fr; gap:28px; text-align:left;}
+  .site-footer-divider{display:none;}
+  .site-footer-bottom{flex-direction:column; gap:6px;}
 }

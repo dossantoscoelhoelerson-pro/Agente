@@ -42,6 +42,8 @@ Object.assign(state, {
   roadmapActionChats: {},
   roadmapActionThinking: {},
   roadmapActionErrors: {},
+  roadmapPdfExporting: false,
+  roadmapPdfExportError: '',
 });
 
 let roadmapIdSeq = 1;
@@ -60,6 +62,7 @@ function resetCockpitState(){
   state.roadmapGenerating = false; state.roadmapGenerateError = '';
   state.roadmapNewActionOpen = false; state.roadmapOpenActionId = null;
   state.roadmapActionChats = {}; state.roadmapActionThinking = {}; state.roadmapActionErrors = {};
+  state.roadmapPdfExporting = false; state.roadmapPdfExportError = '';
 }
 
 // Disparado por ensurePanel() (app.js) assim que o resultado oficial do
@@ -451,6 +454,26 @@ function treeLevelColor(idx){
   return d3.scaleLinear().domain([0, 1.5, 3]).range(TREE_COLOR_STOPS).interpolate(d3.interpolateRgb)(idx);
 }
 
+// Legenda de cores das duas árvores acima (adendo rodada 14, seção 5) --
+// bolinhas nos 4 níveis da escala qualitativa do DEX (Baixo / Médio-baixo /
+// Médio-alto / Alto), cor de cada uma vinda de treeLevelColor() -- mesma
+// função que colore os nós, nunca um hex duplicado à mão.
+function treeLegend(){
+  const wrap = el('div', { class: 'cockpit-tree-legend' });
+  [
+    { idx: 0, label: 'Baixo' },
+    { idx: 1, label: 'Médio-baixo' },
+    { idx: 2, label: 'Médio-alto' },
+    { idx: 3, label: 'Alto' },
+  ].forEach((it) => {
+    wrap.appendChild(el('span', { class: 'cockpit-tree-legend-item' }, [
+      el('span', { class: 'cockpit-tree-legend-dot', style: `background:${treeLevelColor(it.idx)};` }),
+      document.createTextNode(it.label),
+    ]));
+  });
+  return wrap;
+}
+
 // 1 -- árvore de atributos: dendrograma horizontal da hierarquia real
 // (Maturidade Digital -> Capacidade -> Grupo -> Atributo), nós coloridos
 // pelo gradiente acima. 4 -- árvore de oportunidades: MESMA estrutura e
@@ -523,6 +546,7 @@ function sectionAttributeTree(){
   const card = el('div', { class: 'cockpit-card on-paper' });
   card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Árvore de atributos' }));
   card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Como os 34 atributos se distribuem, do nível mais baixo (vermelho) ao mais alto (verde)?', style: 'display:block; margin-bottom:10px;' }));
+  card.appendChild(treeLegend());
   const wrap = el('div', { class: 'cockpit-tree-wrap' });
   card.appendChild(wrap);
   if(DEXI_MODEL){
@@ -580,6 +604,7 @@ function sectionOpportunityTree(){
   const card = el('div', { class: 'cockpit-card on-paper' });
   card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Árvore de oportunidades' }));
   card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Onde vale focar primeiro? Os pontos em destaque são os de nível mais baixo no resultado real.', style: 'display:block; margin-bottom:10px;' }));
+  card.appendChild(treeLegend());
   const wrap = el('div', { class: 'cockpit-tree-wrap' });
   card.appendChild(wrap);
   if(DEXI_MODEL){
@@ -862,7 +887,7 @@ function sectionSynthesis(){
 
 function sectionInsightChat(){
   const card = el('div', { class: 'insight-chat-card' });
-  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Vamos entender esse resultado.', style: 'margin-bottom:4px;' }));
+  card.appendChild(el('div', { class: 'cockpit-card-title', text: 'Vamos entender esse resultado?', style: 'margin-bottom:4px;' }));
   card.appendChild(el('div', { class: 'cockpit-section-question', text: 'Explore o diagnóstico com um consultor que conhece os resultados, as evidências e a estrutura da avaliação.', style: 'display:block; margin-bottom:16px;' }));
 
   const suggestions = ['Por que chegamos a esse resultado?', 'Quais são nossos pontos de força?', 'Onde estão nossos pontos de atenção?', 'Explique nossa Capacidade Digital.', 'Explique nossa Capacidade Organizacional.', 'O que podemos explorar a partir daqui?'];
@@ -1218,6 +1243,50 @@ const ROADMAP_HORIZONTES = [
   { id: '6-12', label: '6–12 meses' },
 ];
 
+// Exportação em PDF do Roadmap (adendo rodada 14, seção 7) -- mesmo padrão
+// de downloadPanelPdf() (app.js): monta o payload a partir do estado já
+// mostrado na tela e chama a rota do servidor, que só formata o documento
+// (buildRoadmapPdf(), reaproveitando a mesma infraestrutura do PDF do
+// Panorama/Insights, nunca um mecanismo novo).
+async function downloadRoadmapPdf(){
+  if(state.roadmapPdfExporting) return;
+  state.roadmapPdfExporting = true;
+  state.roadmapPdfExportError = '';
+  render();
+  try{
+    const items = state.roadmapItems.map((a) => ({
+      titulo: a.titulo,
+      objetivo: a.objetivo,
+      origemLabel: a.origemLabel,
+      responsavel: a.responsavel,
+      prazo: a.prazo,
+      isAiSuggestion: a.isAiSuggestion,
+      statusLabel: (ROADMAP_STATUS.find((s) => s.id === a.status) || {}).label,
+      horizonteLabel: (ROADMAP_HORIZONTES.find((h) => h.id === a.horizonte) || {}).label,
+      chat: state.roadmapActionChats[a.id] || [],
+    }));
+    const res = await fetch('/api/roadmap/export-pdf', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ orgName: state.orgName, orgContext: state.orgContext, items }),
+    });
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || ('Erro ' + res.status));
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (state.orgName || 'roadmap').replace(/\s+/g,'_') + '_roadmap.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(err){
+    state.roadmapPdfExportError = 'Não consegui gerar o PDF: ' + err.message;
+  }
+  state.roadmapPdfExporting = false;
+  render();
+}
+
 function screenRoadmap(){
   const c = el('div');
 
@@ -1228,7 +1297,14 @@ function screenRoadmap(){
   const actions = el('div', { class: 'cockpit-hero-actions' });
   actions.appendChild(el('button', { class: 'btn', text: '＋ Nova ação', onclick: () => { state.roadmapNewActionOpen = !state.roadmapNewActionOpen; render(); } }));
   actions.appendChild(el('button', { class: 'btn secondary', text: state.roadmapGenerating ? 'Gerando…' : 'Criar roadmap com IA', disabled: state.roadmapGenerating, onclick: generateRoadmap }));
+  actions.appendChild(el('button', {
+    class: 'btn secondary small', text: state.roadmapPdfExporting ? 'Gerando PDF…' : 'Exportar Roadmap (PDF)',
+    disabled: state.roadmapPdfExporting || !state.roadmapItems.length, onclick: downloadRoadmapPdf,
+  }));
   hero.appendChild(actions);
+  if(state.roadmapPdfExportError){
+    hero.appendChild(el('div', { class: 'error-box', style: 'margin-top:12px;', text: state.roadmapPdfExportError }));
+  }
   c.appendChild(hero);
 
   // Atual x Meta -- migrada do Panorama: "que nível queremos alcançar" já é

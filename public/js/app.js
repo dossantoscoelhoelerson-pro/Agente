@@ -339,8 +339,8 @@ function screenHome(){
   const heroText = el('div', {class:'home-hero-text'});
   heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'Seu diagnóstico, com mais inteligência'}));
   heroText.appendChild(el('h1', {class:'home-hero-title', text:'Bem-vindo à ORBE'}));
-  heroText.appendChild(el('div', {class:'home-hero-sub', text:'Sua parceira na jornada da transformação digital.'}));
-  heroText.appendChild(el('p', {class:'home-hero-body', text:'Aqui você encontra uma experiência completa para entender onde sua organização está, o que isso significa e como evoluir com base em dados, insights e ação.'}));
+  heroText.appendChild(el('div', {class:'home-hero-sub', text:'Sua parceira na jornada da transformação digital'}));
+  heroText.appendChild(el('p', {class:'home-hero-body', text:'Aqui você encontra uma experiência completa para entender onde sua organização está, o que isso significa e como evoluir com base em dados, insights e ação'}));
   hero.appendChild(heroText);
 
   // Sem o emoji no selo e sem a frase de apoio abaixo do gráfico orbital
@@ -442,23 +442,23 @@ function screenAbout(){
     el('span', {style:'color:var(--blue);', text:'onde ela pode chegar'}),
   ]));
   // Bloco único, largura cheia -- mesma lógica visual já usada em "Por que
-  // a ORBE?" -- em vez das 2 colunas de antes (adendo rodada 13, seção 2).
-  // Texto verbatim do pesquisador, com negrito pontual só nos trechos
-  // indicados no adendo.
-  c.appendChild(el('p', {class:'home-about-opening-body', text:'A transformação digital envolve muito mais do que adotar novas tecnologias, ela também passa pela forma como a organização trabalha, toma decisões, desenvolve pessoas, utiliza dados e conduz suas mudanças.'}));
-  c.appendChild(el('p', {class:'home-about-opening-body', text:'A ORBE foi criada para ajudar a organizar essa visão.'}));
+  // a ORBE?" (adendo rodada 13, seção 2). Texto verbatim do pesquisador,
+  // com negrito pontual só nos trechos indicados no adendo. Texto
+  // substituído na íntegra pelo da rodada 14, seção 3 (3 parágrafos).
+  c.appendChild(el('p', {class:'home-about-opening-body', html:'A transformação digital não acontece apenas pela adoção de novas tecnologias, ela se constrói na forma como a organização trabalha, toma decisões, desenvolve o time, utiliza dados e conduz suas mudanças. A ORBE foi criada para conectar essas dimensões e transformar essa complexidade em uma <strong>visão integrada da maturidade digital</strong>.'}));
   c.appendChild(el('p', {class:'home-about-opening-body', html:'O nome ORBE remete à ideia de <strong>totalidade, conjunto e visão ampla</strong>. Assim como um orbe representa um todo formado por diferentes elementos que se relacionam, a ORBE busca olhar para a maturidade digital de forma <strong>integrada</strong>, conectando diferentes dimensões da organização para construir uma compreensão mais completa de sua realidade.'}));
   c.appendChild(el('p', {class:'home-about-opening-body', html:'A proposta é simples: tornar mais fácil <strong>entender o estágio atual</strong> da organização, <strong>compreender o que existe por trás desse resultado</strong> e <strong>enxergar possibilidades de evolução</strong>.'}));
-  // Slogan de fechamento do bloco (adendo rodada 13, seção 3) -- box em
-  // Azul Profundo (--ink).
-  c.appendChild(el('div', {class:'home-about-opening-slogan', text:'ORBE — Visão para compreender, Inteligência para evoluir.'}));
+  // Slogan de fechamento do bloco -- box em Azul Profundo (--ink). Formato
+  // trocado na rodada 14, seção 3: separador "|", "inteligência" em
+  // minúscula, sem ponto final.
+  c.appendChild(el('div', {class:'home-about-opening-slogan', text:'ORBE | Visão para compreender, inteligência para evoluir'}));
 
   const card2 = el('div', {class:'card'});
   card2.appendChild(icon('target', {class:'home-card-icon', color:'var(--blue)', size:28}));
   card2.appendChild(el('h2', {text:'Por que a ORBE?'}));
   card2.appendChild(el('p', {text:'Nem sempre é fácil saber onde começar.'}));
   card2.appendChild(el('p', {text:'Uma organização pode já utilizar diferentes tecnologias e, ainda assim, ter dificuldades para entender o quanto avançou em sua transformação digital. Isso acontece porque maturidade digital não depende de um único fator: tecnologia, processos, dados, pessoas, cultura, gestão e estratégia fazem parte dessa construção e podem avançar em ritmos diferentes.'}));
-  card2.appendChild(el('p', {text:'A ORBE parte dessa visão para organizar essas diferentes dimensões em uma avaliação estruturada. O objetivo não é apenas chegar a um resultado, mas dar ao usuário condições de compreender esse resultado e explorar seus diferentes aspectos.'}));
+  card2.appendChild(el('p', {text:'A ORBE parte dessa visão para organizar essas diferentes dimensões em uma avaliação estruturada. O objetivo não é apenas chegar a um resultado, mas dar ao usuário condições de compreender esse resultado e explorar seus diferentes aspectos'}));
   c.appendChild(card2);
 
   const card3 = el('div', {class:'card home-about-card-green'});

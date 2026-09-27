@@ -19,6 +19,44 @@
   <img class="site-header-logo" src="/assets/brand/orbe_lockup_branco.png" alt="ORBE — Maturidade Digital">
 </header>
 <div class="wrap" id="app"></div>
+<!-- Rodapé institucional (adendo rodada 14, seção 1) -- estático, fora do
+     #app, presente em todas as telas sem precisar de lógica de render() por
+     tela. Símbolo (orbe_simbolo.png) usado sem nenhuma alteração de forma
+     ou cor; o wordmark "ORBE Maturidade Digital" vira texto vivo em branco
+     em vez do PNG com texto em Azul Profundo (ilegível sobre o fundo escuro
+     do rodapé) -- o arquivo de marca em si nunca é recolorido. -->
+<footer class="site-footer" id="siteFooter">
+  <div class="site-footer-main">
+    <div class="site-footer-col site-footer-brand" aria-label="ORBE — Maturidade Digital">
+      <img class="site-footer-symbol" src="/assets/brand/orbe_simbolo.png" alt="">
+      <div class="site-footer-wordmark">
+        <div class="site-footer-wordmark-orbe">ORBE</div>
+        <div class="site-footer-wordmark-sub">Maturidade Digital</div>
+      </div>
+    </div>
+    <div class="site-footer-divider" aria-hidden="true"></div>
+    <div class="site-footer-col site-footer-product">
+      <div class="site-footer-product-title">
+        <span class="site-footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Zm7 11c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z"/></svg></span>
+        AGENTE DE <span class="site-footer-accent">IA</span>
+      </div>
+      <p class="site-footer-product-text">Um produto tecnológico desenvolvido por <strong>PROFNIT UFSJ</strong> para impulsionar a maturidade digital das organizações.</p>
+    </div>
+    <div class="site-footer-divider" aria-hidden="true"></div>
+    <div class="site-footer-col site-footer-contact">
+      <div class="site-footer-contact-title">
+        <span class="site-footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg></span>
+        Contato
+      </div>
+      <a class="site-footer-contact-email" href="mailto:carvalhowelerson@gmail.com">carvalhowelerson@gmail.com</a>
+    </div>
+  </div>
+  <div class="site-footer-hairline" aria-hidden="true"></div>
+  <div class="site-footer-bottom">
+    <span>© 2026 ORBE. Todos os direitos reservados.</span>
+    <span>PROFNIT UFSJ · PRODUTO TECNOLÓGICO</span>
+  </div>
+</footer>
 <script src="/js/dxi.js"></script>
 <script src="/js/charts.js"></script>
 <!-- D3 (Cockpit de Evolução Digital, adendo rodada 6) -- servido localmente

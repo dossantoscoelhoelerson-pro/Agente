@@ -114,4 +114,66 @@ function buildReportPdf(data) {
   });
 }
 
-module.exports = { buildReportPdf };
+// Exportação em PDF do Roadmap (adendo rodada 14, seção 7) -- mesma
+// infraestrutura acima (pdfkit, mesmo logo, mesma paleta ajustada pra
+// contraste em fundo branco), nunca um mecanismo novo. Ações (manuais e
+// sugeridas pela IA, sempre identificadas), status e o conteúdo das
+// conversas contextuais por ação -- os mesmos dados já mostrados na tela,
+// o servidor só monta o documento.
+function buildRoadmapPdf(data) {
+  const { orgName, orgContext, items } = data;
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 56, size: 'A4' });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    try {
+      doc.image(LOGO_PATH, doc.page.margins.left, doc.y, { width: 120 });
+      doc.moveDown(3.2);
+    } catch (err) {
+      console.error('[export-pdf-roadmap] logo', err);
+    }
+
+    h1(doc, 'Roadmap de Evolução Digital');
+    p(doc, orgName || '(organização não informada)');
+    if (orgContext) small(doc, orgContext);
+
+    if (!items || !items.length) {
+      h2(doc, 'Ações');
+      p(doc, 'Nenhuma ação registrada nesta sessão.');
+    } else {
+      items.forEach((a, i) => {
+        if (i > 0) doc.moveDown(0.6);
+        doc.moveDown(0.5).fontSize(13).fillColor(PDF_INK).font('Helvetica-Bold').text(a.titulo || '(sem título)');
+        if (a.isAiSuggestion) {
+          doc.fontSize(9).fillColor(PDF_GREEN_STRONG).font('Helvetica-Bold').text('SUGESTÃO DA IA');
+        }
+        const metaParts = [];
+        if (a.statusLabel) metaParts.push('Status: ' + a.statusLabel);
+        if (a.horizonteLabel) metaParts.push('Horizonte: ' + a.horizonteLabel);
+        if (a.origemLabel) metaParts.push('Origem: ' + a.origemLabel);
+        if (a.responsavel) metaParts.push('Responsável: ' + a.responsavel);
+        if (a.prazo) metaParts.push('Prazo: ' + a.prazo);
+        if (metaParts.length) small(doc, metaParts.join(' · '));
+        if (a.objetivo) p(doc, a.objetivo);
+
+        if (a.chat && a.chat.length) {
+          doc.moveDown(0.2).fontSize(9).fillColor(PDF_INK_SOFT).font('Helvetica-Bold').text('Conversa sobre esta ação:');
+          a.chat.forEach((m) => {
+            const who = m.role === 'assistant' ? 'ORBE: ' : 'Você: ';
+            doc.moveDown(0.1).fontSize(9.5).font('Helvetica').fillColor(PDF_INK).text(who + m.text);
+          });
+        }
+      });
+    }
+
+    small(doc, 'Ações e conversas registradas nesta sessão -- persistência entre sessões ainda não implementada (ver adendo rodada 6, seção 0).');
+
+    doc.end();
+  });
+}
+
+module.exports = { buildReportPdf, buildRoadmapPdf };

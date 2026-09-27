@@ -7,7 +7,7 @@ const { ATTRS } = require('./attrs');
 const { displayLabel } = require('./displayMap');
 const { questionFor } = require('./officialQuestions');
 const { ROOT, DIMENSOES, GRUPOS, displayLevel, groupIdFor } = require('./dexiModel');
-const { buildReportPdf } = require('./exportPdf');
+const { buildReportPdf, buildRoadmapPdf } = require('./exportPdf');
 const { client, MODEL, handleAnthropicError } = require('./anthropicClient');
 const {
   EXPLAIN_SYSTEM_PROMPT,
@@ -639,6 +639,30 @@ router.post('/interpret/export-pdf', async (req, res) => {
     res.send(buffer);
   } catch (err) {
     console.error('[export-pdf]', err);
+    res.status(500).json({ error: 'Não consegui gerar o PDF: ' + err.message });
+  }
+});
+
+// Roadmap: exportação em PDF (adendo rodada 14, seção 7) -- mesmo padrão
+// da rota acima, cliente envia os dados já mostrados na tela (ações,
+// status, conversas por ação), servidor só monta o documento via
+// buildRoadmapPdf().
+router.post('/roadmap/export-pdf', async (req, res) => {
+  const { orgName, orgContext, items } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  try {
+    const buffer = await buildRoadmapPdf({
+      orgName,
+      orgContext: String(orgContext || ''),
+      items: Array.isArray(items) ? items : [],
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${orgName.replace(/\s+/g, '_')}_roadmap.pdf"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('[export-pdf-roadmap]', err);
     res.status(500).json({ error: 'Não consegui gerar o PDF: ' + err.message });
   }
 });
