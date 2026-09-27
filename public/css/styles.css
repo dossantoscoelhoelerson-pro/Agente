@@ -775,29 +775,39 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
   position:relative; width:200px; height:200px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
 }
 .home-cap-decor svg{position:absolute; inset:0;}
+/* Frase centralizada dentro dos anéis (pedido do pesquisador) -- ocupa o
+   mesmo espaço em que o símbolo ficava antes; svg é position:absolute,
+   então este é o único filho em fluxo e o flex do .home-cap-decor já
+   centraliza sozinho, sem precisar de position:absolute aqui também. */
+.home-cap-decor-label{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  font-family:var(--font-display); font-weight:800; font-size:15px; line-height:1.3;
+  color:var(--ink); letter-spacing:.01em;
+}
 .home-cap-content{flex:1; min-width:0; padding:28px 32px 28px 8px;}
-.home-cap-eyebrow{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:14px;}
-/* Grid com colunas fixas (nunca flex-wrap) -- sempre em linha (3 colunas)
-   ou em coluna (1, no mobile), nunca um meio-termo ambíguo que quebra em
-   pontos imprevisíveis (era a fonte da "confusão" apontada). */
-.home-capabilities{display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;}
-/* align-items:flex-start (não center, adendo rodada 12, seção 5) -- o
-   terceiro item tem texto bem mais longo que os outros dois; com "center"
-   cada item centralizava seu ícone+texto na altura da linha do grid (que
-   segue o item mais alto), fazendo os três parecerem com respiro desigual
-   entre si. Alinhando todos pelo topo, o respiro fica igual nos três. */
-.home-cap-item{display:flex; align-items:flex-start; gap:10px; min-width:0;}
+/* Lista em coluna, um item por linha (pedido do pesquisador -- substitui o
+   grid de 3 colunas de antes, que espaçava demais os itens). Título e
+   texto ficam lado a lado na mesma linha; reticências se não couber. */
+.home-capabilities{display:flex; flex-direction:column; gap:12px;}
+.home-cap-item{display:flex; align-items:center; gap:10px; min-width:0;}
 .home-cap-icon{display:inline-flex; flex-shrink:0;}
-.home-cap-title{font-size:13.5px; font-weight:700; color:var(--ink);}
-.home-cap-text{font-size:12px; color:var(--ink-soft);}
+.home-cap-item-text{display:flex; align-items:baseline; gap:7px; min-width:0; overflow:hidden;}
+.home-cap-title{font-size:13.5px; font-weight:700; color:var(--ink); white-space:nowrap; flex-shrink:0;}
+.home-cap-text{font-size:12px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 @media (max-width:760px){
   .home-cap-section{flex-direction:column;}
   .home-cap-decor{width:100%; height:120px;}
   .home-cap-content{padding:8px 24px 24px;}
-  .home-capabilities{grid-template-columns:1fr;}
 }
-@media (min-width:761px) and (max-width:980px){
-  .home-capabilities{grid-template-columns:1fr 1fr;}
+
+/* Abertura em duas colunas -- texto + logo completo. */
+.home-about-opening{display:grid; grid-template-columns:1.3fr 1fr; gap:40px; align-items:center; padding:8px 0 4px;}
+.home-about-opening-logo{display:flex; align-items:center; justify-content:center;}
+.home-about-opening-logo img{width:100%; max-width:280px; height:auto;}
+.home-about-opening-body{font-size:15px; color:var(--ink-soft); line-height:1.6; margin:0;}
+@media (max-width:900px){
+  .home-about-opening{grid-template-columns:1fr;}
+  .home-about-opening-logo{order:-1; max-width:200px; margin:0 auto;}
 }
 
 .home-about-details{margin-top:16px; font-size:13.5px;}
@@ -805,13 +815,24 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
 .home-about-details-body{margin-top:10px; color:var(--ink-soft); line-height:1.6;}
 .home-about-links{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
 .home-about-links a{color:var(--blue-strong); font-weight:600; font-size:14px; text-decoration:underline;}
-/* Callout "Em resumo" (adendo rodada 12) -- destaque pontual nas cores da
-   marca, sem virar um wall of bold. */
-.home-about-highlight{
-  margin-top:16px; padding:14px 18px; border-radius:12px; background:var(--green-soft);
-  color:var(--ink); font-size:14.5px; line-height:1.6;
+/* Cor de fundo por bloco (pedido do pesquisador) -- "Como funciona" em
+   verde (cor de IA/interpretação na paleta oficial), "De onde vem a ORBE"
+   em vermelho (--red é "Vermelho Identidade" na paleta -- combina com um
+   bloco sobre a origem/identidade do projeto). */
+.home-about-card-green{background:var(--green-soft);}
+.home-about-card-red{background:var(--red-soft);}
+/* "Em resumo" como lista, uma frase por linha com ícone (adendo rodada
+   12 tinha um parágrafo corrido só; pedido do pesquisador para deixar
+   mais elaborado). Fundo --paper (branco) para se destacar do card verde
+   ao redor. */
+.home-about-summary{margin-top:16px; padding:14px 18px; border-radius:12px; background:var(--paper);}
+.home-about-summary-title{
+  font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--green-strong); margin-bottom:10px;
 }
-.home-about-highlight strong{color:var(--green-strong);}
+.home-about-summary-list{display:flex; flex-direction:column; gap:9px;}
+.home-about-summary-item{display:flex; align-items:center; gap:10px; font-size:14.5px; font-weight:600; color:var(--ink);}
+.home-about-summary-icon{flex-shrink:0;}
 
 @media (max-width:900px){
   .home-cards-grid{grid-template-columns:1fr;}

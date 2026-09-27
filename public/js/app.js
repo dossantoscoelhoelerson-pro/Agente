@@ -379,28 +379,35 @@ function screenHome(){
   // do hero (orbitSvg(), pedido explícito de deixar as duas composições
   // consistentes), maior e mais integrado do que a linha simples de
   // ícone+texto de antes. Sem o símbolo sobreposto (adendo rodada 12, seção
-  // 5) -- aqui os anéis ficam só como elemento gráfico vazio (linhas e
-  // pontos), sem logo por dentro; o hero continua com o símbolo.
+  // 5) -- os anéis ficam como elemento gráfico (linhas e pontos), com a
+  // frase "POR QUE A ORBE" centralizada dentro deles em vez do logo
+  // (pedido do pesquisador na rodada seguinte).
   const capSection = el('div', {class:'home-cap-section'});
   const capDecor = el('div', {class:'home-cap-decor'});
   capDecor.innerHTML = orbitSvg(200, ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)']);
+  capDecor.appendChild(el('div', {class:'home-cap-decor-label'}, [
+    el('span', {text:'POR QUE'}),
+    el('span', {text:'A ORBE'}),
+  ]));
   capSection.appendChild(capDecor);
 
   const capContent = el('div', {class:'home-cap-content'});
-  capContent.appendChild(el('div', {class:'home-cap-eyebrow', text:'POR QUE A ORBE'}));
   const capBar = el('div', {class:'home-capabilities'});
   // Terceiro item reescrito (adendo rodada 10, seção 4) -- reflete um
-  // agente de IA conversacional, não uma consultoria tradicional.
+  // agente de IA conversacional, não uma consultoria tradicional. Itens
+  // empilhados em coluna, cada um em uma linha só (título + texto lado a
+  // lado, com reticências se não couber) -- pedido do pesquisador, troca o
+  // grid de 3 colunas de antes.
   [
     {icon:'shield', color:'var(--ink)', title:'Metodologia DEXi', text:'Modelo reconhecido internacionalmente'},
     {icon:'spark', color:'var(--green)', title:'Inteligência Artificial', text:'Para análises mais profundas e personalizadas'},
     {icon:'chat', color:'var(--blue)', title:'Diálogo conversacional', text:'Um agente de IA que interpreta e conversa sobre o diagnóstico com você.'},
   ].forEach((it) => {
     const item = el('div', {class:'home-cap-item'});
-    item.appendChild(icon(it.icon, {class:'home-cap-icon', color: it.color, size: 24}));
-    const txt = el('div');
-    txt.appendChild(el('div', {class:'home-cap-title', text: it.title}));
-    txt.appendChild(el('div', {class:'home-cap-text', text: it.text}));
+    item.appendChild(icon(it.icon, {class:'home-cap-icon', color: it.color, size: 22}));
+    const txt = el('div', {class:'home-cap-item-text'});
+    txt.appendChild(el('span', {class:'home-cap-title', text: it.title}));
+    txt.appendChild(el('span', {class:'home-cap-text', text: it.text}));
     item.appendChild(txt);
     capBar.appendChild(item);
   });
@@ -419,12 +426,23 @@ function screenHome(){
 // estabelecido (rodada 10) e destaques pontuais nas cores da marca.
 function screenAbout(){
   const c = el('div');
-  c.appendChild(el('div', {class:'home-hero-eyebrow', text:'Conheça a ORBE'}));
-  c.appendChild(el('h1', {class:'home-hero-title', text:'Entender onde uma organização está é o primeiro passo para pensar onde ela pode chegar.'}));
-  c.appendChild(el('p', {class:'home-hero-body', text:'A transformação digital envolve muito mais do que adotar novas tecnologias. Ela também passa pela forma como a organização trabalha, toma decisões, desenvolve pessoas, utiliza dados e conduz suas mudanças.'}));
-  c.appendChild(el('p', {class:'home-hero-body', style:'margin-top:14px;', text:'A ORBE foi criada para ajudar a organizar essa visão.'}));
-  c.appendChild(el('p', {class:'home-hero-body', style:'margin-top:14px;', text:'A plataforma conduz uma avaliação da maturidade digital por meio de uma conversa estruturada com a organização e, a partir do diagnóstico, permite explorar os resultados com mais profundidade.'}));
-  c.appendChild(el('p', {class:'home-hero-body', style:'margin-top:14px;', text:'A proposta é simples: tornar mais fácil entender o estágio atual da organização e enxergar o que existe por trás desse resultado.'}));
+  // Abertura em duas colunas -- texto + logo completo (com a linha "Agente
+  // de IA... PROFNIT UFSJ", pedido do pesquisador). Fonte do corpo um
+  // pouco menor que o padrão home-hero-body (também pedido) -- classe
+  // própria em vez de mexer em home-hero-body, que a Home também usa.
+  const opening = el('div', {class:'home-about-opening'});
+  const openingText = el('div', {class:'home-about-opening-text'});
+  openingText.appendChild(el('div', {class:'home-hero-eyebrow', text:'Conheça a ORBE'}));
+  openingText.appendChild(el('h1', {class:'home-hero-title', text:'Entender onde uma organização está é o primeiro passo para pensar onde ela pode chegar.'}));
+  openingText.appendChild(el('p', {class:'home-about-opening-body', text:'A transformação digital envolve muito mais do que adotar novas tecnologias. Ela também passa pela forma como a organização trabalha, toma decisões, desenvolve pessoas, utiliza dados e conduz suas mudanças.'}));
+  openingText.appendChild(el('p', {class:'home-about-opening-body', style:'margin-top:14px;', text:'A ORBE foi criada para ajudar a organizar essa visão.'}));
+  openingText.appendChild(el('p', {class:'home-about-opening-body', style:'margin-top:14px;', text:'A plataforma conduz uma avaliação da maturidade digital por meio de uma conversa estruturada com a organização e, a partir do diagnóstico, permite explorar os resultados com mais profundidade.'}));
+  openingText.appendChild(el('p', {class:'home-about-opening-body', style:'margin-top:14px;', text:'A proposta é simples: tornar mais fácil entender o estágio atual da organização e enxergar o que existe por trás desse resultado.'}));
+  opening.appendChild(openingText);
+  opening.appendChild(el('div', {class:'home-about-opening-logo'}, [
+    el('img', {src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'ORBE — Agente de IA para Maturidade Digital · PROFNIT UFSJ'}),
+  ]));
+  c.appendChild(opening);
 
   const card2 = el('div', {class:'card'});
   card2.appendChild(icon('target', {class:'home-card-icon', color:'var(--blue)', size:28}));
@@ -434,21 +452,38 @@ function screenAbout(){
   card2.appendChild(el('p', {text:'A ORBE parte dessa visão para organizar essas diferentes dimensões em uma avaliação estruturada. O objetivo não é apenas chegar a um resultado, mas dar ao usuário condições de compreender esse resultado e explorar seus diferentes aspectos.'}));
   c.appendChild(card2);
 
-  const card3 = el('div', {class:'card'});
-  card3.appendChild(icon('chat', {class:'home-card-icon', color:'var(--green)', size:28}));
+  const card3 = el('div', {class:'card home-about-card-green'});
+  card3.appendChild(icon('chat', {class:'home-card-icon', color:'var(--green-strong)', size:28}));
   card3.appendChild(el('h2', {text:'Como funciona'}));
   card3.appendChild(el('p', {text:'Uma conversa para chegar a um diagnóstico estruturado.'}));
   card3.appendChild(el('p', {text:'A avaliação começa com uma conversa sobre a realidade da organização -- a ORBE apresenta as perguntas, esclarece conceitos quando necessário e permite que o participante explique sua realidade com suas próprias palavras. As informações são então organizadas de acordo com os atributos previstos no instrumento de avaliação.'}));
   card3.appendChild(el('p', {text:'Depois dessa etapa, o diagnóstico é processado no DEXi, seguindo a estrutura e as regras do modelo utilizado na avaliação.'}));
   card3.appendChild(el('p', {text:'Com o resultado em mãos, a ORBE volta a entrar em cena para ajudar na exploração: o usuário pode entender as capacidades avaliadas, aprofundar grupos e atributos e consultar as informações que sustentam cada parte do diagnóstico.'}));
-  card3.appendChild(el('div', {class:'home-about-highlight', html:'<strong>Em resumo:</strong> a ORBE conduz a conversa. O DEXi processa o diagnóstico. A ORBE ajuda a compreender o resultado.'}));
+  // "Em resumo" como lista, uma frase por linha com ícone -- mais elaborado
+  // que o parágrafo corrido de antes, e um cartão em --paper (branco) para
+  // se destacar do fundo verde do card inteiro.
+  const summaryBox = el('div', {class:'home-about-summary'});
+  summaryBox.appendChild(el('div', {class:'home-about-summary-title', text:'Em resumo'}));
+  const summaryList = el('div', {class:'home-about-summary-list'});
+  [
+    {icon:'chat', text:'A ORBE conduz a conversa.'},
+    {icon:'target', text:'O DEXi processa o diagnóstico.'},
+    {icon:'compass', text:'A ORBE ajuda a compreender o resultado.'},
+  ].forEach((it) => {
+    summaryList.appendChild(el('div', {class:'home-about-summary-item'}, [
+      icon(it.icon, {class:'home-about-summary-icon', color:'var(--green-strong)', size:18}),
+      el('span', {text: it.text}),
+    ]));
+  });
+  summaryBox.appendChild(summaryList);
+  card3.appendChild(summaryBox);
   c.appendChild(card3);
 
   // Bloco 4 já é o cartão de atribuição acadêmica -- não duplicar, só
   // atualizar com o texto definitivo (adendo rodada 12, nota final da
   // seção 1: "reaproveitar/atualizar com este texto, não duplicar").
-  const card4 = el('div', {class:'card'});
-  card4.appendChild(icon('shield', {class:'home-card-icon', color:'var(--ink)', size:28}));
+  const card4 = el('div', {class:'card home-about-card-red'});
+  card4.appendChild(icon('shield', {class:'home-card-icon', color:'var(--red)', size:28}));
   card4.appendChild(el('h2', {text:'De onde vem a ORBE?'}));
   card4.appendChild(el('p', {text:'Uma pesquisa aplicada que ganhou forma de produto.'}));
   card4.appendChild(el('p', {text:'A ORBE é um artefato desenvolvido no âmbito de uma pesquisa aplicada do PROFNIT -- Programa de Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para a Inovação, ponto focal da Universidade Federal de São João del-Rei (UFSJ).'}));
