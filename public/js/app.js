@@ -205,6 +205,7 @@ const ICON_PATHS = {
   shield: 'M12 2.5 19.5 6v6c0 5-3.2 8.6-7.5 9.5C7.7 20.6 4.5 17 4.5 12V6L12 2.5Z',
   chat: 'M4 4h16v11H8.5L4 18.5V4Z',
   bell: 'M12 2.5a1.6 1.6 0 0 1 1.6 1.6v.6c2.6.7 4.4 3 4.4 5.9v4.6l1.7 2.3H4.3L6 15.2v-4.6c0-2.9 1.8-5.2 4.4-5.9v-.6A1.6 1.6 0 0 1 12 2.5Zm-2.3 17.4h4.6a2.3 2.3 0 0 1-4.6 0Z',
+  upload: 'M12 3 7 9h3v6h4V9h3L12 3ZM5 18h14v2H5v-2Z',
 };
 function icon(name, opts){
   opts = opts || {};
@@ -374,14 +375,15 @@ function screenHome(){
   }));
   entrySection.appendChild(cardsGrid);
 
-  // Seção rediagramada (adendo rodada 10, seção 5) -- cartão com o símbolo
-  // da ORBE integrado ao mesmo gráfico orbital do hero (orbitSvg(), rodada
-  // 10: pedido explícito de deixar as duas composições consistentes),
-  // maior e mais integrado do que a linha simples de ícone+texto de antes.
+  // Seção rediagramada (adendo rodada 10, seção 5) -- mesmo gráfico orbital
+  // do hero (orbitSvg(), pedido explícito de deixar as duas composições
+  // consistentes), maior e mais integrado do que a linha simples de
+  // ícone+texto de antes. Sem o símbolo sobreposto (adendo rodada 12, seção
+  // 5) -- aqui os anéis ficam só como elemento gráfico vazio (linhas e
+  // pontos), sem logo por dentro; o hero continua com o símbolo.
   const capSection = el('div', {class:'home-cap-section'});
   const capDecor = el('div', {class:'home-cap-decor'});
   capDecor.innerHTML = orbitSvg(200, ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)']);
-  capDecor.appendChild(el('img', {class:'home-cap-logo', src:'/assets/brand/orbe_simbolo.png', alt:'Símbolo ORBE'}));
   capSection.appendChild(capDecor);
 
   const capContent = el('div', {class:'home-cap-content'});
@@ -411,46 +413,60 @@ function screenHome(){
 // Card 1 -- "Conhecer a ORBE": explicação simples do que é a ferramenta, o
 // problema que resolve, o papel da IA e a base metodológica, com uma
 // camada opcional mais detalhada (adendo rodada 9, seção 3).
+// Texto definitivo do pesquisador (adendo rodada 12, seção 1) -- verbatim,
+// nunca reescrito/parafraseado. 4 blocos: Bloco 1 é a abertura (hero, sem
+// cartão), Blocos 2-4 são cartões com ícone do padrão chapado/sólido já
+// estabelecido (rodada 10) e destaques pontuais nas cores da marca.
 function screenAbout(){
   const c = el('div');
-  c.appendChild(el('div', {class:'home-hero-eyebrow', text:'CONHECER A ORBE'}));
-  c.appendChild(el('h1', {class:'home-hero-title', text:'Mais do que um diagnóstico.'}));
-  c.appendChild(el('p', {class:'home-hero-body', text:'A ORBE é uma parceira digital que ajuda organizações a entender onde estão na jornada de transformação digital -- e o que fazer a partir disso. Ela junta um modelo de avaliação estruturado, uma leitura interpretativa apoiada por IA e um espaço para transformar isso em ação.'}));
-
-  const card1 = el('div', {class:'card'});
-  card1.appendChild(el('h2', {text:'O problema que a ORBE resolve'}));
-  card1.appendChild(el('p', {text:'Muitas organizações sabem que precisam evoluir digitalmente, mas não têm um retrato claro de onde estão hoje -- nem por onde começar. Avaliações informais tendem a ser subjetivas, difíceis de comparar ao longo do tempo, e raramente conectam o diagnóstico a passos concretos.'}));
-  c.appendChild(card1);
+  c.appendChild(el('div', {class:'home-hero-eyebrow', text:'Conheça a ORBE'}));
+  c.appendChild(el('h1', {class:'home-hero-title', text:'Entender onde uma organização está é o primeiro passo para pensar onde ela pode chegar.'}));
+  c.appendChild(el('p', {class:'home-hero-body', text:'A transformação digital envolve muito mais do que adotar novas tecnologias. Ela também passa pela forma como a organização trabalha, toma decisões, desenvolve pessoas, utiliza dados e conduz suas mudanças.'}));
+  c.appendChild(el('p', {class:'home-hero-body', style:'margin-top:14px;', text:'A ORBE foi criada para ajudar a organizar essa visão.'}));
+  c.appendChild(el('p', {class:'home-hero-body', style:'margin-top:14px;', text:'A plataforma conduz uma avaliação da maturidade digital por meio de uma conversa estruturada com a organização e, a partir do diagnóstico, permite explorar os resultados com mais profundidade.'}));
+  c.appendChild(el('p', {class:'home-hero-body', style:'margin-top:14px;', text:'A proposta é simples: tornar mais fácil entender o estágio atual da organização e enxergar o que existe por trás desse resultado.'}));
 
   const card2 = el('div', {class:'card'});
-  card2.appendChild(el('h2', {text:'O papel da inteligência artificial'}));
-  card2.appendChild(el('p', {text:'A IA nunca calcula o resultado da sua organização -- isso é sempre feito pelo modelo DEXi, de forma determinística e rastreável. O papel da IA é conduzir a coleta de forma conversacional, ajudar a interpretar o que o resultado oficial significa na prática, e sugerir possibilidades de evolução -- sempre separando claramente o que é dado oficial do que é interpretação ou sugestão.'}));
+  card2.appendChild(icon('target', {class:'home-card-icon', color:'var(--blue)', size:28}));
+  card2.appendChild(el('h2', {text:'Por que a ORBE?'}));
+  card2.appendChild(el('p', {text:'Nem sempre é fácil saber onde começar.'}));
+  card2.appendChild(el('p', {text:'Uma organização pode já utilizar diferentes tecnologias e, ainda assim, ter dificuldades para entender o quanto avançou em sua transformação digital. Isso acontece porque maturidade digital não depende de um único fator: tecnologia, processos, dados, pessoas, cultura, gestão e estratégia fazem parte dessa construção e podem avançar em ritmos diferentes.'}));
+  card2.appendChild(el('p', {text:'A ORBE parte dessa visão para organizar essas diferentes dimensões em uma avaliação estruturada. O objetivo não é apenas chegar a um resultado, mas dar ao usuário condições de compreender esse resultado e explorar seus diferentes aspectos.'}));
   c.appendChild(card2);
 
   const card3 = el('div', {class:'card'});
-  card3.appendChild(el('h2', {text:'A base metodológica'}));
-  card3.appendChild(el('p', {text:'A avaliação segue o modelo de maturidade digital proposto por Kljajić Borštnar e Pucihar (2021), estruturado com a metodologia DEX e processado na ferramenta DEXi -- um método de apoio à decisão multicritério, hierárquico e qualitativo, amplamente usado em pesquisa aplicada.'}));
+  card3.appendChild(icon('chat', {class:'home-card-icon', color:'var(--green)', size:28}));
+  card3.appendChild(el('h2', {text:'Como funciona'}));
+  card3.appendChild(el('p', {text:'Uma conversa para chegar a um diagnóstico estruturado.'}));
+  card3.appendChild(el('p', {text:'A avaliação começa com uma conversa sobre a realidade da organização -- a ORBE apresenta as perguntas, esclarece conceitos quando necessário e permite que o participante explique sua realidade com suas próprias palavras. As informações são então organizadas de acordo com os atributos previstos no instrumento de avaliação.'}));
+  card3.appendChild(el('p', {text:'Depois dessa etapa, o diagnóstico é processado no DEXi, seguindo a estrutura e as regras do modelo utilizado na avaliação.'}));
+  card3.appendChild(el('p', {text:'Com o resultado em mãos, a ORBE volta a entrar em cena para ajudar na exploração: o usuário pode entender as capacidades avaliadas, aprofundar grupos e atributos e consultar as informações que sustentam cada parte do diagnóstico.'}));
+  card3.appendChild(el('div', {class:'home-about-highlight', html:'<strong>Em resumo:</strong> a ORBE conduz a conversa. O DEXi processa o diagnóstico. A ORBE ajuda a compreender o resultado.'}));
+  c.appendChild(card3);
+
+  // Bloco 4 já é o cartão de atribuição acadêmica -- não duplicar, só
+  // atualizar com o texto definitivo (adendo rodada 12, nota final da
+  // seção 1: "reaproveitar/atualizar com este texto, não duplicar").
+  const card4 = el('div', {class:'card'});
+  card4.appendChild(icon('shield', {class:'home-card-icon', color:'var(--ink)', size:28}));
+  card4.appendChild(el('h2', {text:'De onde vem a ORBE?'}));
+  card4.appendChild(el('p', {text:'Uma pesquisa aplicada que ganhou forma de produto.'}));
+  card4.appendChild(el('p', {text:'A ORBE é um artefato desenvolvido no âmbito de uma pesquisa aplicada do PROFNIT -- Programa de Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para a Inovação, ponto focal da Universidade Federal de São João del-Rei (UFSJ).'}));
+  card4.appendChild(el('p', {text:'O projeto é desenvolvido por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho.'}));
+  card4.appendChild(el('p', {text:'A avaliação utilizada pela ORBE tem como referência o modelo de maturidade digital para pequenas e médias empresas apresentado por Kljajić Borštnar e Pucihar (2021). O modelo utiliza a metodologia DEX, que organiza os elementos da avaliação em uma estrutura hierárquica de atributos qualitativos e estabelece regras para sua agregação.'}));
+  card4.appendChild(el('label', {text:'Acesse', style:'margin-top:6px;'}));
+  const linksRow = el('div', {class:'home-about-links'});
+  linksRow.appendChild(el('a', {href:'https://profnit.org.br', target:'_blank', rel:'noopener', text:'PROFNIT -- Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para a Inovação →'}));
+  linksRow.appendChild(el('a', {href:'https://ufsj.edu.br', target:'_blank', rel:'noopener', text:'UFSJ -- Universidade Federal de São João del-Rei →'}));
+  card4.appendChild(linksRow);
+  c.appendChild(card4);
 
   const details = el('details', {class:'home-about-details'});
   details.appendChild(el('summary', {text:'Quero entender melhor (camada opcional, mais técnica)'}));
   const detailsBody = el('div', {class:'home-about-details-body'});
   detailsBody.appendChild(el('p', {text:'O modelo organiza a maturidade digital em duas capacidades -- Capacidade Digital e Capacidade Organizacional -- cada uma formada por grupos intermediários (ex.: Tecnologia Digital, Papel da TI, Recursos Humanos, Cultura Organizacional), que por sua vez agregam 34 atributos básicos avaliados diretamente com a organização. Cada atributo e cada nível agregado tem uma escala qualitativa própria (ex.: "Baixo / Médio-baixo / Médio-alto / Alto"), definida em tabelas de decisão dentro do DEXi -- nunca um número calculado por fora. Essa é a razão pela qual o resultado final é sempre extraído do DEXi, nunca recalculado por IA: a metodologia depende dessas tabelas para ser consistente e comparável.'}));
   details.appendChild(detailsBody);
-  card3.appendChild(details);
-  c.appendChild(card3);
-
-  // Atribuição acadêmica (pedido do usuário): a ORBE é o produto de uma
-  // dissertação de mestrado real, não um projeto anônimo -- mesma
-  // informação já usada na abertura da Etapa 1, com links para as
-  // instituições oficiais.
-  const card4 = el('div', {class:'card'});
-  card4.appendChild(el('h2', {text:'Quem está por trás da ORBE'}));
-  card4.appendChild(el('p', {text:'A ORBE é uma pesquisa aplicada desenvolvida por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho, no âmbito do PROFNIT -- Programa de Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para Inovação, ponto focal UFSJ (Universidade Federal de São João del-Rei). O modelo de avaliação segue a metodologia de maturidade digital proposta por Kljajić Borštnar e Pucihar (2021).'}));
-  const linksRow = el('div', {class:'home-about-links'});
-  linksRow.appendChild(el('a', {href:'https://profnit.org.br', target:'_blank', rel:'noopener', text:'PROFNIT →'}));
-  linksRow.appendChild(el('a', {href:'https://ufsj.edu.br', target:'_blank', rel:'noopener', text:'UFSJ →'}));
-  card4.appendChild(linksRow);
-  c.appendChild(card4);
+  c.appendChild(details);
 
   const btnRow = el('div', {class:'btn-row'});
   btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar à Início', onclick: goToHome}));
@@ -474,14 +490,15 @@ function screenIntro(){
   const logoHero = el('div', {class:'intro-logo'});
   logoHero.appendChild(el('img', {class:'intro-logo-img', src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Maturidade Digital'}));
   c.appendChild(logoHero);
+  // Texto de abertura simplificado (adendo rodada 12, seção 2) -- a Home já
+  // explica o que é a ORBE e como funciona, então essa tela não repete a
+  // explicação. O campo de nome/contexto abaixo não muda.
   c.appendChild(el('div', {class:'eyebrow brand', text:'Diagnóstico de Maturidade Digital'}));
   c.appendChild(el('h1', {text:'Onde sua organização está na jornada digital?'}));
-  c.appendChild(el('p', {class:'lede', text:'Responda 34 perguntas e descubra seu estágio de maturidade digital.'}));
-  c.appendChild(el('p', {text:'A avaliação considera tecnologia, processos, pessoas, gestão e inovação e, ao final, apresenta um diagnóstico estruturado para ajudar a entender os principais pontos de atenção e evolução.'}));
-  c.appendChild(el('p', {class:'caption-line', text:'34 perguntas · 15–25 min · diagnóstico estruturado'}));
-  c.appendChild(el('p', {class:'caption-line', text:'Pesquisa aplicada desenvolvida no âmbito do PROFNIT — UFSJ, por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho, com base em Kljajić Borštnar e Pucihar (2021) e processamento pelo DEXi.'}));
+  c.appendChild(el('p', {class:'lede', text:'Responda a uma avaliação estruturada sobre a realidade da sua organização e identifique seu estágio atual de maturidade digital.'}));
+  c.appendChild(el('p', {class:'caption-line intro-caption-accent', text:'34 perguntas · 15–25 min · diagnóstico estruturado'}));
 
-  const card = el('div', {class:'card'});
+  const card = el('div', {class:'card intro-card-accent'});
   card.appendChild(el('label', {text:'Nome da organização'}));
   const nameInput = el('input', {type:'text', placeholder:'ex.: MetalLamina Indústria Ltda.', id:'orgNameInput', value: state.orgName});
   card.appendChild(nameInput);
@@ -911,7 +928,7 @@ function screenUpload(){
   }
 
   const zone = el('div', {class:'upload-zone'});
-  zone.appendChild(el('div', {class:'icon', text:'⇪'}));
+  zone.appendChild(el('div', {class:'icon'}, [icon('upload', {size:28, color:'var(--ink-soft)'})]));
   zone.appendChild(el('div', {text:'Clique para escolher um arquivo (.txt, .json, .csv, .pdf)'}));
   const fileInput = el('input', {type:'file', accept:'.txt,.json,.csv,.pdf', onchange: (e)=>{
     const f = e.target.files[0];

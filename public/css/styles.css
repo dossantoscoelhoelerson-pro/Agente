@@ -180,6 +180,13 @@ h2{
 p{color:var(--ink-soft); font-size:var(--text-base); margin:0 0 16px;}
 .lede{font-size:var(--text-md); max-width:56ch; line-height:1.6;}
 .caption-line{font-size:14px; color:var(--ink-soft); font-style:italic; margin:0 0 16px;}
+/* Mais presença da paleta nesta tela (adendo rodada 12, seção 2) -- o meta-
+   dado do processo (contagem/tempo) usa Azul Digital, mesma função
+   semântica já usada em indicadores de processo/progresso no resto do
+   produto; o cartão do formulário ganha um traço de topo na mesma cor,
+   sinalizando "aqui começa o fluxo interativo". */
+.intro-caption-accent{color:var(--blue-strong); font-style:normal; font-weight:600;}
+.intro-card-accent{border-top:3px solid var(--blue);}
 .example-box{
   background:var(--paper); border:1px solid var(--line); border-radius:10px;
   padding:14px 16px; margin:0 0 18px;
@@ -333,7 +340,7 @@ label{font-size:13px; color:var(--ink-soft); display:block; margin-bottom:6px;}
 }
 .upload-zone:hover, .upload-zone.drag{border-color:var(--blue);}
 .upload-zone input{display:none;}
-.upload-zone .icon{font-size:28px; margin-bottom:8px;}
+.upload-zone .icon{display:flex; justify-content:center; margin-bottom:8px;}
 .file-ok{color:var(--ink); font-size:14px; margin-top:10px;}
 
 .report-body{white-space:pre-wrap; font-size:15.5px; line-height:1.65; color:var(--ink);}
@@ -722,6 +729,15 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
 .home-hero-body{font-size:16px; color:var(--ink-soft); line-height:1.6; max-width:46ch; margin:0;}
 .home-hero-visual{position:relative; display:flex; align-items:center; justify-content:center; min-height:260px;}
 .home-orbit-graphic{position:relative; width:100%; max-width:380px;}
+/* Anéis giram devagar em volta do logo (pedido do pesquisador, rodada 12) --
+   só o svg (linhas e pontos) roda; o símbolo é um <img> separado, por cima,
+   e fica parado no centro. Uma volta completa em 90s -- sutil, sem chamar
+   atenção -- e desligado para quem pede menos movimento na tela. */
+.home-orbit-graphic svg{transform-origin:50% 50%; animation:home-orbit-spin 90s linear infinite;}
+@keyframes home-orbit-spin{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){
+  .home-orbit-graphic svg{animation:none;}
+}
 /* Símbolo maior e sem sombra/cartão ao redor (adendo rodada 11, seção 2) --
    o quadrado com sombra lia como uma caixa branca atrás do logo. */
 .home-orbit-logo{
@@ -759,14 +775,18 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
   position:relative; width:200px; height:200px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
 }
 .home-cap-decor svg{position:absolute; inset:0;}
-.home-cap-logo{position:relative; width:104px; height:auto;}
 .home-cap-content{flex:1; min-width:0; padding:28px 32px 28px 8px;}
 .home-cap-eyebrow{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:14px;}
 /* Grid com colunas fixas (nunca flex-wrap) -- sempre em linha (3 colunas)
    ou em coluna (1, no mobile), nunca um meio-termo ambíguo que quebra em
    pontos imprevisíveis (era a fonte da "confusão" apontada). */
 .home-capabilities{display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;}
-.home-cap-item{display:flex; align-items:center; gap:10px; min-width:0;}
+/* align-items:flex-start (não center, adendo rodada 12, seção 5) -- o
+   terceiro item tem texto bem mais longo que os outros dois; com "center"
+   cada item centralizava seu ícone+texto na altura da linha do grid (que
+   segue o item mais alto), fazendo os três parecerem com respiro desigual
+   entre si. Alinhando todos pelo topo, o respiro fica igual nos três. */
+.home-cap-item{display:flex; align-items:flex-start; gap:10px; min-width:0;}
 .home-cap-icon{display:inline-flex; flex-shrink:0;}
 .home-cap-title{font-size:13.5px; font-weight:700; color:var(--ink);}
 .home-cap-text{font-size:12px; color:var(--ink-soft);}
@@ -783,8 +803,15 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
 .home-about-details{margin-top:16px; font-size:13.5px;}
 .home-about-details summary{cursor:pointer; color:var(--blue-strong); font-weight:600;}
 .home-about-details-body{margin-top:10px; color:var(--ink-soft); line-height:1.6;}
-.home-about-links{display:flex; gap:18px; margin-top:6px;}
+.home-about-links{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
 .home-about-links a{color:var(--blue-strong); font-weight:600; font-size:14px; text-decoration:underline;}
+/* Callout "Em resumo" (adendo rodada 12) -- destaque pontual nas cores da
+   marca, sem virar um wall of bold. */
+.home-about-highlight{
+  margin-top:16px; padding:14px 18px; border-radius:12px; background:var(--green-soft);
+  color:var(--ink); font-size:14.5px; line-height:1.6;
+}
+.home-about-highlight strong{color:var(--green-strong);}
 
 @media (max-width:900px){
   .home-cards-grid{grid-template-columns:1fr;}

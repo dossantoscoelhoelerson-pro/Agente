@@ -137,10 +137,13 @@ function cockpitNav(){
       el('span', { class: 'cni-sub', text: ' · ' + it.sub }),
     ]));
   });
-  nav.appendChild(el('button', { class: 'cockpit-chat-trigger', text: '💬 Converse com seu diagnóstico', onclick: () => {
+  nav.appendChild(el('button', { class: 'cockpit-chat-trigger', onclick: () => {
     goToSection('insights');
     setTimeout(() => { const inputEl = document.getElementById('insightsChatInput'); if(inputEl) inputEl.focus(); }, 30);
-  } }));
+  } }, [
+    icon('chat', { size: 16 }),
+    el('span', { text: 'Converse com seu diagnóstico' }),
+  ]));
   return nav;
 }
 
@@ -216,8 +219,8 @@ function screenPanorama(){
     el('span', {}, [el('b', { text: '17' }), document.createTextNode(' atributos agregados')]),
   ]));
   const heroActions = el('div', { class: 'cockpit-hero-actions' });
-  heroActions.appendChild(el('button', { class: 'btn secondary small', text: state.pdfExporting ? 'Gerando PDF…' : '📄 Relatório DEXi', disabled: state.pdfExporting, onclick: downloadPanelPdf }));
-  heroActions.appendChild(el('button', { class: 'btn secondary small', text: '💬 Conversar com a IA', onclick: () => { goToSection('insights'); } }));
+  heroActions.appendChild(el('button', { class: 'btn secondary small', text: state.pdfExporting ? 'Gerando PDF…' : 'Relatório DEXi', disabled: state.pdfExporting, onclick: downloadPanelPdf }));
+  heroActions.appendChild(el('button', { class: 'btn secondary small', text: 'Conversar com a IA', onclick: () => { goToSection('insights'); } }));
   heroActions.appendChild(el('button', { class: 'btn secondary small', text: 'Nova avaliação', onclick: startNewEvaluation }));
   hero.appendChild(heroActions);
   if(state.pdfExportError){
@@ -1224,7 +1227,7 @@ function screenRoadmap(){
   hero.appendChild(el('p', { class: 'cockpit-hero-sub', text: 'Organize prioridades, defina ações e acompanhe a evolução da organização ao longo dos próximos meses.' }));
   const actions = el('div', { class: 'cockpit-hero-actions' });
   actions.appendChild(el('button', { class: 'btn', text: '＋ Nova ação', onclick: () => { state.roadmapNewActionOpen = !state.roadmapNewActionOpen; render(); } }));
-  actions.appendChild(el('button', { class: 'btn secondary', text: state.roadmapGenerating ? 'Gerando…' : '✨ Criar roadmap com IA', disabled: state.roadmapGenerating, onclick: generateRoadmap }));
+  actions.appendChild(el('button', { class: 'btn secondary', text: state.roadmapGenerating ? 'Gerando…' : 'Criar roadmap com IA', disabled: state.roadmapGenerating, onclick: generateRoadmap }));
   hero.appendChild(actions);
   c.appendChild(hero);
 
@@ -1289,7 +1292,7 @@ function sectionRoadmapSuggestions(){
   const list = el('div', { class: 'roadmap-suggestions-list' });
   state.roadmapSuggestions.forEach((s) => {
     const item = el('div', { class: 'roadmap-suggestion-card' });
-    item.appendChild(el('div', { class: 'roadmap-ai-tag', text: '✨ Sugestão da IA' }));
+    item.appendChild(el('div', { class: 'roadmap-ai-tag', text: 'Sugestão da IA' }));
     item.appendChild(el('div', { class: 'roadmap-action-title', text: s.titulo }));
     item.appendChild(el('div', { class: 'roadmap-action-meta' }, [
       s.origemLabel ? el('span', { text: 'Origem: ' + s.origemLabel }) : null,
@@ -1329,7 +1332,7 @@ function sectionRoadmapTimeline(){
 function roadmapActionCard(a){
   const statusInfo = ROADMAP_STATUS.find((s) => s.id === a.status) || ROADMAP_STATUS[0];
   const card = el('div', { class: 'roadmap-action-card', onclick: () => { state.roadmapOpenActionId = a.id; render(); } });
-  if(a.isAiSuggestion) card.appendChild(el('div', { class: 'roadmap-ai-tag', text: '✨ Sugestão da IA' }));
+  if(a.isAiSuggestion) card.appendChild(el('div', { class: 'roadmap-ai-tag', text: 'Sugestão da IA' }));
   card.appendChild(el('div', { class: 'roadmap-action-title', text: a.titulo }));
   const meta = el('div', { class: 'roadmap-action-meta' });
   if(a.origemLabel) meta.appendChild(el('span', { text: 'Origem: ' + a.origemLabel }));
@@ -1349,7 +1352,7 @@ function actionDetailOverlay(){
 
   if(!action){ panel.appendChild(el('div', { text: 'Ação não encontrada.' })); overlay.appendChild(panel); return overlay; }
 
-  if(action.isAiSuggestion) panel.appendChild(el('div', { class: 'roadmap-ai-tag', text: '✨ Sugestão da IA' }));
+  if(action.isAiSuggestion) panel.appendChild(el('div', { class: 'roadmap-ai-tag', text: 'Sugestão da IA' }));
   panel.appendChild(el('h2', { class: 'attr-detail-title', text: action.titulo }));
   if(action.origemLabel) panel.appendChild(el('div', { class: 'attr-detail-eyebrow', text: 'Origem: ' + action.origemLabel }));
 
