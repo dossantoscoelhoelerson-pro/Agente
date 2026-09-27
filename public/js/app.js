@@ -254,7 +254,7 @@ function homeShell(active, contentChildren){
   // só texto de apoio, nenhum dado real.
   const teaser = el('div', {class:'home-sidebar-teaser'});
   teaser.appendChild(el('div', {class:'home-sidebar-teaser-title', text:'Sua jornada com a ORBE'}));
-  teaser.appendChild(el('div', {class:'home-sidebar-teaser-text', text:'Mais clareza, melhores decisões, evolução contínua.'}));
+  teaser.appendChild(el('div', {class:'home-sidebar-teaser-text', text:'Mais compreensão, melhores decisões, evolução contínua.'}));
   sidebar.appendChild(teaser);
 
   shell.appendChild(sidebar);
@@ -370,7 +370,7 @@ function screenHome(){
   cardsGrid.appendChild(homeCard({
     iconName:'compass', iconColor:'var(--green)', title:'Já tenho um diagnóstico',
     text:'Se você já possui um diagnóstico DEXi, acesse aqui para visualizar seus resultados, explorar insights e planejar sua evolução.',
-    ctaLabel:'Acessar meu diagnóstico →',
+    ctaLabel:'Acessar diagnóstico →',
     onClick: goToSkipCollection,
   }));
   entrySection.appendChild(cardsGrid);
@@ -378,20 +378,16 @@ function screenHome(){
   // Seção rediagramada (adendo rodada 10, seção 5) -- mesmo gráfico orbital
   // do hero (orbitSvg(), pedido explícito de deixar as duas composições
   // consistentes), maior e mais integrado do que a linha simples de
-  // ícone+texto de antes. Sem o símbolo sobreposto (adendo rodada 12, seção
-  // 5) -- os anéis ficam como elemento gráfico (linhas e pontos), com a
-  // frase "POR QUE A ORBE" centralizada dentro deles em vez do logo
-  // (pedido do pesquisador na rodada seguinte).
+  // ícone+texto de antes. Anéis ficam vazios (só linhas e pontos, sem nada
+  // dentro) -- o pesquisador testou a frase dentro deles e preferiu
+  // devolver para cima dos tópicos, como eyebrow da seção.
   const capSection = el('div', {class:'home-cap-section'});
   const capDecor = el('div', {class:'home-cap-decor'});
   capDecor.innerHTML = orbitSvg(200, ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)']);
-  capDecor.appendChild(el('div', {class:'home-cap-decor-label'}, [
-    el('span', {text:'POR QUE'}),
-    el('span', {text:'A ORBE?'}),
-  ]));
   capSection.appendChild(capDecor);
 
   const capContent = el('div', {class:'home-cap-content'});
+  capContent.appendChild(el('div', {class:'home-cap-eyebrow', text:'POR QUE A ORBE?'}));
   const capBar = el('div', {class:'home-capabilities'});
   // Terceiro item reescrito (adendo rodada 10, seção 4) -- reflete um
   // agente de IA conversacional, não uma consultoria tradicional. Itens
@@ -438,15 +434,24 @@ function screenAbout(){
   // a logo solto, então ele fica só no cabeçalho fixo e na sidebar.
   c.appendChild(el('div', {class:'home-about-opening-bar'}));
   c.appendChild(el('div', {class:'home-hero-eyebrow', text:'Conheça a ORBE'}));
-  c.appendChild(el('h1', {class:'home-about-opening-title', text:'Entender onde uma organização está é o primeiro passo para pensar onde ela pode chegar.'}));
-  const openingBody = el('div', {class:'home-about-opening-body-wrap'});
-  [
-    'A transformação digital envolve muito mais do que adotar novas tecnologias. Ela também passa pela forma como a organização trabalha, toma decisões, desenvolve pessoas, utiliza dados e conduz suas mudanças.',
-    'A ORBE foi criada para ajudar a organizar essa visão.',
-    'A plataforma conduz uma avaliação da maturidade digital por meio de uma conversa estruturada com a organização e, a partir do diagnóstico, permite explorar os resultados com mais profundidade.',
-    'A proposta é simples: tornar mais fácil entender o estágio atual da organização e enxergar o que existe por trás desse resultado.',
-  ].forEach((t) => openingBody.appendChild(el('p', {class:'home-about-opening-body', text: t})));
-  c.appendChild(openingBody);
+  // Sem ponto final; trecho de fechamento da frase num Azul mais claro que
+  // o resto (adendo rodada 13, seção 1) -- var(--blue) já é mais claro que
+  // var(--ink), cor do restante do título, sem precisar de um tom novo.
+  c.appendChild(el('h1', {class:'home-about-opening-title'}, [
+    document.createTextNode('Entender onde uma organização está é o primeiro passo para pensar '),
+    el('span', {style:'color:var(--blue);', text:'onde ela pode chegar'}),
+  ]));
+  // Bloco único, largura cheia -- mesma lógica visual já usada em "Por que
+  // a ORBE?" -- em vez das 2 colunas de antes (adendo rodada 13, seção 2).
+  // Texto verbatim do pesquisador, com negrito pontual só nos trechos
+  // indicados no adendo.
+  c.appendChild(el('p', {class:'home-about-opening-body', text:'A transformação digital envolve muito mais do que adotar novas tecnologias, ela também passa pela forma como a organização trabalha, toma decisões, desenvolve pessoas, utiliza dados e conduz suas mudanças.'}));
+  c.appendChild(el('p', {class:'home-about-opening-body', text:'A ORBE foi criada para ajudar a organizar essa visão.'}));
+  c.appendChild(el('p', {class:'home-about-opening-body', html:'O nome ORBE remete à ideia de <strong>totalidade, conjunto e visão ampla</strong>. Assim como um orbe representa um todo formado por diferentes elementos que se relacionam, a ORBE busca olhar para a maturidade digital de forma <strong>integrada</strong>, conectando diferentes dimensões da organização para construir uma compreensão mais completa de sua realidade.'}));
+  c.appendChild(el('p', {class:'home-about-opening-body', html:'A proposta é simples: tornar mais fácil <strong>entender o estágio atual</strong> da organização, <strong>compreender o que existe por trás desse resultado</strong> e <strong>enxergar possibilidades de evolução</strong>.'}));
+  // Slogan de fechamento do bloco (adendo rodada 13, seção 3) -- box em
+  // Azul Profundo (--ink).
+  c.appendChild(el('div', {class:'home-about-opening-slogan', text:'ORBE — Visão para compreender, Inteligência para evoluir.'}));
 
   const card2 = el('div', {class:'card'});
   card2.appendChild(icon('target', {class:'home-card-icon', color:'var(--blue)', size:28}));
