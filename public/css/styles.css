@@ -800,14 +800,18 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
   .home-cap-content{padding:8px 24px 24px;}
 }
 
-/* Abertura em duas colunas -- texto + logo completo. */
-.home-about-opening{display:grid; grid-template-columns:1.3fr 1fr; gap:40px; align-items:center; padding:8px 0 4px;}
-.home-about-opening-logo{display:flex; align-items:center; justify-content:center;}
-.home-about-opening-logo img{width:100%; max-width:280px; height:auto;}
-.home-about-opening-body{font-size:15px; color:var(--ink-soft); line-height:1.6; margin:0;}
+/* Abertura inspirada na peça de referência do pesquisador: barra degradê
+   nas 4 cores da marca, título largo (sem coluna estreita) e corpo do
+   texto em 2 colunas para ocupar toda a largura disponível. */
+.home-about-opening-bar{
+  width:200px; height:5px; border-radius:99px; margin-bottom:18px;
+  background:linear-gradient(90deg, var(--blue), var(--green), var(--yellow), var(--red));
+}
+.home-about-opening-title{font-size:38px; line-height:1.18; margin:0 0 20px; max-width:900px;}
+.home-about-opening-body-wrap{column-count:2; column-gap:48px; margin-top:4px;}
+.home-about-opening-body{font-size:15px; color:var(--ink-soft); line-height:1.6; margin:0 0 16px; break-inside:avoid;}
 @media (max-width:900px){
-  .home-about-opening{grid-template-columns:1fr;}
-  .home-about-opening-logo{order:-1; max-width:200px; margin:0 auto;}
+  .home-about-opening-body-wrap{column-count:1;}
 }
 
 .home-about-details{margin-top:16px; font-size:13.5px;}
@@ -816,16 +820,15 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
 .home-about-links{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
 .home-about-links a{color:var(--blue-strong); font-weight:600; font-size:14px; text-decoration:underline;}
 /* Cor de fundo por bloco (pedido do pesquisador) -- "Como funciona" em
-   verde (cor de IA/interpretação na paleta oficial), "De onde vem a ORBE"
-   em vermelho (--red é "Vermelho Identidade" na paleta -- combina com um
-   bloco sobre a origem/identidade do projeto). */
+   verde (cor de IA/interpretação na paleta oficial); "Por que a ORBE" e
+   "De onde vem a ORBE" ficam no azul-claro padrão do .card (mesmo
+   tratamento visual dos dois, sequência azul → verde → azul). */
 .home-about-card-green{background:var(--green-soft);}
-.home-about-card-red{background:var(--red-soft);}
-/* "Em resumo" como lista, uma frase por linha com ícone (adendo rodada
-   12 tinha um parágrafo corrido só; pedido do pesquisador para deixar
-   mais elaborado). Fundo --paper (branco) para se destacar do card verde
-   ao redor. */
-.home-about-summary{margin-top:16px; padding:14px 18px; border-radius:12px; background:var(--paper);}
+/* "Em resumo" como lista, uma frase por linha com ícone (pedido do
+   pesquisador para deixar mais elaborado que o parágrafo corrido de
+   antes). Sem fundo próprio -- ícones e texto direto sobre o verde do
+   card, sem faixa branca embaixo. */
+.home-about-summary{margin-top:18px;}
 .home-about-summary-title{
   font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
   color:var(--green-strong); margin-bottom:10px;
