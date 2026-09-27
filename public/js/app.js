@@ -26,24 +26,25 @@ const state = {
   collectionSourceLoaded: false, // JSON da coleta foi carregado manualmente (sessão nova)
   uploadError: '',
 
-  // Painel da Etapa 3 (adendo rodada 3) -- ver funções ensurePanel/ensureLearning.
-  panel: null,          // {nivelFinal, nivelFinalLabel, capDigital, capDigitalLabel, capOrganizacional, capOrganizacionalLabel, grupos, consistencia}
+  // Resultado oficial do DEXi, extraído do texto carregado (ver ensurePanel()
+  // abaixo) -- base de dados compartilhada pelas três seções do Cockpit
+  // (adendo rodada 6). {nivelFinal, nivelFinalLabel, capDigital,
+  // capDigitalLabel, capOrganizacional, capOrganizacionalLabel, grupos, consistencia}
+  panel: null,
   panelLoading: false,
   panelError: '',
-  learning: null,        // {temas, pontosAtencao}
-  learningLoading: false,
-  learningError: '',
   pdfExporting: false,
   pdfExportError: '',
 
-  duvidasChat: [],
-  duvidasThinking: false,
-  duvidasError: '',
+  // Caminho 3 da Home ("Já tenho um diagnóstico", adendo rodada 9) -- pula
+  // toda a Etapa 1, então não existe registro_completo para essa avaliação.
+  // Controla só o texto de aviso discreto em screenUpload(); nunca bloqueia
+  // o fluxo.
+  skipCollection: false,
 
-  // Navegação do painel da Etapa 3 (adendo rodada 5) -- abas + grupo aberto
-  // no detalhamento sob demanda (item 1.1).
-  reportTab: 'diagnostico',
-  reportExpandedGroup: null,
+  // O resto do estado do Cockpit (Panorama/Insights/Roadmap) é adicionado a
+  // este objeto por public/js/cockpit.js, carregado depois deste arquivo --
+  // mantém app.js só com o que é comum a toda a aplicação.
 };
 
 function el(tag, attrs, children){
@@ -94,6 +95,12 @@ const ETAPA1_SCREENS = ['intro', 'collect', 'review', 'done1'];
 
 function renderOnce(){
   document.body.classList.toggle('etapa-1', ETAPA1_SCREENS.includes(state.screen));
+  // Cockpit (adendo rodada 6) usa um layout mais largo que o --wrap de
+  // 720px da coleta -- produto/dashboard, não formulário de leitura linear.
+  document.body.classList.toggle('cockpit-screen', state.screen === 'report');
+  // Home e "Conhecer a ORBE" (adendo rodada 9) usam sidebar fixa própria em
+  // vez do cabeçalho sticky simples das demais telas.
+  document.body.classList.toggle('home-screen', state.screen === 'home' || state.screen === 'about');
 
   const app = document.getElementById('app');
   app.innerHTML = '';
@@ -106,6 +113,8 @@ function renderOnce(){
   void app.offsetWidth;
   app.classList.add('screen-fade');
   if(state.screen === 'loading') app.appendChild(screenLoading());
+  else if(state.screen === 'home') app.appendChild(screenHome());
+  else if(state.screen === 'about') app.appendChild(screenAbout());
   else if(state.screen === 'intro') app.appendChild(screenIntro());
   else if(state.screen === 'collect') app.appendChild(screenCollect());
   else if(state.screen === 'review') app.appendChild(screenReview());
@@ -143,6 +152,378 @@ function screenLoading(){
   return c;
 }
 
+// ---------- Home e os três caminhos (adendo rodada 9) ----------
+//
+// A Home é a nova porta de entrada da aplicação (antes o primeiro estado
+// era direto a tela de abertura da coleta). Três caminhos, cada um levando
+// a uma lógica já existente ou a uma tela nova simples:
+//   Card 1 "Conhecer a ORBE"      -> tela nova (screenAbout), só explicativa.
+//   Card 2 "Diagnóstico de Maturidade Digital" -> fluxo já existente
+//     (screenIntro -> coleta -> DEXi manual -> upload -> Panorama), sem
+//     nenhuma mudança de lógica -- só uma porta de entrada nova.
+//   Card 3 "Já tenho um diagnóstico" -> pula a Etapa 1 inteira e vai direto
+//     para a tela de upload/colagem já existente (ver screenUpload() e
+//     state.skipCollection).
+
+function goToHome(){ state.screen = 'home'; render(); }
+
+// Item "Realizar um diagnóstico" da sidebar -- retoma de onde a pessoa
+// estiver: coleta em andamento -> próxima pergunta não respondida; nada em
+// andamento -> mesma porta de entrada do Card 2. Painel já carregado numa
+// sessão anterior não redireciona pra cá -- esse caminho é sempre para
+// COMEÇAR uma nova coleta (ver adendo rodada 11, seção 1: espelha os
+// caminhos da Home, e "Realizar um diagnóstico" na Home sempre inicia o
+// fluxo do zero).
+function goToDiagnostico(){
+  const next = nextUnansweredIndex();
+  if(next > 0 && next < ATTRS.length){ goToAttribute(next); return; }
+  state.screen = 'intro';
+  render();
+}
+
+function goToAbout(){ state.screen = 'about'; render(); }
+
+// Item "Já tenho um diagnóstico" -- mesmo caminho do Card 3 da Home
+// (compartilhado para não duplicar a lógica entre sidebar e Home).
+function goToSkipCollection(){
+  state.skipCollection = true; state.uploadError = ''; state.screen = 'upload'; render();
+}
+
+// Ícones chapados/sólidos nas cores oficiais da marca (adendo rodada 10,
+// seção 6) -- substituem os emojis usados até aqui na Home. Um único fill
+// sólido por ícone (currentColor, controlado via CSS color no elemento
+// pai), formas geométricas simples, sem contorno -- estilo "tecnológico e
+// contemporâneo", nunca desenhado à mão.
+const ICON_PATHS = {
+  home: 'M12 3.2 3 10.5V21h6.2v-6.3h5.6V21H21V10.5L12 3.2Z',
+  target: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 3.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z',
+  spark: 'M12 2c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Zm7 11c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z',
+  list: 'M4 5.5h16V8H4V5.5Zm0 5.25h16v2.5H4v-2.5ZM4 16h16v2.5H4V16Z',
+  people: 'M8.5 12a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Zm7-.6a2.9 2.9 0 1 0 0-5.8 2.9 2.9 0 0 0 0 5.8ZM2.2 19c.5-3.3 2.9-5.3 6.3-5.3s5.8 2 6.3 5.3H2.2Zm12.8-.3c-.2-1.7-.8-3.1-1.8-4.2 3-.2 5.3 1.7 5.8 4.5h-4Z',
+  chart: 'M4 20V10h4v10H4Zm6 0V4h4v16h-4Zm6 0v-7h4v7h-4Z',
+  compass: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm3.6 5.6-2 5.2-5.2 2 2-5.2 5.2-2Z',
+  shield: 'M12 2.5 19.5 6v6c0 5-3.2 8.6-7.5 9.5C7.7 20.6 4.5 17 4.5 12V6L12 2.5Z',
+  chat: 'M4 4h16v11H8.5L4 18.5V4Z',
+  bell: 'M12 2.5a1.6 1.6 0 0 1 1.6 1.6v.6c2.6.7 4.4 3 4.4 5.9v4.6l1.7 2.3H4.3L6 15.2v-4.6c0-2.9 1.8-5.2 4.4-5.9v-.6A1.6 1.6 0 0 1 12 2.5Zm-2.3 17.4h4.6a2.3 2.3 0 0 1-4.6 0Z',
+  upload: 'M12 3 7 9h3v6h4V9h3L12 3ZM5 18h14v2H5v-2Z',
+};
+function icon(name, opts){
+  opts = opts || {};
+  const size = opts.size || 18;
+  const span = el('span', {class:'icon-svg' + (opts.class ? ' ' + opts.class : ''), style: opts.color ? `color:${opts.color};` : ''});
+  span.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[name]}"/></svg>`;
+  return span;
+}
+
+// Sidebar com os 4 itens -- espelham exatamente os três caminhos da Home
+// (mais a própria Início), sempre clicáveis (adendo rodada 11, seção 1;
+// substitui os itens Insights/Roadmap, que dependiam de um diagnóstico já
+// carregado -- essa navegação já existe dentro do Cockpit, via
+// .cockpit-nav, uma vez que a pessoa chega lá).
+function sidebarNav(active){
+  const nav = el('nav', {class:'home-sidebar-nav'});
+  const items = [
+    {id:'home', label:'Início', icon:'home', onclick: goToHome},
+    {id:'about', label:'Conhecer a ORBE', icon:'people', onclick: goToAbout},
+    {id:'diagnostico', label:'Realizar um diagnóstico', icon:'target', onclick: goToDiagnostico},
+    {id:'skip', label:'Já tenho um diagnóstico', icon:'compass', onclick: goToSkipCollection},
+  ];
+  items.forEach((it) => {
+    const cls = 'home-sidebar-item' + (it.id === active ? ' active' : '');
+    nav.appendChild(el('button', { class: cls, onclick: it.onclick }, [
+      icon(it.icon, {class:'home-sidebar-icon'}),
+      el('span', {text: it.label}),
+    ]));
+  });
+  return nav;
+}
+
+// Cabeçalho da Home/Sobre -- sidebar fixa + área de conteúdo. Substitui o
+// cabeçalho sticky simples usado nas demais telas (ver body.home-screen em
+// styles.css); mesma identidade (logo oficial, nunca redesenhado).
+function homeShell(active, contentChildren){
+  const shell = el('div', {class:'home-shell'});
+
+  const sidebar = el('aside', {class:'home-sidebar'});
+  const logoWrap = el('div', {class:'home-sidebar-logo'});
+  logoWrap.appendChild(el('img', {src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Maturidade Digital'}));
+  sidebar.appendChild(logoWrap);
+  sidebar.appendChild(sidebarNav(active));
+
+  // Teaser decorativo (mesma composição da referência visual enviada) --
+  // só texto de apoio, nenhum dado real.
+  const teaser = el('div', {class:'home-sidebar-teaser'});
+  teaser.appendChild(el('div', {class:'home-sidebar-teaser-title', text:'Sua jornada com a ORBE'}));
+  teaser.appendChild(el('div', {class:'home-sidebar-teaser-text', text:'Mais compreensão, melhores decisões, evolução contínua.'}));
+  sidebar.appendChild(teaser);
+
+  shell.appendChild(sidebar);
+
+  const main = el('div', {class:'home-main'});
+  const topbar = el('div', {class:'home-topbar'});
+  topbar.appendChild(icon('bell', {class:'home-topbar-bell', color:'var(--yellow-strong)', size: 19}));
+  const identity = el('div', {class:'home-topbar-identity'});
+  identity.appendChild(el('div', {class:'home-topbar-avatar', text:'V'}));
+  identity.appendChild(el('span', {text:'Visitante'}));
+  topbar.appendChild(identity);
+  main.appendChild(topbar);
+
+  const content = el('div', {class:'home-content'});
+  contentChildren.forEach((c) => c && content.appendChild(c));
+  main.appendChild(content);
+  shell.appendChild(main);
+
+  return shell;
+}
+
+// Elemento gráfico orbital (linhas orbitais + pontos de conexão) -- própria
+// linguagem gráfica pedida no adendo, construída em SVG puro a partir da
+// paleta oficial. Não é uma foto (nenhum arquivo de foto foi fornecido) --
+// o símbolo real da ORBE aparece sobreposto, nunca redesenhado. Reaproveitada
+// tanto no hero da Home quanto na seção "Por que a ORBE" (rodada 10, seção
+// 5: pedido explícito de deixar as duas composições consistentes entre si)
+// -- mesmos dois anéis (um achatado, um mais redondo) em ângulos fixos, com
+// os pontos calculados para caírem exatamente sobre a linha do anel (nunca
+// soltos), então a composição lê como intencional em qualquer tamanho.
+function orbitSvg(size, dotColors){
+  const cx = size / 2, cy = size / 2;
+  const ring1 = { rx: size * 0.46, ry: size * 0.19, rot: -12 };
+  const ring2 = { rx: size * 0.33, ry: size * 0.33, rot: 8 };
+  const pointOn = (ring, angleDeg) => {
+    const a = (angleDeg * Math.PI) / 180;
+    const x0 = ring.rx * Math.cos(a), y0 = ring.ry * Math.sin(a);
+    const r = (ring.rot * Math.PI) / 180;
+    return [cx + x0 * Math.cos(r) - y0 * Math.sin(r), cy + x0 * Math.sin(r) + y0 * Math.cos(r)];
+  };
+  const dots = [
+    { ring: ring1, angle: 8, color: dotColors[0], r: size * 0.03 },
+    { ring: ring1, angle: 195, color: dotColors[1], r: size * 0.03 },
+    { ring: ring2, angle: 95, color: dotColors[2], r: size * 0.026 },
+    { ring: ring2, angle: 268, color: dotColors[3], r: size * 0.026 },
+  ];
+  const dotsSvg = dots.map((d) => {
+    const [x, y] = pointOn(d.ring, d.angle);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${d.r.toFixed(1)}" fill="${d.color}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="100%" height="100%" role="img" aria-label="Ilustração orbital ORBE" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="${cx}" cy="${cy}" rx="${ring1.rx}" ry="${ring1.ry}" fill="none" stroke="var(--blue)" stroke-width="${size * 0.003}" opacity="0.35" transform="rotate(${ring1.rot} ${cx} ${cy})"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${ring2.rx}" ry="${ring2.ry}" fill="none" stroke="var(--green)" stroke-width="${size * 0.003}" opacity="0.32" transform="rotate(${ring2.rot} ${cx} ${cy})"/>
+    ${dotsSvg}
+  </svg>`;
+}
+
+function orbitGraphic(){
+  const wrap = el('div', {class:'home-orbit-graphic'});
+  wrap.innerHTML = orbitSvg(400, ['var(--blue)', 'var(--red)', 'var(--yellow)', 'var(--green)']);
+  // Símbolo (não o lockup com texto) -- adendo rodada 11, seção 2: o lockup
+  // é uma imagem bem larga (~3:1) com texto; encolhido pro tamanho de um
+  // emblema, o texto virava uma mancha que lia como "caixa borrada", não
+  // falta de transparência de verdade.
+  const logo = el('img', {class:'home-orbit-logo', src:'/assets/brand/orbe_simbolo.png', alt:'Símbolo ORBE'});
+  wrap.appendChild(logo);
+  return wrap;
+}
+
+function homeCard({iconName, iconColor, title, text, ctaLabel, onClick, featured}){
+  const card = el('div', {class:'home-card' + (featured ? ' featured' : '')});
+  if(featured) card.appendChild(el('div', {class:'home-card-tag', text:'Caminho principal'}));
+  card.appendChild(icon(iconName, {class:'home-card-icon', color: iconColor, size: 30}));
+  card.appendChild(el('div', {class:'home-card-title', text: title}));
+  card.appendChild(el('div', {class:'home-card-text', text: text}));
+  card.appendChild(el('button', {class:'btn' + (featured ? '' : ' secondary'), text: ctaLabel, onclick: onClick}));
+  return card;
+}
+
+function screenHome(){
+  const hero = el('div', {class:'home-hero'});
+  const heroText = el('div', {class:'home-hero-text'});
+  heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'Seu diagnóstico, com mais inteligência'}));
+  heroText.appendChild(el('h1', {class:'home-hero-title', text:'Bem-vindo à ORBE'}));
+  heroText.appendChild(el('div', {class:'home-hero-sub', text:'Sua parceira na jornada da transformação digital'}));
+  heroText.appendChild(el('p', {class:'home-hero-body', text:'Aqui você encontra uma experiência completa para entender onde sua organização está, o que isso significa e como evoluir com base em dados, insights e ação'}));
+  hero.appendChild(heroText);
+
+  // Sem o emoji no selo e sem a frase de apoio abaixo do gráfico orbital
+  // (adendo rodada 10, seções 7 e 8).
+  const heroVisual = el('div', {class:'home-hero-visual'});
+  heroVisual.appendChild(orbitGraphic());
+  hero.appendChild(heroVisual);
+
+  const entrySection = el('div', {class:'home-entry-section'});
+  entrySection.appendChild(el('div', {class:'home-entry-eyebrow', text:'ESCOLHA O QUE VOCÊ PRECISA'}));
+  entrySection.appendChild(el('h2', {class:'home-entry-title', text:'Como podemos te ajudar hoje?'}));
+  entrySection.appendChild(el('p', {class:'home-entry-sub', text:'Cada caminho foi pensado para a sua jornada. Escolha por onde você quer começar.'}));
+
+  const cardsGrid = el('div', {class:'home-cards-grid'});
+  cardsGrid.appendChild(homeCard({
+    iconName:'people', iconColor:'var(--blue)', title:'Conhecer a ORBE',
+    text:'Entenda quem somos, nossa metodologia e como ajudamos organizações a evoluírem na jornada digital.',
+    ctaLabel:'Saiba mais →',
+    onClick: goToAbout,
+  }));
+  cardsGrid.appendChild(homeCard({
+    iconName:'chart', iconColor:'var(--yellow)', title:'Diagnóstico de Maturidade Digital',
+    text:'Responda 34 perguntas e descubra o estágio de maturidade digital da sua organização. Em poucos minutos, você terá um diagnóstico completo com base no modelo DEXi.',
+    ctaLabel:'Começar diagnóstico →', featured: true,
+    onClick: () => { state.screen = 'intro'; render(); },
+  }));
+  cardsGrid.appendChild(homeCard({
+    iconName:'compass', iconColor:'var(--green)', title:'Já tenho um diagnóstico',
+    text:'Se você já possui um diagnóstico DEXi, acesse aqui para visualizar seus resultados, explorar insights e planejar sua evolução.',
+    ctaLabel:'Acessar diagnóstico →',
+    onClick: goToSkipCollection,
+  }));
+  entrySection.appendChild(cardsGrid);
+
+  // Seção rediagramada (adendo rodada 10, seção 5) -- mesmo gráfico orbital
+  // do hero (orbitSvg(), pedido explícito de deixar as duas composições
+  // consistentes), maior e mais integrado do que a linha simples de
+  // ícone+texto de antes. Anéis ficam vazios (só linhas e pontos, sem nada
+  // dentro) -- o pesquisador testou a frase dentro deles e preferiu
+  // devolver para cima dos tópicos, como eyebrow da seção.
+  const capSection = el('div', {class:'home-cap-section'});
+  const capDecor = el('div', {class:'home-cap-decor'});
+  capDecor.innerHTML = orbitSvg(200, ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)']);
+  capSection.appendChild(capDecor);
+
+  const capContent = el('div', {class:'home-cap-content'});
+  capContent.appendChild(el('div', {class:'home-cap-eyebrow', text:'POR QUE A ORBE?'}));
+  const capBar = el('div', {class:'home-capabilities'});
+  // Terceiro item reescrito (adendo rodada 10, seção 4) -- reflete um
+  // agente de IA conversacional, não uma consultoria tradicional. Itens
+  // empilhados em coluna, cada um em uma linha só (título + texto lado a
+  // lado, com reticências se não couber) -- pedido do pesquisador, troca o
+  // grid de 3 colunas de antes. Cores dos ícones seguindo a identidade
+  // visual -- verde, amarelo e azul, nessa ordem (pedido do pesquisador).
+  [
+    {icon:'shield', color:'var(--green)', title:'Metodologia DEXi', text:'Modelo reconhecido internacionalmente'},
+    {icon:'spark', color:'var(--yellow)', title:'Inteligência Artificial', text:'Para análises mais profundas e personalizadas'},
+    {icon:'chat', color:'var(--blue)', title:'Diálogo conversacional', text:'Um agente de IA que interpreta e conversa sobre o diagnóstico com você.'},
+  ].forEach((it) => {
+    const item = el('div', {class:'home-cap-item'});
+    item.appendChild(icon(it.icon, {class:'home-cap-icon', color: it.color, size: 22}));
+    const txt = el('div', {class:'home-cap-item-text'});
+    txt.appendChild(el('span', {class:'home-cap-title', text: it.title}));
+    txt.appendChild(el('span', {class:'home-cap-text', text: it.text}));
+    item.appendChild(txt);
+    capBar.appendChild(item);
+  });
+  capContent.appendChild(capBar);
+  capSection.appendChild(capContent);
+
+  return homeShell('home', [hero, entrySection, capSection]);
+}
+
+// Card 1 -- "Conhecer a ORBE": explicação simples do que é a ferramenta, o
+// problema que resolve, o papel da IA e a base metodológica, com uma
+// camada opcional mais detalhada (adendo rodada 9, seção 3).
+// Texto definitivo do pesquisador (adendo rodada 12, seção 1) -- verbatim,
+// nunca reescrito/parafraseado. 4 blocos: Bloco 1 é a abertura (hero, sem
+// cartão), Blocos 2-4 são cartões com ícone do padrão chapado/sólido já
+// estabelecido (rodada 10) e destaques pontuais nas cores da marca.
+function screenAbout(){
+  const c = el('div');
+  // Abertura inspirada na peça de referência do pesquisador: barra
+  // degradê nas 4 cores da marca, título grande em até 2 linhas (largura
+  // livre em vez de coluna estreita ao lado de uma imagem) e corpo do
+  // texto em 2 colunas ocupando toda a largura disponível, pra "percorrer"
+  // visualmente a composição em vez de empilhar num bloco só. Sem o logo
+  // aqui -- tentamos com o lockup completo ao lado do texto e ficou solto
+  // (não é uma foto real, é um recorte fixo que não se adapta ao layout
+  // como na peça de referência); o pesquisador preferiu composição limpa
+  // a logo solto, então ele fica só no cabeçalho fixo e na sidebar.
+  c.appendChild(el('div', {class:'home-about-opening-bar'}));
+  c.appendChild(el('div', {class:'home-hero-eyebrow', text:'Conheça a ORBE'}));
+  // Sem ponto final; trecho de fechamento da frase num Azul mais claro que
+  // o resto (adendo rodada 13, seção 1) -- var(--blue) já é mais claro que
+  // var(--ink), cor do restante do título, sem precisar de um tom novo.
+  c.appendChild(el('h1', {class:'home-about-opening-title'}, [
+    document.createTextNode('Entender onde uma organização está é o primeiro passo para pensar '),
+    el('span', {style:'color:var(--blue);', text:'onde ela pode chegar'}),
+  ]));
+  // Bloco único, largura cheia -- mesma lógica visual já usada em "Por que
+  // a ORBE?" (adendo rodada 13, seção 2). Texto verbatim do pesquisador,
+  // com negrito pontual só nos trechos indicados no adendo. Texto
+  // substituído na íntegra pelo da rodada 14, seção 3 (3 parágrafos).
+  c.appendChild(el('p', {class:'home-about-opening-body', html:'A transformação digital não acontece apenas pela adoção de novas tecnologias, ela se constrói na forma como a organização trabalha, toma decisões, desenvolve o time, utiliza dados e conduz suas mudanças. A ORBE foi criada para conectar essas dimensões e transformar essa complexidade em uma <strong>visão integrada da maturidade digital</strong>.'}));
+  c.appendChild(el('p', {class:'home-about-opening-body', html:'O nome ORBE remete à ideia de <strong>totalidade, conjunto e visão ampla</strong>. Assim como um orbe representa um todo formado por diferentes elementos que se relacionam, a ORBE busca olhar para a maturidade digital de forma <strong>integrada</strong>, conectando diferentes dimensões da organização para construir uma compreensão mais completa de sua realidade.'}));
+  c.appendChild(el('p', {class:'home-about-opening-body', html:'A proposta é simples: tornar mais fácil <strong>entender o estágio atual</strong> da organização, <strong>compreender o que existe por trás desse resultado</strong> e <strong>enxergar possibilidades de evolução</strong>.'}));
+  // Slogan de fechamento do bloco -- box em Azul Profundo (--ink). Formato
+  // trocado na rodada 14, seção 3: separador "|", "inteligência" em
+  // minúscula, sem ponto final.
+  c.appendChild(el('div', {class:'home-about-opening-slogan', text:'ORBE | Visão para compreender, inteligência para evoluir'}));
+
+  const card2 = el('div', {class:'card'});
+  card2.appendChild(icon('target', {class:'home-card-icon', color:'var(--blue)', size:28}));
+  card2.appendChild(el('h2', {text:'Por que a ORBE?'}));
+  card2.appendChild(el('p', {text:'Nem sempre é fácil saber onde começar.'}));
+  card2.appendChild(el('p', {text:'Uma organização pode já utilizar diferentes tecnologias e, ainda assim, ter dificuldades para entender o quanto avançou em sua transformação digital. Isso acontece porque maturidade digital não depende de um único fator: tecnologia, processos, dados, pessoas, cultura, gestão e estratégia fazem parte dessa construção e podem avançar em ritmos diferentes.'}));
+  card2.appendChild(el('p', {text:'A ORBE parte dessa visão para organizar essas diferentes dimensões em uma avaliação estruturada. O objetivo não é apenas chegar a um resultado, mas dar ao usuário condições de compreender esse resultado e explorar seus diferentes aspectos'}));
+  c.appendChild(card2);
+
+  const card3 = el('div', {class:'card home-about-card-green'});
+  card3.appendChild(icon('chat', {class:'home-card-icon', color:'var(--green-strong)', size:28}));
+  card3.appendChild(el('h2', {text:'Como funciona'}));
+  card3.appendChild(el('p', {text:'Uma conversa para chegar a um diagnóstico estruturado.'}));
+  card3.appendChild(el('p', {text:'A avaliação começa com uma conversa sobre a realidade da organização -- a ORBE apresenta as perguntas, esclarece conceitos quando necessário e permite que o participante explique sua realidade com suas próprias palavras. As informações são então organizadas de acordo com os atributos previstos no instrumento de avaliação.'}));
+  card3.appendChild(el('p', {text:'Depois dessa etapa, o diagnóstico é processado no DEXi, seguindo a estrutura e as regras do modelo utilizado na avaliação.'}));
+  card3.appendChild(el('p', {text:'Com o resultado em mãos, a ORBE volta a entrar em cena para ajudar na exploração: o usuário pode entender as capacidades avaliadas, aprofundar grupos e atributos e consultar as informações que sustentam cada parte do diagnóstico.'}));
+  // "Em resumo" como lista, uma frase por linha com ícone -- mais elaborado
+  // que o parágrafo corrido de antes. Sem fundo próprio (pedido do
+  // pesquisador) -- ícones e texto direto sobre o verde do card, sem
+  // faixa branca embaixo.
+  const summaryBox = el('div', {class:'home-about-summary'});
+  summaryBox.appendChild(el('div', {class:'home-about-summary-title', text:'Em resumo'}));
+  const summaryList = el('div', {class:'home-about-summary-list'});
+  [
+    {icon:'chat', text:'A ORBE conduz a conversa.'},
+    {icon:'target', text:'O DEXi processa o diagnóstico.'},
+    {icon:'compass', text:'A ORBE ajuda a compreender o resultado.'},
+  ].forEach((it) => {
+    summaryList.appendChild(el('div', {class:'home-about-summary-item'}, [
+      icon(it.icon, {class:'home-about-summary-icon', color:'var(--green-strong)', size:18}),
+      el('span', {text: it.text}),
+    ]));
+  });
+  summaryBox.appendChild(summaryList);
+  card3.appendChild(summaryBox);
+  c.appendChild(card3);
+
+  // Bloco 4 já é o cartão de atribuição acadêmica -- não duplicar, só
+  // atualizar com o texto definitivo (adendo rodada 12, nota final da
+  // seção 1: "reaproveitar/atualizar com este texto, não duplicar").
+  // Mesmo tratamento visual do Bloco 2 (card padrão, azul-claro) -- o
+  // vermelho testado antes não combinou com o ícone; sequência dos 3
+  // cartões fica azul → verde → azul (pedido do pesquisador).
+  const card4 = el('div', {class:'card'});
+  card4.appendChild(icon('shield', {class:'home-card-icon', color:'var(--blue)', size:28}));
+  card4.appendChild(el('h2', {text:'De onde vem a ORBE?'}));
+  card4.appendChild(el('p', {text:'Uma pesquisa aplicada que ganhou forma de produto.'}));
+  card4.appendChild(el('p', {text:'A ORBE é um artefato desenvolvido no âmbito de uma pesquisa aplicada do PROFNIT -- Programa de Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para a Inovação, ponto focal da Universidade Federal de São João del-Rei (UFSJ).'}));
+  card4.appendChild(el('p', {text:'O projeto é desenvolvido por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho.'}));
+  card4.appendChild(el('p', {text:'A avaliação utilizada pela ORBE tem como referência o modelo de maturidade digital para pequenas e médias empresas apresentado por Kljajić Borštnar e Pucihar (2021). O modelo utiliza a metodologia DEX, que organiza os elementos da avaliação em uma estrutura hierárquica de atributos qualitativos e estabelece regras para sua agregação.'}));
+  card4.appendChild(el('label', {text:'Acesse', style:'margin-top:6px;'}));
+  const linksRow = el('div', {class:'home-about-links'});
+  linksRow.appendChild(el('a', {href:'https://profnit.org.br', target:'_blank', rel:'noopener', text:'PROFNIT -- Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para a Inovação →'}));
+  linksRow.appendChild(el('a', {href:'https://ufsj.edu.br', target:'_blank', rel:'noopener', text:'UFSJ -- Universidade Federal de São João del-Rei →'}));
+  card4.appendChild(linksRow);
+  c.appendChild(card4);
+
+  const details = el('details', {class:'home-about-details'});
+  details.appendChild(el('summary', {text:'Quero entender melhor (camada opcional, mais técnica)'}));
+  const detailsBody = el('div', {class:'home-about-details-body'});
+  detailsBody.appendChild(el('p', {text:'O modelo organiza a maturidade digital em duas capacidades -- Capacidade Digital e Capacidade Organizacional -- cada uma formada por grupos intermediários (ex.: Tecnologia Digital, Papel da TI, Recursos Humanos, Cultura Organizacional), que por sua vez agregam 34 atributos básicos avaliados diretamente com a organização. Cada atributo e cada nível agregado tem uma escala qualitativa própria (ex.: "Baixo / Médio-baixo / Médio-alto / Alto"), definida em tabelas de decisão dentro do DEXi -- nunca um número calculado por fora. Essa é a razão pela qual o resultado final é sempre extraído do DEXi, nunca recalculado por IA: a metodologia depende dessas tabelas para ser consistente e comparável.'}));
+  details.appendChild(detailsBody);
+  c.appendChild(details);
+
+  const btnRow = el('div', {class:'btn-row'});
+  btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar à Início', onclick: goToHome}));
+  btnRow.appendChild(el('button', {class:'btn', text:'Começar diagnóstico →', onclick: () => { state.screen = 'intro'; render(); }}));
+  c.appendChild(btnRow);
+
+  return homeShell('about', [c]);
+}
+
 // ---------- Etapa 1: coleta conversacional ----------
 
 // Textos de abertura e de contextualização da organização: cópia exata do
@@ -155,16 +536,17 @@ function screenIntro(){
   // porque o PNG tem fundo branco embutido e a Etapa 1 usa fundo cinza
   // (--etapa1-bg), evitando um retângulo branco "solto" sobre o cinza.
   const logoHero = el('div', {class:'intro-logo'});
-  logoHero.appendChild(el('img', {class:'intro-logo-img', src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Visão integrada'}));
+  logoHero.appendChild(el('img', {class:'intro-logo-img', src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Maturidade Digital'}));
   c.appendChild(logoHero);
+  // Texto de abertura simplificado (adendo rodada 12, seção 2) -- a Home já
+  // explica o que é a ORBE e como funciona, então essa tela não repete a
+  // explicação. O campo de nome/contexto abaixo não muda.
   c.appendChild(el('div', {class:'eyebrow brand', text:'Diagnóstico de Maturidade Digital'}));
   c.appendChild(el('h1', {text:'Onde sua organização está na jornada digital?'}));
-  c.appendChild(el('p', {class:'lede', text:'Responda 34 perguntas e descubra seu estágio de maturidade digital.'}));
-  c.appendChild(el('p', {text:'A avaliação considera tecnologia, processos, pessoas, gestão e inovação e, ao final, apresenta um diagnóstico estruturado para ajudar a entender os principais pontos de atenção e evolução.'}));
-  c.appendChild(el('p', {class:'caption-line', text:'34 perguntas · 15–25 min · diagnóstico estruturado'}));
-  c.appendChild(el('p', {class:'caption-line', text:'Pesquisa aplicada desenvolvida no âmbito do PROFNIT — UFSJ, por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho, com base em Kljajić Borštnar e Pucihar (2021) e processamento pelo DEXi.'}));
+  c.appendChild(el('p', {class:'lede', text:'Responda a uma avaliação estruturada sobre a realidade da sua organização e identifique seu estágio atual de maturidade digital.'}));
+  c.appendChild(el('p', {class:'caption-line intro-caption-accent', text:'34 perguntas · 15–25 min · diagnóstico estruturado'}));
 
-  const card = el('div', {class:'card'});
+  const card = el('div', {class:'card intro-card-accent'});
   card.appendChild(el('label', {text:'Nome da organização'}));
   const nameInput = el('input', {type:'text', placeholder:'ex.: MetalLamina Indústria Ltda.', id:'orgNameInput', value: state.orgName});
   card.appendChild(nameInput);
@@ -274,9 +656,12 @@ function screenCollect(){
   block3.appendChild(renderAlternatives(attr));
   c.appendChild(block3);
 
-  // Bloco 4 -- campo de conversa livre (dúvida ou resposta em texto).
+  // Bloco 4 -- campo de conversa livre (dúvida ou resposta em texto). Texto
+  // mais humano (adendo rodada 9, seção 4) -- só o texto ao redor do campo
+  // muda, a lógica de interpretação da resposta livre continua a mesma.
   const block4 = el('div', {class:'card panel-duvidas'});
-  block4.appendChild(el('div', {class:'block-label', text:'Dúvida ou resposta livre'}));
+  block4.appendChild(el('div', {class:'block-label', text:'Ficou em dúvida sobre essa pergunta?'}));
+  block4.appendChild(el('p', {class:'block-explain-text', style:'margin-bottom:14px;', text:'Você pode explicar com suas próprias palavras. A ORBE ajuda a entender sua resposta.'}));
   const chatLog = state.chatLogs[attr.id] || (state.chatLogs[attr.id] = []);
   if(chatLog.length){
     const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
@@ -559,62 +944,71 @@ async function extractPdfText(file, okMsgEl, textareaEl){
 
 function screenUpload(){
   const c = el('div');
-  c.appendChild(stepsNav(2));
-  c.appendChild(el('h1', {text:'Carregue o resultado do DEXi.'}));
+  // Caminho 3 da Home pula a Etapa 1 inteira -- os "3 passos" (Coleta/Rodar
+  // no DEXi/Resultado) não se aplicam a essa entrada direta.
+  if(!state.skipCollection) c.appendChild(stepsNav(2));
+  c.appendChild(el('h1', {text: state.skipCollection ? 'Acesse seu diagnóstico.' : 'Carregue o resultado do DEXi.'}));
   c.appendChild(el('p', {class:'lede', text:'Cole o texto do relatório, ou carregue um arquivo .txt/.json/.csv/.pdf com o resultado -- inclusive o PDF exportado direto pelo DEXi.'}));
+
+  // Etapa 1 é pulada nesse caminho -- é onde o nome da organização normalmente
+  // seria coletado, então precisa de um campo próprio aqui.
+  let orgNameInput = null;
+  if(state.skipCollection){
+    const orgCard = el('div', {class:'card'});
+    orgCard.appendChild(el('label', {text:'Nome da organização'}));
+    orgNameInput = el('input', {type:'text', placeholder:'ex.: MetalLamina Indústria Ltda.', value: state.orgName});
+    orgCard.appendChild(orgNameInput);
+    c.appendChild(orgCard);
+  }
 
   const card = el('div', {class:'card'});
 
-  if(!hasFullCollectionData()){
-    card.appendChild(el('label', {text:'Sessão nova — carregue também o JSON da coleta (baixado ao final da Etapa 1)'}));
-    const collZone = el('div', {class:'upload-zone'});
-    collZone.appendChild(el('div', {class:'icon', text:'⇪'}));
-    collZone.appendChild(el('div', {text:'Clique para escolher o JSON da coleta'}));
-    const collInput = el('input', {type:'file', accept:'.json', onchange: (e) => {
-      const f = e.target.files[0];
-      if(!f) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try{
-          const data = JSON.parse(reader.result);
-          if(!data.respostas) throw new Error('arquivo não tem o formato esperado (faltando "respostas")');
-          state.orgName = data.organizacao || state.orgName;
-          state.orgContext = data.contexto_organizacao || state.orgContext;
-          state.answers = Object.assign({}, state.answers, data.respostas);
-          (data.registro_completo || []).forEach(r => { if(r && r.id) state.registro[r.id] = r; });
-          state.collectionSourceLoaded = true;
-          state.uploadError = '';
-          render();
-        } catch(err){
-          state.uploadError = 'Não consegui ler o JSON da coleta: ' + err.message;
-          render();
-        }
-      };
-      reader.readAsText(f);
-    }});
-    collZone.appendChild(collInput);
-    collZone.addEventListener('click', () => collInput.click());
-    card.appendChild(collZone);
-    if(hasFullCollectionData()){
-      card.appendChild(el('div', {class:'file-ok', text: 'Coleta carregada: ' + state.orgName}));
-    }
-    card.appendChild(el('div', {style:'height:18px;'}));
+  // Campo único (adendo rodada 11, seção 5): antes eram duas áreas de
+  // upload separadas (JSON da coleta / resultado do DEXi). O conteúdo dos
+  // dois tipos nunca é ambíguo -- só o JSON da coleta tem a chave
+  // "respostas" -- então dá pra reconhecer automaticamente qual é qual a
+  // partir do próprio conteúdo do arquivo, sem precisar de duas áreas.
+  const needsColeta = !hasFullCollectionData();
+  if(needsColeta){
+    card.appendChild(el('label', {text: state.skipCollection
+      ? 'O resultado do DEXi é obrigatório; o JSON da coleta desta avaliação é opcional (enriquece a leitura no Insights) -- envie um de cada vez, na mesma área abaixo'
+      : 'Carregue o resultado do DEXi e, se ainda não tiver enviado nesta sessão, o JSON da coleta (baixado ao final da Etapa 1) -- um de cada vez, na mesma área'}));
   }
 
   const zone = el('div', {class:'upload-zone'});
-  zone.appendChild(el('div', {class:'icon', text:'⇪'}));
+  zone.appendChild(el('div', {class:'icon'}, [icon('upload', {size:28, color:'var(--ink-soft)'})]));
   zone.appendChild(el('div', {text:'Clique para escolher um arquivo (.txt, .json, .csv, .pdf)'}));
   const fileInput = el('input', {type:'file', accept:'.txt,.json,.csv,.pdf', onchange: (e)=>{
     const f = e.target.files[0];
     if(!f) return;
     const isPdf = f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf';
     if(isPdf){
-      okMsg.textContent = 'Extraindo texto de ' + f.name + '...';
+      // Feedback de carregamento (adendo rodada 10, seção 2) -- mesmo padrão
+      // spinner + texto já usado no resto da aplicação.
+      okMsg.innerHTML = '';
+      okMsg.appendChild(el('span', {class:'spinner'}));
+      okMsg.appendChild(el('span', {text:' Extraindo texto de ' + f.name + '...', style:'margin-left:8px;'}));
       extractPdfText(f, okMsg, textarea);
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
+      // Só é o JSON da coleta se tiver a chave "respostas" -- qualquer
+      // outro conteúdo (inclusive um .json que seja o próprio resultado
+      // do DEXi) vai para o campo de texto, nunca fica ambíguo.
+      let data = null;
+      try{ data = JSON.parse(reader.result); } catch(err){ /* não é JSON -- segue como texto do DEXi */ }
+      if(data && data.respostas){
+        state.orgName = data.organizacao || state.orgName;
+        state.orgContext = data.contexto_organizacao || state.orgContext;
+        state.answers = Object.assign({}, state.answers, data.respostas);
+        (data.registro_completo || []).forEach(r => { if(r && r.id) state.registro[r.id] = r; });
+        state.collectionSourceLoaded = true;
+        state.uploadError = '';
+        okMsg.textContent = 'Coleta carregada: ' + state.orgName;
+        render();
+        return;
+      }
       state.dexiText = reader.result;
       okMsg.textContent = 'Arquivo carregado: ' + f.name;
       textarea.value = reader.result;
@@ -626,6 +1020,12 @@ function screenUpload(){
   const okMsg = el('div', {class:'file-ok'});
   card.appendChild(zone);
   card.appendChild(okMsg);
+  // Confirmação persistente (sobrevive ao render() disparado pelo próprio
+  // upload, diferente de escrever só em okMsg -- a tela inteira é recriada
+  // do zero a cada render, então texto solto em okMsg não sobrevive).
+  if(state.collectionSourceLoaded){
+    card.appendChild(el('div', {class:'file-ok', text: 'Coleta carregada: ' + state.orgName}));
+  }
 
   card.appendChild(el('label', {text:'Ou cole o texto do relatório aqui', style:'margin-top:18px;'}));
   const textarea = el('textarea', {placeholder:'Cole aqui o resultado do DEXi (classificação final, dimensões, atributos)...', style:'min-height:160px;'});
@@ -637,19 +1037,38 @@ function screenUpload(){
     c.appendChild(el('div', {class:'error-box', text: state.uploadError}));
   }
 
+  // Aviso discreto (nunca um alerta de abertura, adendo rodada 9, seção 3):
+  // sem a coleta, o Insights ainda explica o resultado oficial do DEXi
+  // normalmente, só não consegue cruzar com "o que a organização
+  // respondeu" na rastreabilidade -- some sozinho se um JSON de coleta
+  // acabar sendo carregado de qualquer forma.
+  if(state.skipCollection && !hasFullCollectionData()){
+    c.appendChild(el('div', {class:'note', text:'Sem o registro da coleta, o Insights explica o resultado oficial do DEXi normalmente, mas não consegue mostrar as respostas e evidências originais da organização na rastreabilidade.'}));
+  }
+
   const btnRow = el('div', {class:'btn-row'});
-  btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar', onclick: () => { state.screen = 'manual'; render(); }}));
-  const canProceed = () => hasFullCollectionData();
+  btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar', onclick: () => {
+    state.screen = state.skipCollection ? 'home' : 'manual';
+    render();
+  }}));
+  const canProceed = () => hasFullCollectionData() || state.skipCollection;
   const genBtn = el('button', {class:'btn', text:'Ver relatório →'});
   genBtn.addEventListener('click', () => {
+    // Sincroniza com o state ANTES de qualquer validação -- uma falha de
+    // validação chama render(), que recria os campos do zero a partir do
+    // state; sem isso, o texto colado (ou o nome digitado) some da tela a
+    // cada tentativa que falhar, mesmo sem nenhum erro do usuário nesse
+    // campo específico (bug real, pego ao testar o nome da organização).
     const text = textarea.value.trim();
+    state.dexiText = text;
+    if(orgNameInput) state.orgName = orgNameInput.value.trim();
+
+    if(orgNameInput && !state.orgName){ state.uploadError = 'Informe o nome da organização antes de continuar.'; render(); return; }
     if(!text){ state.uploadError = 'Cole o resultado do DEXi ou carregue um arquivo antes de continuar.'; render(); return; }
     if(!canProceed()){ state.uploadError = 'Carregue o JSON da coleta desta organização antes de continuar — ele não está disponível nesta sessão.'; render(); return; }
-    state.dexiText = text;
     state.uploadError = '';
     state.panel = null; state.panelError = '';
-    state.learning = null; state.learningError = '';
-    state.duvidasChat = []; state.duvidasError = '';
+    if(typeof resetCockpitState === 'function') resetCockpitState();
     state.screen = 'report';
     render();
   });
@@ -718,6 +1137,9 @@ function computePanorama(){
   return { respondidos, total, maisBaixas, maisAltas };
 }
 
+// Extração do resultado oficial do DEXi (nível final, duas capacidades,
+// grupos) -- base de dados compartilhada pelas três seções do Cockpit
+// (Panorama, Insights e Roadmap partem todos daqui, nunca recalculam).
 async function ensurePanel(){
   if(state.panel || state.panelLoading) return;
   state.panelLoading = true;
@@ -733,71 +1155,11 @@ async function ensurePanel(){
     if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
     state.panel = data;
   } catch(err){
-    state.panelError = 'Não consegui extrair o status e os gráficos do resultado do DEXi (' + err.message + '). O panorama e o centro de dúvidas abaixo ainda funcionam a partir do texto carregado.';
+    state.panelError = 'Não consegui extrair o resultado oficial do DEXi (' + err.message + ').';
   }
   state.panelLoading = false;
   render();
-  if(state.panel) ensureLearning();
-}
-
-async function ensureLearning(){
-  if(state.learning || state.learningLoading) return;
-  state.learningLoading = true;
-  state.learningError = '';
-  render();
-  try{
-    const res = await fetch('/api/interpret/learning', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        orgName: state.orgName,
-        orgContext: state.orgContext,
-        answers: state.answers,
-        capDigital: state.panel ? state.panel.capDigital : null,
-        capOrganizacional: state.panel ? state.panel.capOrganizacional : null,
-        grupos: state.panel ? state.panel.grupos : [],
-      }),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
-    state.learning = data;
-  } catch(err){
-    state.learningError = 'Não consegui gerar o centro de aprendizado agora (' + err.message + ').';
-  }
-  state.learningLoading = false;
-  render();
-}
-
-async function duvidasTurn(userMessage){
-  userMessage = (userMessage || '').trim();
-  if(!userMessage || state.duvidasThinking) return;
-  state.duvidasChat.push({role:'user', text: userMessage});
-  const historySnapshot = state.duvidasChat.slice(0, -1);
-  state.duvidasThinking = true;
-  state.duvidasError = '';
-  render();
-  try{
-    const res = await fetch('/api/interpret/turn', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        orgName: state.orgName,
-        orgContext: state.orgContext,
-        answers: state.answers,
-        registroCompleto: ATTRS.map(a => state.registro[a.id]).filter(Boolean),
-        dexiText: state.dexiText,
-        history: historySnapshot,
-        userMessage,
-      }),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || ('Erro ' + res.status));
-    state.duvidasChat.push({role:'assistant', text: data.message});
-  } catch(err){
-    state.duvidasError = 'Não consegui gerar a resposta: ' + err.message;
-  }
-  state.duvidasThinking = false;
-  render();
+  if(state.panel && typeof onPanelReady === 'function') onPanelReady();
 }
 
 async function downloadPanelPdf(){
@@ -818,7 +1180,7 @@ async function downloadPanelPdf(){
         capOrganizacionalLabel: state.panel && state.panel.capOrganizacionalLabel,
         grupos: (state.panel && state.panel.grupos) || [],
         panorama: computePanorama(),
-        temas: (state.learning && state.learning.temas) || [],
+        temas: typeof pdfTemasFromRoadmap === 'function' ? pdfTemasFromRoadmap() : [],
         consistenciaOk: state.panel ? state.panel.consistencia.completo : computeConsistencia(),
       }),
     });
@@ -839,403 +1201,6 @@ async function downloadPanelPdf(){
   render();
 }
 
-function statTile(value, label){
-  const t = el('div', {class:'stat-tile'});
-  t.appendChild(el('div', {class:'stat-value', text: value}));
-  t.appendChild(el('div', {class:'stat-caption', text: label}));
-  return t;
-}
-
-// (a) status geral -- grande, com o rótulo "Resultado oficial do DEXi"
-// sempre visível, a posição na escala de 4 níveis, e (adendo rodada 5, item
-// 1.3) o indicador circular unificado com o mesmo selo de classificação,
-// em vez de aparecerem como elementos separados.
-function sectionStatus(){
-  const card = el('div', {class:'card panel-status'});
-  card.appendChild(el('div', {class:'block-label', text:'Resultado oficial do DEXi'}));
-  if(state.panelLoading && !state.panel){
-    card.appendChild(el('div', {class:'block-explain-text'}, [
-      el('span', {class:'spinner'}), el('span', {text:' analisando o resultado...', style:'margin-left:8px;'})
-    ]));
-    return card;
-  }
-  const nivelLabel = state.panel && state.panel.nivelFinalLabel;
-  const idx = (DEXI_MODEL && state.panel && state.panel.nivelFinal) ? DEXI_MODEL.root.niveis.indexOf(state.panel.nivelFinal) : null;
-
-  const row = el('div', {class:'status-hero-row'});
-  const gaugeBox = el('div', {class:'status-gauge'});
-  row.appendChild(gaugeBox);
-  const textBox = el('div', {style:'flex:1; min-width:200px;'});
-  textBox.appendChild(el('div', {class:'status-hero', text: nivelLabel || 'Não identificado no texto carregado'}));
-  if(DEXI_MODEL){
-    const track = el('div', {class:'scale-track'});
-    DEXI_MODEL.root.niveisExibicao.forEach((lbl, i) => {
-      track.appendChild(el('div', {class:'scale-seg' + (i === idx ? ' scale-seg-active' : ''), text: lbl}));
-    });
-    textBox.appendChild(track);
-  }
-  row.appendChild(textBox);
-  card.appendChild(row);
-
-  if(DEXI_MODEL){
-    renderLevelGauge(gaugeBox, { levelLabel: nivelLabel, idx, total: DEXI_MODEL.root.niveis.length });
-  }
-  return card;
-}
-
-// (b) gráficos das duas dimensões e dos grupos intermediários.
-function sectionCharts(){
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Gráficos'}));
-  const grid = el('div', {class:'chart-grid'});
-
-  const scatterWrap = el('div', {class:'chart-card'});
-  scatterWrap.appendChild(el('div', {class:'chart-title', text:'Capacidade Digital × Capacidade Organizacional'}));
-  const scatterBox = el('div', {class:'chart-box'});
-  scatterWrap.appendChild(scatterBox);
-  grid.appendChild(scatterWrap);
-
-  const radarWrap = el('div', {class:'chart-card'});
-  radarWrap.appendChild(el('div', {class:'chart-title', text:'Grupos intermediários'}));
-  const radarBox = el('div', {class:'chart-box'});
-  radarWrap.appendChild(radarBox);
-  grid.appendChild(radarWrap);
-
-  card.appendChild(grid);
-
-  if(DEXI_MODEL && state.panel){
-    const dimDigital = DEXI_MODEL.dimensoes.find(d => d.id === 'CAP.DIGITAL');
-    const dimOrg = DEXI_MODEL.dimensoes.find(d => d.id === 'CAP.ORGANIZACIONAL');
-    const xIdx = state.panel.capDigital ? dimDigital.niveis.indexOf(state.panel.capDigital) : null;
-    const yIdx = state.panel.capOrganizacional ? dimOrg.niveis.indexOf(state.panel.capOrganizacional) : null;
-    renderDimensionScatter(scatterBox, { xLabels: dimDigital.niveisExibicao, yLabels: dimOrg.niveisExibicao, xIdx, yIdx });
-
-    const groups = DEXI_MODEL.grupos.map(g => {
-      const found = state.panel.grupos.find(pg => pg.id === g.id);
-      return { label: g.label, idx: found ? g.niveis.indexOf(found.nivel) : null, levelLabel: found ? found.nivelLabel : null };
-    });
-    renderGroupRadar(radarBox, groups);
-  } else {
-    scatterBox.appendChild(el('div', {class:'chart-empty-note', text: state.panelLoading ? 'Carregando...' : 'Sem dados ainda.'}));
-    radarBox.appendChild(el('div', {class:'chart-empty-note', text: state.panelLoading ? 'Carregando...' : 'Sem dados ainda.'}));
-  }
-  return card;
-}
-
-// (c) panorama do processo -- a partir das respostas da coleta, nunca da IA.
-function sectionPanorama(){
-  const p = computePanorama();
-  const card = el('div', {class:'card panel-panorama'});
-  card.appendChild(el('div', {class:'block-label', text:'Panorama da coleta'}));
-  const stats = el('div', {class:'stat-row'});
-  stats.appendChild(statTile(`${p.respondidos}/${p.total}`, 'atributos respondidos'));
-  stats.appendChild(statTile(String(p.maisBaixas.length), 'no nível mais baixo da própria escala'));
-  stats.appendChild(statTile(String(p.maisAltas.length), 'no nível mais alto da própria escala'));
-  card.appendChild(stats);
-  if(p.maisBaixas.length){
-    card.appendChild(el('div', {class:'block-explain-text', style:'margin-top:12px;', text: 'Respostas no nível mais baixo: ' + p.maisBaixas.join(', ') + '.'}));
-  }
-  if(p.maisAltas.length){
-    card.appendChild(el('div', {class:'block-explain-text', text: 'Respostas no nível mais alto: ' + p.maisAltas.join(', ') + '.'}));
-  }
-  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Panorama informativo, a partir das respostas da coleta -- não é uma explicação causal do resultado oficial do DEXi.'}));
-  return card;
-}
-
-// (1.2) Seção dedicada -- lista visual (não texto corrido) dos atributos em
-// destaque, com indicador de cor e resumo de uma linha rastreável até a
-// resposta real da coleta. No mockup esta lógica aparece como "Atributos em
-// destaque" (adendo rodada 5, item 1.2).
-function sectionDestaques(){
-  const { fortes, atencao } = pontosDestaqueLists();
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Atributos em destaque'}));
-
-  const renderGroup = (title, cls, items) => {
-    const g = el('div', {class:'destaque-group'});
-    g.appendChild(el('div', {class:'destaque-group-title ' + cls, text: title}));
-    if(!items.length){
-      g.appendChild(el('div', {class:'block-explain-text', text:'Nenhum atributo nesta condição.'}));
-    } else {
-      items.forEach(({attr, label}) => {
-        const item = el('div', {class:'destaque-item'});
-        item.appendChild(el('div', {class:'destaque-dot ' + cls}));
-        const text = el('div', {class:'destaque-item-text'});
-        text.appendChild(el('b', {text: humanizeAttrId(attr.id) + ': '}));
-        text.appendChild(document.createTextNode('resposta registrada na coleta foi "' + label + '".'));
-        item.appendChild(text);
-        g.appendChild(item);
-      });
-    }
-    return g;
-  };
-
-  card.appendChild(renderGroup('Pontos fortes', 'forte', fortes));
-  card.appendChild(renderGroup('Pontos de atenção', 'atencao', atencao));
-  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Melhor/pior posição dentro da própria escala de 4 níveis de cada atributo (a mesma leitura do panorama) -- não é um ranking entre atributos diferentes nem um cálculo do DEXi.'}));
-  return card;
-}
-
-// (1.1) Visão por grupo -- cada um dos 7 grupos intermediários com barra de
-// posição na própria escala e, sob demanda (clique), o detalhamento dos
-// atributos básicos que o compõem com o valor de cada um (adendo rodada 5,
-// item 1.1). grupoTop já vem calculado pelo servidor (GET /api/attrs), a
-// partir da mesma tabela LEAF_TO_GROUP usada no radar -- nunca duplicada
-// aqui.
-function sectionGroupCards(){
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Grupos -- detalhamento por atributo'}));
-
-  if(!DEXI_MODEL){
-    card.appendChild(el('div', {class:'chart-empty-note', text:'Carregando...'}));
-    return card;
-  }
-
-  DEXI_MODEL.grupos.forEach((g) => {
-    const found = state.panel ? state.panel.grupos.find((pg) => pg.id === g.id) : null;
-    const idx = found ? g.niveis.indexOf(found.nivel) : null;
-    const isOpen = state.reportExpandedGroup === g.id;
-
-    const gc = el('div', {class:'group-card' + (isOpen ? ' group-card-open' : ''), onclick: () => {
-      state.reportExpandedGroup = isOpen ? null : g.id;
-      render();
-    }});
-    const header = el('div', {class:'group-card-header'});
-    header.appendChild(el('div', {class:'group-card-title', text: g.label}));
-    const right = el('div', {style:'display:flex; align-items:center; gap:10px;'});
-    right.appendChild(el('div', {class:'group-card-level', text: found ? found.nivelLabel : 'não identificado'}));
-    right.appendChild(el('div', {class:'group-card-caret', text: '›'}));
-    header.appendChild(right);
-    gc.appendChild(header);
-
-    const track = el('div', {class:'group-bar-track'});
-    const frac = (idx !== null && idx !== undefined) ? (idx + 1) / g.niveis.length : 0;
-    track.appendChild(el('div', {class:'group-bar-fill', style: `width:${Math.round(frac*100)}%`}));
-    gc.appendChild(track);
-
-    if(isOpen){
-      const body = el('div', {class:'group-card-body', onclick: (e) => e.stopPropagation()});
-      const attrsOfGroup = ATTRS.filter((a) => a.grupoTop === g.id);
-      if(!attrsOfGroup.length){
-        body.appendChild(el('div', {class:'block-explain-text', text:'Nenhum atributo básico mapeado para este grupo.'}));
-      } else {
-        attrsOfGroup.forEach((a) => {
-          const val = state.answers[a.id];
-          const vIdx = val ? a.niveis.indexOf(val) : -1;
-          const vLabel = (vIdx >= 0 && a.niveisExibicao) ? a.niveisExibicao[vIdx] : (val || 'não respondido');
-          const row = el('div', {class:'group-attr-row'});
-          row.appendChild(el('div', {class:'ga-name', text: humanizeAttrId(a.id)}));
-          row.appendChild(el('div', {class:'ga-val', text: vLabel}));
-          body.appendChild(row);
-        });
-      }
-      gc.appendChild(body);
-    }
-    card.appendChild(gc);
-  });
-  return card;
-}
-
-// Aba "Evolução" -- a jornada de 4 estágios já existente (sectionStatus),
-// ampliada. Deliberadamente NÃO mostra um gráfico de tendência histórica:
-// o mockup sugere um, mas esta versão da ferramenta não guarda dados entre
-// sessões (fora do escopo original) -- fabricar uma tendência sem dados
-// reais violaria a regra de ouro do adendo. A nota abaixo é honesta sobre
-// essa limitação em vez de simular um histórico.
-function sectionEvolucao(){
-  const card = el('div', {class:'card'});
-  card.appendChild(el('div', {class:'block-label', text:'Evolução -- posição atual na jornada'}));
-  card.appendChild(el('div', {class:'block-explain-text', text:'A posição abaixo é sempre o resultado oficial mais recente do DEXi para esta organização -- a mesma classificação mostrada em "Diagnóstico".'}));
-  card.appendChild(el('div', {class:'note', style:'margin-top:14px;', text:'Esta versão da ferramenta não guarda um histórico entre sessões, então não há uma linha de tendência ao longo do tempo para mostrar -- mostrar uma aqui exigiria inventar dados que não existem. Para acompanhar evolução, repita o diagnóstico periodicamente e compare os PDFs exportados de cada rodada.'}));
-  return card;
-}
-
-// Card "Próximos passos" (referência do mockup) -- prévia compacta do
-// centro de aprendizado na aba Diagnóstico, com atalho para a aba
-// Relatórios onde a seção completa (com as etiquetas do item 1.4) já vive.
-// Nunca duplica a chamada à IA -- só lê o que já está (ou não) carregado em
-// state.learning.
-function sectionProximosPassos(){
-  const card = el('div', {class:'card block-explain'});
-  card.appendChild(el('div', {class:'block-label', text:'Próximos passos'}));
-  if(state.learning && state.learning.temas.length){
-    state.learning.temas.slice(0, 2).forEach((t) => {
-      const item = el('div', {class:'learning-item'});
-      if(t.pontoLabel) item.appendChild(el('div', {class:'learning-tag', text: '⚑ ' + t.pontoLabel}));
-      item.appendChild(el('div', {class:'learning-tema', text: t.tema}));
-      card.appendChild(item);
-    });
-    card.appendChild(el('button', {class:'btn secondary small', text:'Ver centro de aprendizado completo →', style:'margin-top:14px;', onclick: () => { state.reportTab = 'relatorios'; render(); }}));
-  } else if(state.learningLoading || state.panelLoading){
-    card.appendChild(el('div', {class:'block-explain-text'}, [
-      el('span', {class:'spinner'}), el('span', {text:' preparando sugestões...', style:'margin-left:8px;'})
-    ]));
-  } else {
-    card.appendChild(el('div', {class:'block-explain-text', text:'As sugestões do centro de aprendizado aparecem aqui assim que o resultado for analisado -- veja a aba Relatórios.'}));
-  }
-  return card;
-}
-
-function reportTabNav(){
-  const tabs = [
-    {id:'diagnostico', label:'Diagnóstico'},
-    {id:'dimensoes', label:'Dimensões'},
-    {id:'atributos', label:'Atributos'},
-    {id:'evolucao', label:'Evolução'},
-    {id:'relatorios', label:'Relatórios'},
-  ];
-  const nav = el('div', {class:'report-tabs'});
-  tabs.forEach((t) => {
-    const active = state.reportTab === t.id;
-    nav.appendChild(el('button', {
-      class: 'report-tab' + (active ? ' report-tab-active' : ''),
-      text: t.label,
-      onclick: () => { state.reportTab = t.id; render(); },
-    }));
-  });
-  return nav;
-}
-
-// (e) centro de aprendizado -- temas de estudo vinculados aos pontos de
-// atenção, nunca livros/autores específicos (risco de citação inventada).
-function sectionLearning(){
-  const card = el('div', {class:'card block-explain'});
-  card.appendChild(el('div', {class:'block-label', text:'Centro de aprendizado'}));
-  if(state.learning && state.learning.temas.length){
-    state.learning.temas.forEach(t => {
-      const item = el('div', {class:'learning-item'});
-      // (1.4) etiqueta visual do ponto de atenção que motivou o tema --
-      // pontoLabel já vem validado pelo servidor contra a lista real de
-      // pontos de atenção (nunca um texto livre inventado pela IA).
-      if(t.pontoLabel){
-        item.appendChild(el('div', {class:'learning-tag', text: '⚑ ' + t.pontoLabel}));
-      }
-      item.appendChild(el('div', {class:'learning-tema', text: t.tema}));
-      item.appendChild(el('div', {class:'block-explain-text', text: t.porque}));
-      card.appendChild(item);
-    });
-  } else if(state.learningLoading){
-    card.appendChild(el('div', {class:'block-explain-text'}, [
-      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
-    ]));
-  } else if(state.learningError){
-    card.appendChild(el('div', {class:'error-box', text: state.learningError}));
-    card.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: ensureLearning}));
-  } else if(state.learning){
-    card.appendChild(el('div', {class:'block-explain-text', text:'Nenhum tema gerado nesta sessão.'}));
-  }
-  card.appendChild(el('div', {class:'note', style:'margin-top:12px;', text:'Temas de estudo sugeridos por IA, vinculados aos pontos de atenção do diagnóstico -- não são referências bibliográficas curadas ou verificadas pelo projeto.'}));
-  return card;
-}
-
-// (d) centro de dúvidas -- a conversa que já existia, agora reativa e como
-// uma seção do painel (nunca abre sozinha com um relatório).
-function sectionDuvidas(){
-  const card = el('div', {class:'card panel-duvidas'});
-  card.appendChild(el('div', {class:'block-label', text:'Centro de dúvidas'}));
-  if(state.duvidasChat.length){
-    const chatBox = el('div', {class:'chat-log', style:'margin-bottom:16px;'});
-    state.duvidasChat.forEach(m => {
-      chatBox.appendChild(el('div', {class: 'bubble report-body ' + (m.role === 'assistant' ? 'bubble-agent' : 'bubble-user'), text: m.text}));
-    });
-    card.appendChild(chatBox);
-  }
-  if(state.duvidasThinking){
-    card.appendChild(el('div', {class:'bubble bubble-agent'}, [
-      el('span', {class:'spinner'}), el('span', {text:' pensando...', style:'margin-left:8px;'})
-    ]));
-  } else {
-    const inputRow = el('div', {class:'chat-input-row'});
-    const textIn = el('input', {type:'text', placeholder:'Pergunte algo sobre o resultado (ex.: por que ficamos nesse nível em Estratégia?)...', id:'duvidasTextInput'});
-    textIn.addEventListener('keydown', (e) => { if(e.key === 'Enter' && textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } });
-    const sendBtn = el('button', {class:'btn chat-send', text:'Enviar', onclick: () => { if(textIn.value.trim()){ duvidasTurn(textIn.value); textIn.value=''; } }});
-    inputRow.appendChild(textIn);
-    inputRow.appendChild(sendBtn);
-    card.appendChild(inputRow);
-  }
-  if(state.duvidasError){
-    card.appendChild(el('div', {class:'error-box', text: state.duvidasError}));
-  }
-  return card;
-}
-
-// Painel da Etapa 3 (adendo rodada 5) -- navegação por abas seguindo a
-// lógica de organização do mockup (Diagnóstico / Dimensões / Atributos /
-// Evolução / Relatórios), sem copiar layout pixel a pixel. Cada aba é uma
-// combinação das mesmas seções já existentes (status, gráficos, panorama,
-// centro de aprendizado, centro de dúvidas) mais as três novas peças do
-// adendo (indicador circular unificado, cards de grupo com detalhamento,
-// lista de atributos em destaque) -- nada aqui recalcula ou inventa um
-// valor que não venha do resultado oficial do DEXi ou da coleta.
-function screenReport(){
-  const c = el('div');
-  c.appendChild(stepsNav(2));
-  c.appendChild(el('div', {class:'result-badge', text: state.orgName}));
-  c.appendChild(el('h1', {text:'Painel do resultado'}));
-
-  if(state.panel && !state.panel.consistencia.completo){
-    const parts = [];
-    if(state.panel.consistencia.atributosFaltando.length) parts.push('sem resposta na coleta: ' + state.panel.consistencia.atributosFaltando.join(', '));
-    if(state.panel.consistencia.atributosInvalidos.length) parts.push('valor fora das 4 alternativas oficiais: ' + state.panel.consistencia.atributosInvalidos.join(', '));
-    c.appendChild(el('div', {class:'error-box', text: 'Divergência de consistência encontrada — ' + parts.join(' · ')}));
-  }
-
-  c.appendChild(reportTabNav());
-
-  const tab = state.reportTab;
-  if(tab === 'diagnostico'){
-    c.appendChild(sectionStatus());
-    c.appendChild(sectionDestaques());
-    c.appendChild(sectionProximosPassos());
-  } else if(tab === 'dimensoes'){
-    c.appendChild(sectionCharts());
-    c.appendChild(sectionPanorama());
-  } else if(tab === 'atributos'){
-    c.appendChild(sectionGroupCards());
-    c.appendChild(sectionDestaques());
-  } else if(tab === 'evolucao'){
-    c.appendChild(sectionEvolucao());
-  } else if(tab === 'relatorios'){
-    c.appendChild(sectionLearning());
-    c.appendChild(sectionDuvidas());
-  }
-
-  if(state.panelError){
-    const box = el('div', {class:'error-box', text: state.panelError});
-    c.appendChild(box);
-    c.appendChild(el('button', {class:'btn secondary small', text:'Tentar novamente', style:'margin-top:10px;', onclick: () => { state.panelError = ''; ensurePanel(); }}));
-  }
-
-  c.appendChild(el('div', {class:'note', text:'O resultado final, as dimensões e os grupos vêm sempre do resultado oficial do DEXi (nunca recalculados). Interpretações, panorama e centro de aprendizado são gerados a partir dele e das respostas da coleta -- qualquer cenário hipotético é sempre indicado como simulação, nunca confundido com o resultado oficial.'}));
-
-  const btnRow = el('div', {class:'btn-row'});
-  btnRow.appendChild(el('button', {class:'btn', text: state.pdfExporting ? 'Gerando PDF…' : 'Baixar PDF', disabled: state.pdfExporting, onclick: downloadPanelPdf}));
-  btnRow.appendChild(el('button', {class:'btn secondary', text:'Nova avaliação', onclick: () => {
-    state.screen = 'intro'; state.idx = 0; state.answers = {}; state.registro = {}; state.chatLogs = {};
-    state.explanations = {}; state.explainErrors = {};
-    state.orgName = ''; state.orgContext = ''; state.dexiText = ''; state.collectionSourceLoaded = false;
-    state.panel = null; state.panelError = ''; state.learning = null; state.learningError = '';
-    state.duvidasChat = []; state.duvidasError = '';
-    state.reportTab = 'diagnostico'; state.reportExpandedGroup = null;
-    render();
-  }}));
-  c.appendChild(btnRow);
-  if(state.pdfExportError){
-    c.appendChild(el('div', {class:'error-box', text: state.pdfExportError}));
-  }
-
-  if(!state.panel && !state.panelLoading && !state.panelError){
-    // !state.panelError evita um loop -- sem essa checagem, toda vez que
-    // uma falha zerasse panelLoading e chamasse render(), esta mesma
-    // condição voltaria a ficar verdadeira e disparava ensurePanel() nela
-    // de novo, para sempre (bug real, pego só ao testar com falha de API).
-    // O setTimeout evita reentrar em render() antes deste appendChild()
-    // terminar (duplicaria a tela).
-    setTimeout(ensurePanel, 0);
-  }
-  return c;
-}
-
 // ---------- boot ----------
 
 async function boot(){
@@ -1250,8 +1215,14 @@ async function boot(){
     document.getElementById('app').appendChild(el('div', {class:'error-box', text:'Não consegui carregar os dados do servidor. Recarregue a página.'}));
     return;
   }
-  state.screen = 'intro';
+  state.screen = 'home';
   render();
 }
+
+// Logo do cabeçalho sempre clicável -> Início (adendo rodada 10, seção 1:
+// navegação coerente e sempre disponível, padrão comum de "clicar no logo
+// volta pra home"). O cabeçalho é HTML estático (não recriado a cada
+// render()), então o listener é preso uma única vez aqui.
+document.getElementById('siteHeader').addEventListener('click', goToHome);
 
 boot();

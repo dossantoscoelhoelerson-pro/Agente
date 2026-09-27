@@ -4,8 +4,9 @@
 resultado para o protótipo de dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de
 Kljajić Borštnar e Pucihar (2021), com o **DEXi** como motor oficial de cálculo. A
 especificação completa está em `especificacao_experiencia_conversacional.md`, com correções
-e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.md`,
-`adendo_especificacao_rodada4.md` e `adendo_especificacao_rodada5.md`.
+e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_rodada14.md` (a
+mais recente cobre rodapé institucional, ajustes de texto e exportação em PDF do Roadmap --
+ver "Sistema de design" e "Estrutura" abaixo para o que cada rodada trouxe).
 
 ## Arquitetura
 
@@ -26,14 +27,95 @@ e adições em `adendo_especificacao_rodada2.md`, `adendo_especificacao_rodada3.
   oficiais, sempre visíveis como botões, rotuladas com o texto de exibição final em
   `mapeamento_exibicao.json` (adendo rodada 4 -- o valor técnico que vai para CSV/.dxi nunca
   muda); (4) um campo de conversa livre para dúvida ou resposta em texto.
-- **Etapa 3 é um painel visual** (adendo rodada 3): status geral (nível final + posição na
-  escala de 4 níveis), gráficos SVG (posição nas duas dimensões e radar dos 7 grupos
-  intermediários -- sempre extraídos do resultado oficial do DEXi, nunca recalculados),
-  panorama da coleta (client-side, a partir das respostas), centro de dúvidas (a conversa,
-  agora reativa e como uma seção do painel) e centro de aprendizado (temas de estudo
-  vinculados aos pontos de atenção, nunca livros/autores específicos). Aceita upload de PDF
-  (o texto é extraído no backend com `pdf-parse`) além de `.txt/.json/.csv`. Tem exportação
-  do painel inteiro como PDF (`pdfkit`, server-side).
+- **Home é a porta de entrada** (`screenHome()`/`screenAbout()` em `public/js/app.js`,
+  adendo rodada 9) -- sidebar fixa com 4 itens sempre clicáveis, espelhando os três
+  caminhos abaixo mais a própria Início (rodada 11, seção 1), hero com ilustração
+  orbital em SVG (nenhuma foto foi fornecida como asset) e três caminhos:
+  1. **"Conhecer a ORBE"** -- tela nova e só explicativa (`screenAbout()`): o que é a
+     ferramenta, o papel da IA, a base metodológica (Kljajić Borštnar & Pucihar, 2021 /
+     DEX/DEXi), com uma camada `<details>` opcional mais técnica e um cartão de atribuição
+     acadêmica (autor, orientador, PROFNIT/UFSJ, com links para os sites oficiais).
+  2. **"Diagnóstico de Maturidade Digital"** -- fluxo já existente (`screenIntro()` →
+     coleta → DEXi manual → upload → Panorama), sem nenhuma mudança de lógica.
+  3. **"Já tenho um diagnóstico"** -- pula a Etapa 1 inteira direto para
+     `screenUpload()` (`state.skipCollection = true`), pedindo só o nome da organização
+     (que normalmente viria da Etapa 1). Sem `registro_completo`, a rastreabilidade do
+     Insights mostra uma nota breve e discreta em vez do atributo/resposta específicos --
+     nunca um alerta de abertura, e nunca bloqueia o fluxo.
+  O topo direito (notificação/avatar "Visitante") é um placeholder estático coerente com
+  a identidade visual -- a aplicação não tem sistema de login nesta fase (decisão em
+  aberto desde a rodada 6, junto com a persistência do Roadmap).
+- **Etapa 3 aceita o resultado do DEXi** por upload de PDF (texto extraído no backend com
+  `pdf-parse`) ou `.txt/.json/.csv` colado/carregado.
+- **Etapa 3 é o "Cockpit de Evolução Digital"** (adendo rodada 6, substitui o painel das
+  rodadas 3-5): três seções que são três momentos metodológicos da jornada, não só três
+  páginas -- **Panorama** ("Onde estamos?", visualizar), **Insights** ("O que isso
+  significa?", interpretar/explorar) e **Roadmap** ("O que vamos fazer?", agir). Todas
+  partem do mesmo resultado oficial extraído do DEXi (`POST /api/interpret/extract`, nunca
+  recalculado). Detalhes de cada seção em `public/js/cockpit.js`:
+  - **Panorama** (`screenPanorama()` em `public/js/cockpit.js` -- estrutura consolidada na
+    rodada 9, refino visual da rodada 7): "estado geral → perfil → estrutura → leitura geral
+    → árvore de atributos → capacidades → explorar → zoom", oito seções que se sucedem como
+    uma leitura progressiva, não gráficos concorrendo por atenção. (1) Abertura com nome,
+    contexto da organização (texto literal da coleta, nunca decomposto/inferido em
+    setor/porte/local por IA) e indicadores reais. (2) Resultado em destaque com indicador
+    circular unificado ao selo de classificação (a posição do nível oficial na própria
+    escala de 4 níveis, nunca um percentual calculado), e logo abaixo, no mesmo cartão,
+    **duas faixas qualitativas horizontais** para as capacidades Digital e Organizacional
+    (substituíram o mapa de dispersão + radares da rodada 7 -- menos elementos, nenhuma
+    leitura de "escala 0-100"). (3) **Estrutura do diagnóstico** (sunburst D3, fundo cinza
+    claro, alinhado à esquerda -- verde/amarelo já têm significado semântico específico no
+    resto da aplicação, ver rodada 10 seção 9) e **Capacidades** (grupos de cada dimensão
+    como barras qualitativas horizontais) lado a lado no mesmo `.cockpit-grid-2`, para
+    ficarem no mesmo campo de visão (pedido do usuário, rodada 10). (4) **Árvore de
+    atributos** (dendrograma D3, raiz em Maturidade Digital, nós coloridos num gradiente
+    vermelho→verde conforme o nível real -- exceção pontual e funcional à paleta de marca,
+    documentada em `treeLevelColor()`). (5) **Explore seu diagnóstico**: tabela navegável
+    (Capacidade/Grupo/Atributo/Nível) com filtros e busca, clicar numa linha abre a
+    exploração do atributo. "Atual × Meta" e "árvore de oportunidades" migraram para Roadmap
+    e Insights respectivamente (ver abaixo --
+    são leitura de futuro/interpretação, não descrição do que foi encontrado). Comparação com
+    mercado/benchmark foi avaliada e **descartada deliberadamente** -- não existe dado real
+    disponível no projeto para isso.
+  - **Insights** (`screenInsights()`; postura conversacional refinada nas rodadas 8-9 -- ver
+    `adendo_especificacao_rodada8.md`): síntese de abertura gerada por IA com três blocos
+    visualmente distintos (Resultado -- montado no cliente a partir do dado real, nunca da IA
+    --, Interpretação e Possibilidades), **árvore de oportunidades** (dendrograma D3 com os
+    pontos de atenção em destaque -- migrada do Panorama, por ser leitura interpretativa),
+    cards de pontos fortes/pontos de atenção, exploração de atributo individual (reaproveita
+    a explicação do Bloco 2 já gerada na Etapa 1 quando disponível, sem chamada nova). **O
+    consultor ORBE** ("Vamos entender esse resultado.") é o coração desta seção: a primeira
+    mensagem do chat já abre contextualizada (reaproveita a síntese já gerada, sem chamada
+    nova à IA só para o texto de abertura) com **caminhos concretos como chips clicáveis**
+    (os grupos reais da dimensão mais fraca no resultado). A cada resposta do agente
+    (`POST /api/interpret/turn`, saída estruturada validada contra os nomes reais de
+    dimensão/grupo/atributo -- nunca um nome inventado), novos chips aparecem para continuar
+    a conversa sem reformular a pergunta do zero. Postura definida em
+    `INTERPRET_SYSTEM_PROMPT` (`server/prompts.js`): consultor, nunca auditor/FAQ -- responde
+    primeiro a partir do resultado oficial em texto corrido natural; nunca abre com alerta de
+    inconsistência (só aparece, curta e contextual, quando relevante para a pergunta feita, e
+    só interrompe a resposta quando impede responder com segurança); nunca termina com
+    pergunta genérica de fechamento; usa o histórico da conversa para resolver referências
+    implícitas ao que já foi discutido. Nenhuma regra de fidelidade ao resultado do DEXi
+    muda -- é só o comportamento conversacional que é refinado.
+  - **Roadmap** (`screenRoadmap()`): "Atual × Meta" (meta escolhida pelo usuário nesta
+    sessão -- migrada do Panorama, por ser pergunta de gestão/futuro, nunca inventada nem
+    persistida), timeline de 12 meses (0-3/3-6/6-12), ações criadas manualmente ou propostas
+    pela IA a partir dos pontos de atenção (sempre rotuladas "Sugestão da IA", nunca
+    autoaceitas), conversa contextual por ação, status (não iniciada/em andamento/
+    concluída/pausada). **Funciona só com estado de sessão** (igual ao resto da aplicação
+    hoje -- nada persiste entre sessões): revisões de 3/6/12 meses, comparação com uma
+    avaliação anterior real e retomar o roadmap numa visita futura exigiriam um banco de
+    dados e um mecanismo de identificação de organização entre sessões -- mudança estrutural
+    deliberadamente **não implementada** (ver nota explícita na própria tela do Roadmap e na
+    seção 0 do adendo rodada 6).
+  - **D3.js** é servido localmente (`public/js/vendor/d3.min.js`, ver o README ao lado) --
+    não por CDN externo, para não depender de um serviço de terceiros no host de deploy.
+  - Exportação em PDF (`pdfkit`, server-side, `server/exportPdf.js`) -- `buildReportPdf()`
+    para o Panorama/Insights (a seção "Centro de aprendizado" mostra as ações do Roadmap) e
+    `buildRoadmapPdf()` para um PDF só do Roadmap (rodada 14, seção 7): ações manuais e
+    sugeridas pela IA (sempre identificadas), status e a conversa contextual de cada ação --
+    mesma infraestrutura, nunca um mecanismo novo.
 - **Paleta de cores oficial** (adendo rodada 4, seção 2) aplicada em toda a aplicação --
   tela de coleta, painel, gráficos, botões e PDF exportado (`public/css/styles.css`, com a
   correspondência de cada cor documentada no topo do arquivo). Erros/avisos usam uma cor de
@@ -137,12 +219,20 @@ server/
   exportPdf.js              monta o PDF do painel (pdfkit)
   anthropicClient.js       cliente da Anthropic + tratamento de erros
 public/
-  index.html
+  index.html               cabeçalho fixo + rodapé institucional estáticos (fora do #app,
+                            adendo rodada 14, seção 1) -- presentes em toda tela sem lógica
+                            de render() por tela
   css/styles.css
-  js/app.js               estado, telas (4 blocos por atributo, painel da Etapa 3 com abas)
+  js/app.js               estado compartilhado, roteador de telas, Home e os três
+                            caminhos (adendo rodada 9), Etapa 1 (4 blocos por atributo),
+                            extração do resultado do DEXi (ensurePanel)
+  js/cockpit.js             Cockpit de Evolução Digital -- Panorama/Insights/Roadmap
+                            (adendo rodada 6)
   js/dxi.js               decodeTemplate/fillDxi/splitKeepEnds/validateDxi
-  js/charts.js             gráficos SVG do painel (dimensões, radar dos grupos, indicador
-                            circular de posição na escala)
+  js/charts.js             gráficos SVG pequenos reaproveitados no Panorama (comparação das
+                            capacidades, indicador circular de posição na escala)
+  js/vendor/               bibliotecas de terceiros servidas localmente (D3.js -- ver
+                            public/js/vendor/README.md)
   assets/
     brand/                 logo ORBE original + derivados só de recorte/redimensionamento
                             (ver public/assets/brand/README.md)
@@ -163,15 +253,123 @@ Endpoints (`server/routes.js`):
 | `POST /api/collect/explain` | Bloco 2 -- explicação adaptada ao contexto |
 | `POST /api/collect/turn` | Bloco 4 -- turno da conversa livre de um atributo |
 | `POST /api/extract-pdf` | extrai texto de um PDF enviado (Etapa 3) |
-| `POST /api/interpret/extract` | status + dimensões + grupos, extraídos do resultado do DEXi |
-| `POST /api/interpret/learning` | centro de aprendizado (temas de estudo) |
-| `POST /api/interpret/turn` | centro de dúvidas -- turno da conversa sobre o resultado |
-| `POST /api/interpret/export-pdf` | exporta o painel completo como PDF |
+| `POST /api/interpret/extract` | status + dimensões + grupos, extraídos do resultado do DEXi (base de todo o Cockpit) |
+| `POST /api/interpret/learning` | mantido por compatibilidade (não usado pelo Cockpit atual) |
+| `POST /api/interpret/turn` | Insights -- consultor ORBE ("Vamos entender esse resultado."); retorna `message` + `nextSteps` (caminhos concretos validados) |
+| `POST /api/interpret/export-pdf` | exporta o Cockpit completo como PDF |
+| `POST /api/insights/synthesis` | Insights -- síntese de abertura (interpretação + possibilidades) |
+| `POST /api/insights/attribute-explore` | Insights -- possibilidades de evolução de um atributo (exploração individual) |
+| `POST /api/roadmap/generate` | Roadmap -- proposta inicial de ações a partir dos pontos de atenção ("Sugestão da IA") |
+| `POST /api/roadmap/action-turn` | Roadmap -- conversa contextual sobre uma ação específica |
+| `POST /api/roadmap/export-pdf` | exporta o Roadmap (ações, status, conversas por ação) como PDF |
+
+## Sistema de design
+
+Dois passes sobre a mesma base estrutural (`public/css/styles.css`, bloco `:root`):
+um primeiro refinando estrutura/uso sem alterar nenhum matiz de identidade, e a
+rodada 9 (`adendo_especificacao_rodada9.md`) trocando os próprios hex da paleta e a
+tipografia em toda a aplicação -- Home, coleta, Panorama, Insights, Roadmap e PDF.
+
+- **Paleta oficial (rodada 9)**: `--ink` Azul Profundo `#003F69`, `--blue` Azul
+  Digital `#1E8FC8`, `--green` Verde Inteligência `#2BBFB3`, `--yellow` Amarelo
+  Evolução `#FDC350`, `--red` Vermelho Identidade `#DF5266` -- mesma função
+  semântica de sempre (ver comentário no topo do CSS), só os hex mudaram. O logo
+  não muda nunca (arquivo original, sem redesenho). Os fundos estruturais
+  (`--paper`/`--paper-raised`/`--etapa1-bg`) são ajustes explícitos de rodadas
+  anteriores a pedido do usuário e não foram desfeitos; `--home-bg` (`#F5F3ED`,
+  "Off-white" do adendo) é novo, usado só no fundo da Home.
+- **Tokens de cor 60/30/10**: 60% neutra dominante (`--paper`/`--paper-raised`/
+  `--line`/`--ink`), 30% apoio/navegação (`--ink-soft`/`--blue`), 10% destaque
+  pontual (`--green`/`--yellow`, nunca preenchimento amplo).
+- **Auditoria WCAG AAA recalculada para os novos tons** (pedido explícito do
+  adendo 9): `--ink-soft`, `--blue-soft`/`-strong`, `--green-soft`/`-strong`,
+  `--yellow-soft`/`-strong` e `--red-soft` foram todos recalculados a partir dos
+  hex novos, mantendo a mesma lógica já estabelecida (badges usam `--ink` como
+  cor do texto sobre o próprio fundo "-soft", nunca a cor de expressão; as
+  mesmas três exceções documentadas no CSS continuam valendo). Valores de cor
+  fixos fora de variável CSS (gráficos em `public/js/charts.js`, gradiente das
+  árvores D3 em `public/js/cockpit.js`, PDF exportado em `server/exportPdf.js`)
+  foram atualizados manualmente para os novos hex, como o adendo pediu.
+- **Tipografia**: Manrope substitui Fraunces + Inter em toda a aplicação --
+  uma família única para título e corpo; a hierarquia visual que antes vinha da
+  troca serifada/sem-serifa agora vem só do peso (ExtraBold/Bold nos títulos,
+  SemiBold em subtítulos, Regular no corpo). Escala geométrica Major Third
+  (razão 1.25, `--text-xs` a `--text-2xl`) continua aplicada à hierarquia
+  principal de título/leitura; `line-height` 1.6 em blocos de texto; espaçamento
+  entre seções sempre o dobro do espaçamento interno dos componentes
+  (`--space-component`/`--space-section`).
+- **Menos bordas, mais espaço**: cartões cujo fundo já os distingue da página
+  (`.card`, `.cockpit-card`, `.roadmap-action-card`, `.insight-card`, `.home-card`
+  etc.) usam sombra suave em vez de borda de 1px.
+- **Micro-interações**: `--ease-smooth: cubic-bezier(0.25, 1, 0.5, 1)` em botões,
+  opções de resposta, itens de navegação, chips e cartões de ação -- hover com
+  leve elevação (sombra) e escala até 1.02, `:focus-visible` visível em todos.
+- **Ícones chapados/sólidos** (adendo rodada 10, seção 6): substituem os emojis da
+  Home (cartões, barra de capacidades, sidebar, notificação) -- `ICON_PATHS`/`icon()`
+  em `public/js/app.js`, um único fill sólido nas cores oficiais da marca.
+- **Navegação sempre disponível** (rodada 10, seção 1): o logo do cabeçalho fica
+  clicável em todas as telas fora da Home, sempre voltando para a Início.
+- **Logo atualizado** (rodada 10, seção 3): novo arquivo em PNG com fundo transparente de
+  verdade (o pesquisador reenviou como anexo de arquivo, preservando o canal alfa -- a
+  primeira tentativa, colada inline no chat, tinha sido reconvertida para `.webp` sem
+  transparência), assinatura trocada de "Visão integrada" para "Maturidade Digital", favicon
+  regenerado a partir do símbolo. Ver `public/assets/brand/README.md`.
+- **Sidebar com 4 itens fixos** (adendo rodada 11, seção 1) -- Início / Conhecer a ORBE /
+  Realizar um diagnóstico / Já tenho um diagnóstico, sempre clicáveis (substituem
+  Insights/Roadmap, que dependiam de um diagnóstico já carregado -- essa navegação já
+  existe dentro do Cockpit via `.cockpit-nav`). Logo da sidebar maior.
+- **`orbe_simbolo.png`** (rodada 11, seção 2) -- só o símbolo (sem texto), usado nos
+  emblemas pequenos do hero e da seção "Por que a ORBE" em vez do lockup completo: o
+  lockup é uma imagem larga (~3:1) com texto, que encolhida virava uma mancha ilegível
+  lendo como "uma caixa borrada" -- não era falta de transparência de verdade. O mesmo
+  fundo branco (real, não uma ilusão de escala) também foi removido de `.intro-logo` na
+  tela de abertura da coleta -- sobrava de quando o PNG antigo tinha fundo sólido
+  embutido, virou redundante (e visível) depois que o arquivo passou a ser transparente.
+- **Upload consolidado** (rodada 11, seção 5) -- o caminho "Já tenho um diagnóstico" tinha
+  duas áreas de upload separadas (JSON da coleta / resultado do DEXi); viraram uma só, que
+  reconhece automaticamente qual é qual pelo conteúdo (só o JSON da coleta tem a chave
+  `respostas` -- nunca ambíguo, mesmo se o resultado do DEXi também for `.json`).
+- **Ícones chapados/sólidos em toda a aplicação** (rodada 12, auditoria): últimos emojis
+  restantes (gatilho de chat do Insights, tags "Sugestão da IA" do Roadmap) trocados por
+  `icon()`/texto simples; anéis do hero da Home giram devagar ao redor do símbolo (90s,
+  `prefers-reduced-motion` desliga a animação).
+- **"Conhecer a ORBE", Bloco 1 -- composição final** (rodadas 12-14): texto de abertura
+  reescrito peça por peça a partir de referências visuais enviadas pelo pesquisador até
+  chegar na versão atual -- barra degradê nas 4 cores da marca, título em até 2 linhas com
+  o trecho final em Azul mais claro, corpo em bloco único de largura cheia (mesma lógica de
+  "Por que a ORBE?"), e slogan de fechamento em box Azul Profundo. Blocos 2-4 (Por que a
+  ORBE / Como funciona / De onde vem a ORBE) com fundo por bloco (azul → verde → azul) e a
+  lista "Em resumo" direto sobre o fundo verde, sem cartão branco por baixo.
+- **Rodapé institucional** (adendo rodada 14, seção 1) -- `<footer>` estático em
+  `public/index.html`, fora do `#app`, presente em toda tela sem precisar de lógica de
+  `render()` por tela: símbolo da ORBE (sem alteração) + wordmark em texto vivo branco
+  (o PNG do lockup tem o texto em Azul Profundo, pensado pra fundo claro -- reescrever como
+  texto evita recolorir o arquivo da marca em si), bloco "Agente de IA", bloco de contato,
+  linha inferior com copyright e "PROFNIT UFSJ · PRODUTO TECNOLÓGICO". Separador entre as
+  duas linhas é um degradê sutil nas 4 cores da marca a 35% de opacidade (pedido do
+  pesquisador, no lugar de uma linha sólida azul-clara).
+- **Legenda de cores nas árvores do Panorama** (rodada 14, seção 5) -- bolinhas nos 4 níveis
+  da escala qualitativa (Baixo/Médio-baixo/Médio-alto/Alto), cor de cada uma vinda da mesma
+  `treeLevelColor()` que já colore os nós (nunca um hex duplicado à mão).
+- **Bug de contraste corrigido** (rodada 14, seção 6): a bolha do usuário no chat de Insights
+  tinha a mesma especificidade CSS que `.report-body` (que fixa `color:var(--ink)`) -- o
+  texto do usuário (Azul Profundo) ficava sobre o próprio fundo Azul Profundo da bolha,
+  praticamente ilegível. Corrigido com um seletor de duas classes (`.bubble.bubble-user`).
 
 ## O que ainda falta (pendências conhecidas da especificação)
 
-- Hospedagem definitiva e persistência entre sessões: decisões em aberto, não bloqueiam
-  esta primeira versão (ver especificação, seção 12).
+- **Persistência entre sessões (decisão em aberto, adendo rodada 6, seção 0)**: hoje nada
+  na aplicação sobrevive a um recarregamento de página -- nem a coleta, nem o resultado do
+  DEXi, nem o Roadmap. Isso é suficiente para Panorama e Insights (visualizar/interpretar um
+  resultado dentro da mesma sessão), mas limita três coisas específicas do Roadmap/Panorama
+  que dependeriam de dados reais entre visitas: revisões de 3/6/12 meses do Roadmap,
+  comparação "Atual × Referência" com uma avaliação anterior real, e evolução histórica.
+  Implementar isso exigiria um banco de dados simples e um mecanismo de identificação de
+  organização entre sessões (não precisa ser login completo -- pode ser um código de acesso
+  por organização) -- mudança estrutural deliberadamente deixada para decisão do pesquisador
+  antes de implementar, em vez de simular esses dados.
+- Hospedagem definitiva: decisão em aberto, não bloqueia esta primeira versão (ver
+  especificação, seção 12).
 - Os rótulos legíveis das 2 dimensões + 7 grupos do painel (`server/dexiModel.js`, campo
   `label`) e a limpeza cosmética dos tokens de escala agregada (`DISPLAY_LEVELS`, ex.
   "Medio.Baixo" -> "Médio-baixo") foram curados por mim a partir do `template.dxi` -- ao

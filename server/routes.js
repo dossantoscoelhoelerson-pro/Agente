@@ -7,7 +7,7 @@ const { ATTRS } = require('./attrs');
 const { displayLabel } = require('./displayMap');
 const { questionFor } = require('./officialQuestions');
 const { ROOT, DIMENSOES, GRUPOS, displayLevel, groupIdFor } = require('./dexiModel');
-const { buildReportPdf } = require('./exportPdf');
+const { buildReportPdf, buildRoadmapPdf } = require('./exportPdf');
 const { client, MODEL, handleAnthropicError } = require('./anthropicClient');
 const {
   EXPLAIN_SYSTEM_PROMPT,
@@ -20,6 +20,14 @@ const {
   buildLearningUserPrompt,
   INTERPRET_SYSTEM_PROMPT,
   buildInterpretContextPrompt,
+  SYNTHESIS_SYSTEM_PROMPT,
+  buildSynthesisUserPrompt,
+  ATTRIBUTE_EXPLORE_SYSTEM_PROMPT,
+  buildAttributeExploreUserPrompt,
+  ROADMAP_GENERATE_SYSTEM_PROMPT,
+  buildRoadmapGenerateUserPrompt,
+  ROADMAP_ACTION_SYSTEM_PROMPT,
+  buildRoadmapActionContextPrompt,
 } = require('./prompts');
 
 const router = express.Router();
@@ -28,8 +36,14 @@ const ATTR_INDEX = new Map(ATTRS.map((a) => [a.id, a]));
 const GROUP_INDEX = new Map(GRUPOS.map((g) => [g.id, g]));
 const DIMENSAO_INDEX = new Map(DIMENSOES.map((d) => [d.id, d]));
 
+// "action" é z.string() e não z.enum(...) -- o helper zodOutputFormat da SDK
+// (0.127.0) não converte a palavra-chave JSON Schema "enum" para o formato
+// estrito da Anthropic (vira só uma descrição em texto, sem restrição real
+// aplicada pela API); um z.enum() aqui faz a resposta inteira falhar com
+// erro genérico sempre que a IA escrever algo fora dos 2 valores esperados,
+// mesmo a mensagem sendo válida. Normalizado explicitamente abaixo.
 const TurnSchema = z.object({
-  action: z.enum(['reply', 'register']),
+  action: z.string(),
   message: z.string(),
   chosen: z.string().optional(),
 });
@@ -40,6 +54,24 @@ function sanitizeHistory(history) {
     .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
     .slice(-40) // uma rodada por atributo não deveria chegar perto disso, mas limita abuso
     .map((m) => ({ role: m.role, text: m.text.slice(0, 4000) }));
+}
+
+// Estrutura real do modelo (dimensão -> grupos -> atributos), para o
+// consultor ORBE (Insights) poder oferecer caminhos concretos e nomeados ao
+// final de cada resposta sem nunca inventar um nome de grupo/atributo
+// (adendo rodada 8, seção 4) -- mesma fonte (DIMENSOES/GRUPOS/ATTRS) usada
+// em todo o resto do projeto, nunca uma lista à parte.
+function buildEstruturaTxt() {
+  return DIMENSOES.map((dim) => {
+    const gruposTxt = GRUPOS
+      .filter((g) => g.dimensaoId === dim.id)
+      .map((g) => {
+        const attrsTxt = ATTRS.filter((a) => groupIdFor(a.grupo) === g.id).map((a) => a.id).join(', ');
+        return `  - ${g.label} (atributos: ${attrsTxt})`;
+      })
+      .join('\n');
+    return `${dim.label}:\n${gruposTxt}`;
+  }).join('\n');
 }
 
 function checkConsistency(answers) {
@@ -142,7 +174,10 @@ router.post('/collect/turn', async (req, res) => {
       });
     }
 
-    res.json({ action: parsed.action, message: parsed.message, chosen: parsed.chosen });
+    // "action" só pode ser 'register' quando de fato bateu na validação
+    // acima -- qualquer outro valor (inclusive um que a IA tenha escrito
+    // fora dos 2 esperados) vira 'reply', nunca repassado cru ao cliente.
+    res.json({ action: parsed.action === 'register' ? 'register' : 'reply', message: parsed.message, chosen: parsed.chosen });
   } catch (err) {
     handleAnthropicError(err, res);
   }
@@ -318,6 +353,161 @@ router.post('/interpret/learning', async (req, res) => {
   }
 });
 
+// Cockpit (adendo rodada 6) -- Insights, abertura: síntese curta da seção,
+// com "interpretacao" e "possibilidades" gerados pela IA. O campo
+// "resultado" NUNCA vem daqui -- é montado no cliente a partir do dado real
+// do painel (state.panel), eliminando qualquer risco de a IA reformular o
+// resultado oficial ao "sintetizá-lo".
+router.post('/insights/synthesis', async (req, res) => {
+  const { orgName, orgContext, nivelFinalLabel, capDigitalLabel, capOrganizacionalLabel, grupos, fortes, atencao } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  const SynthesisSchema = z.object({ interpretacao: z.string(), possibilidades: z.string() });
+
+  try {
+    const response = await client.messages.parse({
+      model: MODEL,
+      // 700 truncava com alguma frequência o texto consultivo mais longo
+      // (rodada 8/9, tom natural/não-robótico) antes de fechar o JSON --
+      // resposta cortada = JSON inválido = falha na estrutura, nunca no
+      // conteúdo. 1400 dá folga real para os dois campos.
+      max_tokens: 1400,
+      system: [{ type: 'text', text: SYNTHESIS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildSynthesisUserPrompt({
+        orgName, orgContext: String(orgContext || ''), nivelFinalLabel, capDigitalLabel, capOrganizacionalLabel,
+        grupos: Array.isArray(grupos) ? grupos : [],
+        fortes: Array.isArray(fortes) ? fortes : [],
+        atencao: Array.isArray(atencao) ? atencao : [],
+      }) }],
+      output_config: { format: zodOutputFormat(SynthesisSchema) },
+    });
+    const parsed = response.parsed_output;
+    if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
+    res.json(parsed);
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Insights, exploração de um atributo
+// individual: só o campo "possibilidades" (o "o que isso significa" reusa a
+// explicação do Bloco 2 já gerada na Etapa 1, no cliente, sem chamada nova).
+router.post('/insights/attribute-explore', async (req, res) => {
+  const { attrId, orgName, orgContext, evidenciaConversa } = req.body || {};
+
+  const attr = ATTR_INDEX.get(attrId);
+  if (!attr) return res.status(400).json({ error: 'attrId inválido.' });
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  const pergunta = questionFor(attr.id) || attr.descricao;
+  const resposta = req.body.resposta;
+  const respostaLabel = req.body.respostaLabel;
+  const evidenciaTxt = Array.isArray(evidenciaConversa)
+    ? evidenciaConversa
+        .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
+        .slice(-20)
+        .map((m) => `${m.role === 'assistant' ? 'agente' : 'usuário'}: ${m.text.slice(0, 1000)}`)
+        .join('\n')
+    : '';
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 400,
+      system: [{ type: 'text', text: ATTRIBUTE_EXPLORE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildAttributeExploreUserPrompt({ attr, pergunta, resposta, respostaLabel, orgName, orgContext: String(orgContext || ''), evidenciaTxt }) }],
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    res.json({ possibilidades: textBlock ? textBlock.text : '' });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Roadmap: proposta inicial de ações a partir
+// dos pontos de atenção, reaproveitando buildPontosAtencao() (mesma leitura
+// já usada pelo centro de aprendizado). Toda ação vem marcada como sugestão
+// -- o cliente rotula "Sugestão da IA" e o usuário decide o que aceitar.
+router.post('/roadmap/generate', async (req, res) => {
+  const { orgName, orgContext, answers, capDigital, capOrganizacional, grupos } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+  if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'answers é obrigatório.' });
+
+  const pontosAtencao = buildPontosAtencao({ answers, capDigital, capOrganizacional, grupos });
+  const pontoLabels = pontosAtencao.map((p) => p.label);
+
+  // "horizonte" é z.string() e não z.enum(...) -- mesma limitação do helper
+  // zodOutputFormat da SDK (0.127.0) documentada acima em TurnSchema;
+  // normalizado explicitamente abaixo em vez de deixar a validação estrita
+  // do enum derrubar a geração inteira do roadmap.
+  const RoadmapSchema = z.object({
+    acoes: z.array(z.object({
+      titulo: z.string(),
+      origemLabel: z.string().nullable(),
+      objetivo: z.string(),
+      horizonte: z.string(),
+      indicadorSugerido: z.string(),
+    })),
+  });
+  const HORIZONTES_VALIDOS = ['0-3', '3-6', '6-12'];
+
+  try {
+    const response = await client.messages.parse({
+      model: MODEL,
+      max_tokens: 1800,
+      system: [{ type: 'text', text: ROADMAP_GENERATE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: buildRoadmapGenerateUserPrompt({ orgName, orgContext: String(orgContext || ''), pontosAtencao }) }],
+      output_config: { format: zodOutputFormat(RoadmapSchema) },
+    });
+    const parsed = response.parsed_output;
+    if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
+    // Mesma validação defensiva de sempre: origemLabel só é aceito se bater
+    // byte a byte com um rótulo real da lista enviada.
+    const acoes = parsed.acoes.map((a) => ({
+      ...a,
+      origemLabel: a.origemLabel && pontoLabels.includes(a.origemLabel) ? a.origemLabel : null,
+      horizonte: HORIZONTES_VALIDOS.includes(a.horizonte) ? a.horizonte : '0-3',
+    }));
+    res.json({ acoes });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
+// Cockpit (adendo rodada 6) -- Roadmap: conversa contextual sobre UMA ação.
+router.post('/roadmap/action-turn', async (req, res) => {
+  const { orgName, action, history, userMessage } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+  if (!action || typeof action !== 'object' || typeof action.titulo !== 'string') {
+    return res.status(400).json({ error: 'action é obrigatório.' });
+  }
+  if (typeof userMessage !== 'string' || !userMessage.trim()) {
+    return res.status(400).json({ error: 'userMessage é obrigatório.' });
+  }
+
+  const contextPrompt = buildRoadmapActionContextPrompt({ orgName, action });
+  const safeHistory = sanitizeHistory(history);
+  const messages = [{ role: 'user', content: contextPrompt }];
+  safeHistory.forEach((m) => messages.push({ role: m.role, content: m.text }));
+  messages.push({ role: 'user', content: userMessage.trim() });
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1500,
+      system: [{ type: 'text', text: ROADMAP_ACTION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages,
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    res.json({ message: textBlock ? textBlock.text : '' });
+  } catch (err) {
+    handleAnthropicError(err, res);
+  }
+});
+
 // Etapa 3, painel (d) -- centro de dúvidas: um turno da conversa livre
 // sobre o resultado (reativo -- só responde quando o usuário pergunta).
 router.post('/interpret/turn', async (req, res) => {
@@ -357,6 +547,7 @@ router.post('/interpret/turn', async (req, res) => {
     missing,
     invalid,
     registroTxt,
+    estruturaTxt: buildEstruturaTxt(),
   });
 
   const safeHistory = sanitizeHistory(history);
@@ -364,16 +555,52 @@ router.post('/interpret/turn', async (req, res) => {
   safeHistory.forEach((m) => messages.push({ role: m.role, content: m.text }));
   messages.push({ role: 'user', content: userMessage.trim() });
 
+  // "Caminhos concretos" (rodada 9): em vez de só citar nomes em texto
+  // corrido, o agente devolve os próximos passos como dado estruturado, pra
+  // virar chip clicável na UI -- validados aqui contra os nomes reais de
+  // dimensão/grupo/atributo (mesmo padrão defensivo do resto do projeto),
+  // nunca confiando que a IA não inventou um nome parecido.
+  // "kind" é z.string() aqui, não z.enum(...) -- limitação confirmada do
+  // helper zodOutputFormat/transformJSONSchema da SDK (0.127.0): ele não
+  // sabe converter a palavra-chave JSON Schema "enum" para o formato
+  // estrito da Anthropic, então um enum vira só uma DESCRIÇÃO em texto (não
+  // uma restrição real aplicada pela API). Como o enum não é garantido do
+  // lado da API, um z.enum() aqui rejeita a resposta inteira (erro genérico
+  // "Erro inesperado ao consultar a IA") sempre que a IA escrever um valor
+  // que não bata 100% com os 3 esperados -- mesmo a mensagem em si sendo
+  // perfeitamente válida. Com string solta, a validação passa e o filtro
+  // abaixo (que já existia) descarta silenciosamente qualquer "kind" que
+  // não seja um dos três valores reais -- falha graciosa em vez de erro.
+  const InterpretTurnSchema = z.object({
+    message: z.string(),
+    nextSteps: z.array(z.object({
+      label: z.string(),
+      kind: z.string(),
+      question: z.string(),
+    })).max(5),
+  });
+
   try {
-    const response = await client.messages.create({
+    const response = await client.messages.parse({
       model: MODEL,
       max_tokens: 4096,
       system: [{ type: 'text', text: INTERPRET_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages,
+      output_config: { format: zodOutputFormat(InterpretTurnSchema) },
     });
-    const textBlock = response.content.find((b) => b.type === 'text');
+    const parsed = response.parsed_output;
+    if (!parsed) return res.status(502).json({ error: 'A IA não retornou um formato de resposta válido.' });
+
+    const nextSteps = (parsed.nextSteps || []).filter((s) => {
+      if (s.kind === 'dimensao') return DIMENSOES.some((d) => d.label === s.label);
+      if (s.kind === 'grupo') return GRUPOS.some((g) => g.label === s.label);
+      if (s.kind === 'atributo') return ATTRS.some((a) => a.id === s.label || a.id.replace(/\./g, ' ') === s.label);
+      return false;
+    }).slice(0, 5);
+
     res.json({
-      message: textBlock ? textBlock.text : '',
+      message: parsed.message,
+      nextSteps,
       consistencia: { completo, atributosFaltando: missing, atributosInvalidos: invalid },
     });
   } catch (err) {
@@ -412,6 +639,30 @@ router.post('/interpret/export-pdf', async (req, res) => {
     res.send(buffer);
   } catch (err) {
     console.error('[export-pdf]', err);
+    res.status(500).json({ error: 'Não consegui gerar o PDF: ' + err.message });
+  }
+});
+
+// Roadmap: exportação em PDF (adendo rodada 14, seção 7) -- mesmo padrão
+// da rota acima, cliente envia os dados já mostrados na tela (ações,
+// status, conversas por ação), servidor só monta o documento via
+// buildRoadmapPdf().
+router.post('/roadmap/export-pdf', async (req, res) => {
+  const { orgName, orgContext, items } = req.body || {};
+
+  if (!orgName || typeof orgName !== 'string') return res.status(400).json({ error: 'orgName é obrigatório.' });
+
+  try {
+    const buffer = await buildRoadmapPdf({
+      orgName,
+      orgContext: String(orgContext || ''),
+      items: Array.isArray(items) ? items : [],
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${orgName.replace(/\s+/g, '_')}_roadmap.pdf"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('[export-pdf-roadmap]', err);
     res.status(500).json({ error: 'Não consegui gerar o PDF: ' + err.message });
   }
 });
