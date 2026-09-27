@@ -4,7 +4,9 @@
 resultado para o protótipo de dissertação de mestrado (PROFNIT/UFSJ), aplicando o modelo de
 Kljajić Borštnar e Pucihar (2021), com o **DEXi** como motor oficial de cálculo. A
 especificação completa está em `especificacao_experiencia_conversacional.md`, com correções
-e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_rodada8.md`.
+e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_rodada14.md` (a
+mais recente cobre rodapé institucional, ajustes de texto e exportação em PDF do Roadmap --
+ver "Sistema de design" e "Estrutura" abaixo para o que cada rodada trouxe).
 
 ## Arquitetura
 
@@ -109,8 +111,11 @@ e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_roda
     seção 0 do adendo rodada 6).
   - **D3.js** é servido localmente (`public/js/vendor/d3.min.js`, ver o README ao lado) --
     não por CDN externo, para não depender de um serviço de terceiros no host de deploy.
-  - Exportação do Cockpit inteiro como PDF continua disponível (`pdfkit`, server-side) --
-    a seção "Centro de aprendizado" do PDF agora mostra as ações do Roadmap.
+  - Exportação em PDF (`pdfkit`, server-side, `server/exportPdf.js`) -- `buildReportPdf()`
+    para o Panorama/Insights (a seção "Centro de aprendizado" mostra as ações do Roadmap) e
+    `buildRoadmapPdf()` para um PDF só do Roadmap (rodada 14, seção 7): ações manuais e
+    sugeridas pela IA (sempre identificadas), status e a conversa contextual de cada ação --
+    mesma infraestrutura, nunca um mecanismo novo.
 - **Paleta de cores oficial** (adendo rodada 4, seção 2) aplicada em toda a aplicação --
   tela de coleta, painel, gráficos, botões e PDF exportado (`public/css/styles.css`, com a
   correspondência de cada cor documentada no topo do arquivo). Erros/avisos usam uma cor de
@@ -214,7 +219,9 @@ server/
   exportPdf.js              monta o PDF do painel (pdfkit)
   anthropicClient.js       cliente da Anthropic + tratamento de erros
 public/
-  index.html
+  index.html               cabeçalho fixo + rodapé institucional estáticos (fora do #app,
+                            adendo rodada 14, seção 1) -- presentes em toda tela sem lógica
+                            de render() por tela
   css/styles.css
   js/app.js               estado compartilhado, roteador de telas, Home e os três
                             caminhos (adendo rodada 9), Etapa 1 (4 blocos por atributo),
@@ -254,6 +261,7 @@ Endpoints (`server/routes.js`):
 | `POST /api/insights/attribute-explore` | Insights -- possibilidades de evolução de um atributo (exploração individual) |
 | `POST /api/roadmap/generate` | Roadmap -- proposta inicial de ações a partir dos pontos de atenção ("Sugestão da IA") |
 | `POST /api/roadmap/action-turn` | Roadmap -- conversa contextual sobre uma ação específica |
+| `POST /api/roadmap/export-pdf` | exporta o Roadmap (ações, status, conversas por ação) como PDF |
 
 ## Sistema de design
 
@@ -321,6 +329,32 @@ tipografia em toda a aplicação -- Home, coleta, Panorama, Insights, Roadmap e 
   duas áreas de upload separadas (JSON da coleta / resultado do DEXi); viraram uma só, que
   reconhece automaticamente qual é qual pelo conteúdo (só o JSON da coleta tem a chave
   `respostas` -- nunca ambíguo, mesmo se o resultado do DEXi também for `.json`).
+- **Ícones chapados/sólidos em toda a aplicação** (rodada 12, auditoria): últimos emojis
+  restantes (gatilho de chat do Insights, tags "Sugestão da IA" do Roadmap) trocados por
+  `icon()`/texto simples; anéis do hero da Home giram devagar ao redor do símbolo (90s,
+  `prefers-reduced-motion` desliga a animação).
+- **"Conhecer a ORBE", Bloco 1 -- composição final** (rodadas 12-14): texto de abertura
+  reescrito peça por peça a partir de referências visuais enviadas pelo pesquisador até
+  chegar na versão atual -- barra degradê nas 4 cores da marca, título em até 2 linhas com
+  o trecho final em Azul mais claro, corpo em bloco único de largura cheia (mesma lógica de
+  "Por que a ORBE?"), e slogan de fechamento em box Azul Profundo. Blocos 2-4 (Por que a
+  ORBE / Como funciona / De onde vem a ORBE) com fundo por bloco (azul → verde → azul) e a
+  lista "Em resumo" direto sobre o fundo verde, sem cartão branco por baixo.
+- **Rodapé institucional** (adendo rodada 14, seção 1) -- `<footer>` estático em
+  `public/index.html`, fora do `#app`, presente em toda tela sem precisar de lógica de
+  `render()` por tela: símbolo da ORBE (sem alteração) + wordmark em texto vivo branco
+  (o PNG do lockup tem o texto em Azul Profundo, pensado pra fundo claro -- reescrever como
+  texto evita recolorir o arquivo da marca em si), bloco "Agente de IA", bloco de contato,
+  linha inferior com copyright e "PROFNIT UFSJ · PRODUTO TECNOLÓGICO". Separador entre as
+  duas linhas é um degradê sutil nas 4 cores da marca a 35% de opacidade (pedido do
+  pesquisador, no lugar de uma linha sólida azul-clara).
+- **Legenda de cores nas árvores do Panorama** (rodada 14, seção 5) -- bolinhas nos 4 níveis
+  da escala qualitativa (Baixo/Médio-baixo/Médio-alto/Alto), cor de cada uma vinda da mesma
+  `treeLevelColor()` que já colore os nós (nunca um hex duplicado à mão).
+- **Bug de contraste corrigido** (rodada 14, seção 6): a bolha do usuário no chat de Insights
+  tinha a mesma especificidade CSS que `.report-body` (que fixa `color:var(--ink)`) -- o
+  texto do usuário (Azul Profundo) ficava sobre o próprio fundo Azul Profundo da bolha,
+  praticamente ilegível. Corrigido com um seletor de duas classes (`.bubble.bubble-user`).
 
 ## O que ainda falta (pendências conhecidas da especificação)
 
