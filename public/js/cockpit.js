@@ -231,14 +231,15 @@ function screenPanorama(){
   // cartão coeso.
   c.appendChild(sectionOverview());
 
-  // 3. Estrutura do diagnóstico (sunburst) -- "como o resultado é formado?"
-  c.appendChild(sectionSunburst());
+  // 3+5. Estrutura do diagnóstico (sunburst, "como o resultado é formado?")
+  // e Capacidades lado a lado, no mesmo campo de visão (pedido do usuário).
+  const estruturaCapacidadesRow = el('div', { class: 'cockpit-grid-2' });
+  estruturaCapacidadesRow.appendChild(sectionSunburst());
+  estruturaCapacidadesRow.appendChild(sectionCapacidadesBars());
+  c.appendChild(estruturaCapacidadesRow);
 
   // 4. Árvore de atributos.
   c.appendChild(sectionAttributeTree());
-
-  // 5. Capacidades -- grupos de cada dimensão como barras qualitativas.
-  c.appendChild(sectionCapacidadesBars());
 
   // 6. Explore seu diagnóstico -- tabela navegável.
   c.appendChild(sectionExplorar());

@@ -234,7 +234,7 @@ function homeShell(active, contentChildren){
 
   const sidebar = el('aside', {class:'home-sidebar'});
   const logoWrap = el('div', {class:'home-sidebar-logo'});
-  logoWrap.appendChild(el('img', {src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Visão integrada'}));
+  logoWrap.appendChild(el('img', {src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Maturidade Digital'}));
   sidebar.appendChild(logoWrap);
   sidebar.appendChild(sidebarNav(active));
 
@@ -267,21 +267,42 @@ function homeShell(active, contentChildren){
 // Elemento gráfico orbital (linhas orbitais + pontos de conexão) -- própria
 // linguagem gráfica pedida no adendo, construída em SVG puro a partir da
 // paleta oficial. Não é uma foto (nenhum arquivo de foto foi fornecido) --
-// o símbolo real da ORBE aparece sobreposto, nunca redesenhado.
+// o símbolo real da ORBE aparece sobreposto, nunca redesenhado. Reaproveitada
+// tanto no hero da Home quanto na seção "Por que a ORBE" (rodada 10, seção
+// 5: pedido explícito de deixar as duas composições consistentes entre si)
+// -- mesmos dois anéis (um achatado, um mais redondo) em ângulos fixos, com
+// os pontos calculados para caírem exatamente sobre a linha do anel (nunca
+// soltos), então a composição lê como intencional em qualquer tamanho.
+function orbitSvg(size, dotColors){
+  const cx = size / 2, cy = size / 2;
+  const ring1 = { rx: size * 0.46, ry: size * 0.19, rot: -12 };
+  const ring2 = { rx: size * 0.33, ry: size * 0.33, rot: 8 };
+  const pointOn = (ring, angleDeg) => {
+    const a = (angleDeg * Math.PI) / 180;
+    const x0 = ring.rx * Math.cos(a), y0 = ring.ry * Math.sin(a);
+    const r = (ring.rot * Math.PI) / 180;
+    return [cx + x0 * Math.cos(r) - y0 * Math.sin(r), cy + x0 * Math.sin(r) + y0 * Math.cos(r)];
+  };
+  const dots = [
+    { ring: ring1, angle: 8, color: dotColors[0], r: size * 0.03 },
+    { ring: ring1, angle: 195, color: dotColors[1], r: size * 0.03 },
+    { ring: ring2, angle: 95, color: dotColors[2], r: size * 0.026 },
+    { ring: ring2, angle: 268, color: dotColors[3], r: size * 0.026 },
+  ];
+  const dotsSvg = dots.map((d) => {
+    const [x, y] = pointOn(d.ring, d.angle);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${d.r.toFixed(1)}" fill="${d.color}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="100%" height="100%" role="img" aria-label="Ilustração orbital ORBE" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="${cx}" cy="${cy}" rx="${ring1.rx}" ry="${ring1.ry}" fill="none" stroke="var(--blue)" stroke-width="${size * 0.003}" opacity="0.35" transform="rotate(${ring1.rot} ${cx} ${cy})"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${ring2.rx}" ry="${ring2.ry}" fill="none" stroke="var(--green)" stroke-width="${size * 0.003}" opacity="0.32" transform="rotate(${ring2.rot} ${cx} ${cy})"/>
+    ${dotsSvg}
+  </svg>`;
+}
+
 function orbitGraphic(){
   const wrap = el('div', {class:'home-orbit-graphic'});
-  wrap.innerHTML = `
-    <svg viewBox="0 0 440 360" width="100%" height="100%" role="img" aria-label="Ilustração orbital ORBE" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="220" cy="180" rx="200" ry="80" fill="none" stroke="var(--blue)" stroke-width="1.2" opacity="0.35"/>
-      <ellipse cx="220" cy="180" rx="150" ry="150" fill="none" stroke="var(--green)" stroke-width="1.2" opacity="0.3"/>
-      <ellipse cx="220" cy="180" rx="200" ry="80" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.25" transform="rotate(35 220 180)"/>
-      <circle cx="20" cy="180" r="6" fill="var(--blue)"/>
-      <circle cx="420" cy="180" r="6" fill="var(--red)"/>
-      <circle cx="220" cy="30" r="6" fill="var(--yellow)"/>
-      <circle cx="220" cy="330" r="6" fill="var(--green)"/>
-      <circle cx="90" cy="90" r="5" fill="var(--yellow)"/>
-      <circle cx="350" cy="270" r="5" fill="var(--blue)"/>
-    </svg>`;
+  wrap.innerHTML = orbitSvg(400, ['var(--blue)', 'var(--red)', 'var(--yellow)', 'var(--green)']);
   const logo = el('img', {class:'home-orbit-logo', src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'Símbolo ORBE'});
   wrap.appendChild(logo);
   return wrap;
@@ -338,20 +359,13 @@ function screenHome(){
   }));
   entrySection.appendChild(cardsGrid);
 
-  // Seção rediagramada (adendo rodada 10, seção 5) -- antes era só uma linha
-  // simples de ícone+texto sob uma borda, com sensação de "jogada"; agora é
-  // um cartão com o símbolo da ORBE grande, integrado como elemento gráfico
-  // de fundo (a versão em PNG com fundo transparente entra aqui assim que
-  // disponível -- ver nota no topo do arquivo/README), acompanhado das
-  // linhas orbitais que já são a linguagem gráfica da Home.
+  // Seção rediagramada (adendo rodada 10, seção 5) -- cartão com o símbolo
+  // da ORBE integrado ao mesmo gráfico orbital do hero (orbitSvg(), rodada
+  // 10: pedido explícito de deixar as duas composições consistentes),
+  // maior e mais integrado do que a linha simples de ícone+texto de antes.
   const capSection = el('div', {class:'home-cap-section'});
   const capDecor = el('div', {class:'home-cap-decor'});
-  capDecor.innerHTML = `<svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true">
-    <ellipse cx="100" cy="100" rx="95" ry="38" fill="none" stroke="var(--blue)" stroke-width="1" opacity="0.4" transform="rotate(-10 100 100)"/>
-    <ellipse cx="100" cy="100" rx="70" ry="70" fill="none" stroke="var(--green)" stroke-width="1" opacity="0.35"/>
-    <circle cx="12" cy="70" r="4" fill="var(--yellow)"/>
-    <circle cx="188" cy="130" r="4" fill="var(--red)"/>
-  </svg>`;
+  capDecor.innerHTML = orbitSvg(200, ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)']);
   capDecor.appendChild(el('img', {class:'home-cap-logo', src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'Símbolo ORBE'}));
   capSection.appendChild(capDecor);
 
@@ -410,6 +424,19 @@ function screenAbout(){
   card3.appendChild(details);
   c.appendChild(card3);
 
+  // Atribuição acadêmica (pedido do usuário): a ORBE é o produto de uma
+  // dissertação de mestrado real, não um projeto anônimo -- mesma
+  // informação já usada na abertura da Etapa 1, com links para as
+  // instituições oficiais.
+  const card4 = el('div', {class:'card'});
+  card4.appendChild(el('h2', {text:'Quem está por trás da ORBE'}));
+  card4.appendChild(el('p', {text:'A ORBE é uma pesquisa aplicada desenvolvida por Welerson Carvalho Coelho, sob orientação do Prof. Dr. Darlinton Barbosa Feres Carvalho, no âmbito do PROFNIT -- Programa de Pós-Graduação em Propriedade Intelectual e Transferência de Tecnologia para Inovação, ponto focal UFSJ (Universidade Federal de São João del-Rei). O modelo de avaliação segue a metodologia de maturidade digital proposta por Kljajić Borštnar e Pucihar (2021).'}));
+  const linksRow = el('div', {class:'home-about-links'});
+  linksRow.appendChild(el('a', {href:'https://profnit.org.br', target:'_blank', rel:'noopener', text:'PROFNIT →'}));
+  linksRow.appendChild(el('a', {href:'https://ufsj.edu.br', target:'_blank', rel:'noopener', text:'UFSJ →'}));
+  card4.appendChild(linksRow);
+  c.appendChild(card4);
+
   const btnRow = el('div', {class:'btn-row'});
   btnRow.appendChild(el('button', {class:'btn secondary', text:'← Voltar à Início', onclick: goToHome}));
   btnRow.appendChild(el('button', {class:'btn', text:'Começar diagnóstico →', onclick: () => { state.screen = 'intro'; render(); }}));
@@ -430,7 +457,7 @@ function screenIntro(){
   // porque o PNG tem fundo branco embutido e a Etapa 1 usa fundo cinza
   // (--etapa1-bg), evitando um retângulo branco "solto" sobre o cinza.
   const logoHero = el('div', {class:'intro-logo'});
-  logoHero.appendChild(el('img', {class:'intro-logo-img', src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Visão integrada'}));
+  logoHero.appendChild(el('img', {class:'intro-logo-img', src:'/assets/brand/orbe_lockup_branco.png', alt:'ORBE — Maturidade Digital'}));
   c.appendChild(logoHero);
   c.appendChild(el('div', {class:'eyebrow brand', text:'Diagnóstico de Maturidade Digital'}));
   c.appendChild(el('h1', {text:'Onde sua organização está na jornada digital?'}));

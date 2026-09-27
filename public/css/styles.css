@@ -420,7 +420,7 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-section-title{font-family:var(--font-display); font-size:var(--text-lg); font-weight:700; margin:0;}
 .cockpit-section-question{font-size:13px; color:var(--ink-soft); font-style:italic;}
 
-.cockpit-grid-2{display:grid; grid-template-columns:1.1fr 1fr; gap:22px; align-items:stretch;}
+.cockpit-grid-2{display:grid; grid-template-columns:1fr 1.15fr; gap:22px; align-items:stretch;}
 @media (max-width:900px){ .cockpit-grid-2{grid-template-columns:1fr;} }
 .cockpit-card{
   background:var(--paper-raised); border-radius:16px; padding:var(--space-component);
@@ -627,9 +627,14 @@ body.cockpit-screen .wrap{max-width:1180px;}
 .cockpit-qual-track-label{font-size:13.5px; font-weight:600; color:var(--ink);}
 .cockpit-qual-track-level{font-size:13.5px; font-weight:600; color:var(--ink);}
 
-/* Capacidades -- barras qualitativas horizontais (substituem os radares). */
+/* Capacidades -- barras qualitativas horizontais (substituem os radares).
+   Rodada 10: a seção passou a dividir a largura da tela com "Estrutura do
+   diagnóstico" (.cockpit-grid-2), então as duas capacidades empilham em
+   vez de ficar lado a lado -- cada linha continua com espaço suficiente
+   pro rótulo, a barra e o nível. */
 .cockpit-bars-grid{display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:6px;}
 @media (max-width:860px){ .cockpit-bars-grid{grid-template-columns:1fr;} }
+.cockpit-grid-2 .cockpit-bars-grid{grid-template-columns:1fr; gap:22px;}
 .qual-bar-row{display:grid; grid-template-columns:150px 1fr 110px; align-items:center; gap:10px; margin-top:12px;}
 .qual-bar-row:first-of-type{margin-top:0;}
 .qual-bar-label{font-size:13px; color:var(--ink); font-weight:600;}
@@ -751,8 +756,11 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
 .home-cap-logo{position:relative; width:88px; height:auto; border-radius:16px; box-shadow:0 8px 22px rgba(0,63,105,.16);}
 .home-cap-content{flex:1; min-width:0; padding:28px 32px 28px 8px;}
 .home-cap-eyebrow{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:14px;}
-.home-capabilities{display:flex; gap:28px; flex-wrap:wrap;}
-.home-cap-item{display:flex; align-items:center; gap:10px; flex:1; min-width:220px;}
+/* Grid com colunas fixas (nunca flex-wrap) -- sempre em linha (3 colunas)
+   ou em coluna (1, no mobile), nunca um meio-termo ambíguo que quebra em
+   pontos imprevisíveis (era a fonte da "confusão" apontada). */
+.home-capabilities{display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;}
+.home-cap-item{display:flex; align-items:center; gap:10px; min-width:0;}
 .home-cap-icon{display:inline-flex; flex-shrink:0;}
 .home-cap-title{font-size:13.5px; font-weight:700; color:var(--ink);}
 .home-cap-text{font-size:12px; color:var(--ink-soft);}
@@ -760,11 +768,17 @@ body.home-screen .wrap{max-width:none; padding:0; margin:0;}
   .home-cap-section{flex-direction:column;}
   .home-cap-decor{width:100%; height:120px;}
   .home-cap-content{padding:8px 24px 24px;}
+  .home-capabilities{grid-template-columns:1fr;}
+}
+@media (min-width:761px) and (max-width:980px){
+  .home-capabilities{grid-template-columns:1fr 1fr;}
 }
 
 .home-about-details{margin-top:16px; font-size:13.5px;}
 .home-about-details summary{cursor:pointer; color:var(--blue-strong); font-weight:600;}
 .home-about-details-body{margin-top:10px; color:var(--ink-soft); line-height:1.6;}
+.home-about-links{display:flex; gap:18px; margin-top:6px;}
+.home-about-links a{color:var(--blue-strong); font-weight:600; font-size:14px; text-decoration:underline;}
 
 @media (max-width:900px){
   .home-cards-grid{grid-template-columns:1fr;}

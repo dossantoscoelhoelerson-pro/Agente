@@ -31,7 +31,8 @@ e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_roda
   ilustração orbital em SVG (nenhuma foto foi fornecida como asset) e três caminhos:
   1. **"Conhecer a ORBE"** -- tela nova e só explicativa (`screenAbout()`): o que é a
      ferramenta, o papel da IA, a base metodológica (Kljajić Borštnar & Pucihar, 2021 /
-     DEX/DEXi), com uma camada `<details>` opcional mais técnica.
+     DEX/DEXi), com uma camada `<details>` opcional mais técnica e um cartão de atribuição
+     acadêmica (autor, orientador, PROFNIT/UFSJ, com links para os sites oficiais).
   2. **"Diagnóstico de Maturidade Digital"** -- fluxo já existente (`screenIntro()` →
      coleta → DEXi manual → upload → Panorama), sem nenhuma mudança de lógica.
   3. **"Já tenho um diagnóstico"** -- pula a Etapa 1 inteira direto para
@@ -60,18 +61,17 @@ e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_roda
     escala de 4 níveis, nunca um percentual calculado), e logo abaixo, no mesmo cartão,
     **duas faixas qualitativas horizontais** para as capacidades Digital e Organizacional
     (substituíram o mapa de dispersão + radares da rodada 7 -- menos elementos, nenhuma
-    leitura de "escala 0-100"). (3) **Sunburst D3** da estrutura completa. (4) **Leitura
-    geral**: três blocos com contagens reais dos 34 atributos pela posição na própria escala
-    (nível mais alto = já estruturado, nível mais baixo = ponto de atenção, os dois níveis do
-    meio = espaço de evolução -- nunca uma classificação extra inventada pela IA). (5)
-    **Árvore de atributos** (dendrograma D3, raiz em Maturidade Digital, nós coloridos num
-    gradiente vermelho→verde conforme o nível real -- exceção pontual e funcional à paleta de
-    marca, documentada em `treeLevelColor()`). (6) **Capacidades**: os grupos de cada
-    dimensão como barras qualitativas horizontais lado a lado. (7) **Explore seu
-    diagnóstico**: tabela navegável (Capacidade/Grupo/Atributo/Nível) com filtros e busca,
-    clicar numa linha abre a exploração do atributo. (8) **Heatmap D3** dos 34 atributos
-    ("selecione um atributo para entender como ele aparece no resultado"). "Atual × Meta" e
-    "árvore de oportunidades" migraram para Roadmap e Insights respectivamente (ver abaixo --
+    leitura de "escala 0-100"). (3) **Estrutura do diagnóstico** (sunburst D3, fundo cinza
+    claro, alinhado à esquerda -- verde/amarelo já têm significado semântico específico no
+    resto da aplicação, ver rodada 10 seção 9) e **Capacidades** (grupos de cada dimensão
+    como barras qualitativas horizontais) lado a lado no mesmo `.cockpit-grid-2`, para
+    ficarem no mesmo campo de visão (pedido do usuário, rodada 10). (4) **Árvore de
+    atributos** (dendrograma D3, raiz em Maturidade Digital, nós coloridos num gradiente
+    vermelho→verde conforme o nível real -- exceção pontual e funcional à paleta de marca,
+    documentada em `treeLevelColor()`). (5) **Explore seu diagnóstico**: tabela navegável
+    (Capacidade/Grupo/Atributo/Nível) com filtros e busca, clicar numa linha abre a
+    exploração do atributo. "Atual × Meta" e "árvore de oportunidades" migraram para Roadmap
+    e Insights respectivamente (ver abaixo --
     são leitura de futuro/interpretação, não descrição do que foi encontrado). Comparação com
     mercado/benchmark foi avaliada e **descartada deliberadamente** -- não existe dado real
     disponível no projeto para isso.
@@ -301,19 +301,14 @@ tipografia em toda a aplicação -- Home, coleta, Panorama, Insights, Roadmap e 
   em `public/js/app.js`, um único fill sólido nas cores oficiais da marca.
 - **Navegação sempre disponível** (rodada 10, seção 1): o logo do cabeçalho fica
   clicável em todas as telas fora da Home, sempre voltando para a Início.
+- **Logo atualizado** (rodada 10, seção 3): novo arquivo em PNG com fundo transparente de
+  verdade (o pesquisador reenviou como anexo de arquivo, preservando o canal alfa -- a
+  primeira tentativa, colada inline no chat, tinha sido reconvertida para `.webp` sem
+  transparência), assinatura trocada de "Visão integrada" para "Maturidade Digital", favicon
+  regenerado a partir do símbolo. Ver `public/assets/brand/README.md`.
 
 ## O que ainda falta (pendências conhecidas da especificação)
 
-- **Logo em PNG com fundo transparente (adendo rodada 10, seção 3, bloqueado)**: o adendo
-  pede a troca da assinatura "Visão integrada" -> "Maturidade Digital" e o novo arquivo do
-  logo em todos os pontos já mapeados (Home, cabeçalho, favicon, PDF). O pesquisador enviou
-  uma imagem colada direto na conversa, mas o arquivo que chega por esse caminho é
-  reconvertido para `.webp` e perde o canal alfa -- o que sobrou tem o padrão xadrez de
-  "fundo transparente" do próprio visualizador gravado como pixel opaco (confirmado
-  inspecionando o arquivo: sem canal alfa, tons de cinza em grade regular exatamente onde
-  deveria estar vazio). Usar esse arquivo deixaria um quadriculado visível atrás do logo em
-  toda a aplicação. Precisa do arquivo `.png` original enviado como anexo de arquivo (não
-  colado inline) para preservar a transparência real.
 - **Persistência entre sessões (decisão em aberto, adendo rodada 6, seção 0)**: hoje nada
   na aplicação sobrevive a um recarregamento de página -- nem a coleta, nem o resultado do
   DEXi, nem o Roadmap. Isso é suficiente para Panorama e Insights (visualizar/interpretar um
