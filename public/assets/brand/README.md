@@ -20,6 +20,14 @@ conteúdo mudou:
   também transparente. Derivado só por recorte do arquivo acima.
 - `../favicon/*` — recorte só do símbolo (sem nenhum texto), redimensionado para os
   tamanhos padrão de favicon/ícone de app (16, 32, 48, 180, 192, 512px + .ico).
+- `orbe_simbolo.png` — o mesmo recorte do símbolo (mesma origem do favicon, ~552x564,
+  quase quadrado), em resolução maior, transparente. Novo na rodada 11: usado nos
+  emblemas pequenos (círculo do hero, "Por que a ORBE") em vez do lockup completo --
+  o lockup é uma imagem bem larga (proporção ~3:1) com texto; encolhido para um emblema
+  pequeno, o texto virava uma mancha ilegível que lia como "uma caixa borrada" (era essa
+  a origem do problema relatado no adendo rodada 11, seção 2 -- não era falta de
+  transparência de verdade, o arquivo já era transparente desde a rodada 10; era o
+  recorte errado sendo usado num espaço pequeno demais pra ele).
 
 `orbe_logo_fundo_azul.png` / `orbe_lockup_azul.png` ficam como estavam (versão antiga, com
 "Visão integrada", fundo `#DFECF2` sólido) -- **não são mais referenciados em nenhum lugar

@@ -26,9 +26,9 @@ e adições em `adendo_especificacao_rodada2.md` até `adendo_especificacao_roda
   `mapeamento_exibicao.json` (adendo rodada 4 -- o valor técnico que vai para CSV/.dxi nunca
   muda); (4) um campo de conversa livre para dúvida ou resposta em texto.
 - **Home é a porta de entrada** (`screenHome()`/`screenAbout()` em `public/js/app.js`,
-  adendo rodada 9) -- sidebar fixa (Início/Diagnóstico/Insights/Roadmap; os dois últimos
-  só ficam clicáveis depois de um diagnóstico carregado, `state.panel`), hero com
-  ilustração orbital em SVG (nenhuma foto foi fornecida como asset) e três caminhos:
+  adendo rodada 9) -- sidebar fixa com 4 itens sempre clicáveis, espelhando os três
+  caminhos abaixo mais a própria Início (rodada 11, seção 1), hero com ilustração
+  orbital em SVG (nenhuma foto foi fornecida como asset) e três caminhos:
   1. **"Conhecer a ORBE"** -- tela nova e só explicativa (`screenAbout()`): o que é a
      ferramenta, o papel da IA, a base metodológica (Kljajić Borštnar & Pucihar, 2021 /
      DEX/DEXi), com uma camada `<details>` opcional mais técnica e um cartão de atribuição
@@ -306,6 +306,21 @@ tipografia em toda a aplicação -- Home, coleta, Panorama, Insights, Roadmap e 
   primeira tentativa, colada inline no chat, tinha sido reconvertida para `.webp` sem
   transparência), assinatura trocada de "Visão integrada" para "Maturidade Digital", favicon
   regenerado a partir do símbolo. Ver `public/assets/brand/README.md`.
+- **Sidebar com 4 itens fixos** (adendo rodada 11, seção 1) -- Início / Conhecer a ORBE /
+  Realizar um diagnóstico / Já tenho um diagnóstico, sempre clicáveis (substituem
+  Insights/Roadmap, que dependiam de um diagnóstico já carregado -- essa navegação já
+  existe dentro do Cockpit via `.cockpit-nav`). Logo da sidebar maior.
+- **`orbe_simbolo.png`** (rodada 11, seção 2) -- só o símbolo (sem texto), usado nos
+  emblemas pequenos do hero e da seção "Por que a ORBE" em vez do lockup completo: o
+  lockup é uma imagem larga (~3:1) com texto, que encolhida virava uma mancha ilegível
+  lendo como "uma caixa borrada" -- não era falta de transparência de verdade. O mesmo
+  fundo branco (real, não uma ilusão de escala) também foi removido de `.intro-logo` na
+  tela de abertura da coleta -- sobrava de quando o PNG antigo tinha fundo sólido
+  embutido, virou redundante (e visível) depois que o arquivo passou a ser transparente.
+- **Upload consolidado** (rodada 11, seção 5) -- o caminho "Já tenho um diagnóstico" tinha
+  duas áreas de upload separadas (JSON da coleta / resultado do DEXi); viraram uma só, que
+  reconhece automaticamente qual é qual pelo conteúdo (só o JSON da coleta tem a chave
+  `respostas` -- nunca ambíguo, mesmo se o resultado do DEXi também for `.json`).
 
 ## O que ainda falta (pendências conhecidas da especificação)
 

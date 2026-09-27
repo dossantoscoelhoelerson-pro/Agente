@@ -167,15 +167,26 @@ function screenLoading(){
 
 function goToHome(){ state.screen = 'home'; render(); }
 
-// Item "Diagnóstico" da sidebar -- retoma de onde a pessoa estiver: painel
-// já carregado -> Panorama; coleta em andamento -> próxima pergunta não
-// respondida; nada em andamento -> mesma porta de entrada do Card 2.
+// Item "Realizar um diagnóstico" da sidebar -- retoma de onde a pessoa
+// estiver: coleta em andamento -> próxima pergunta não respondida; nada em
+// andamento -> mesma porta de entrada do Card 2. Painel já carregado numa
+// sessão anterior não redireciona pra cá -- esse caminho é sempre para
+// COMEÇAR uma nova coleta (ver adendo rodada 11, seção 1: espelha os
+// caminhos da Home, e "Realizar um diagnóstico" na Home sempre inicia o
+// fluxo do zero).
 function goToDiagnostico(){
-  if(state.panel){ state.screen = 'report'; render(); return; }
   const next = nextUnansweredIndex();
   if(next > 0 && next < ATTRS.length){ goToAttribute(next); return; }
   state.screen = 'intro';
   render();
+}
+
+function goToAbout(){ state.screen = 'about'; render(); }
+
+// Item "Já tenho um diagnóstico" -- mesmo caminho do Card 3 da Home
+// (compartilhado para não duplicar a lógica entre sidebar e Home).
+function goToSkipCollection(){
+  state.skipCollection = true; state.uploadError = ''; state.screen = 'upload'; render();
 }
 
 // Ícones chapados/sólidos nas cores oficiais da marca (adendo rodada 10,
@@ -203,22 +214,22 @@ function icon(name, opts){
   return span;
 }
 
+// Sidebar com os 4 itens -- espelham exatamente os três caminhos da Home
+// (mais a própria Início), sempre clicáveis (adendo rodada 11, seção 1;
+// substitui os itens Insights/Roadmap, que dependiam de um diagnóstico já
+// carregado -- essa navegação já existe dentro do Cockpit, via
+// .cockpit-nav, uma vez que a pessoa chega lá).
 function sidebarNav(active){
   const nav = el('nav', {class:'home-sidebar-nav'});
   const items = [
-    {id:'home', label:'Início', icon:'home', onclick: goToHome, enabled: true},
-    {id:'diagnostico', label:'Diagnóstico', icon:'target', onclick: goToDiagnostico, enabled: true},
-    {id:'insights', label:'Insights', icon:'spark', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('insights'), 0); }, enabled: !!state.panel},
-    {id:'roadmap', label:'Roadmap', icon:'list', onclick: () => { state.screen = 'report'; render(); setTimeout(() => goToSection('roadmap'), 0); }, enabled: !!state.panel},
+    {id:'home', label:'Início', icon:'home', onclick: goToHome},
+    {id:'about', label:'Conhecer a ORBE', icon:'people', onclick: goToAbout},
+    {id:'diagnostico', label:'Realizar um diagnóstico', icon:'target', onclick: goToDiagnostico},
+    {id:'skip', label:'Já tenho um diagnóstico', icon:'compass', onclick: goToSkipCollection},
   ];
   items.forEach((it) => {
-    const cls = 'home-sidebar-item' + (it.id === active ? ' active' : '') + (it.enabled ? '' : ' disabled');
-    nav.appendChild(el('button', {
-      class: cls,
-      disabled: !it.enabled,
-      onclick: it.enabled ? it.onclick : null,
-      title: it.enabled ? '' : 'Disponível depois de carregar um diagnóstico',
-    }, [
+    const cls = 'home-sidebar-item' + (it.id === active ? ' active' : '');
+    nav.appendChild(el('button', { class: cls, onclick: it.onclick }, [
       icon(it.icon, {class:'home-sidebar-icon'}),
       el('span', {text: it.label}),
     ]));
@@ -303,7 +314,11 @@ function orbitSvg(size, dotColors){
 function orbitGraphic(){
   const wrap = el('div', {class:'home-orbit-graphic'});
   wrap.innerHTML = orbitSvg(400, ['var(--blue)', 'var(--red)', 'var(--yellow)', 'var(--green)']);
-  const logo = el('img', {class:'home-orbit-logo', src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'Símbolo ORBE'});
+  // Símbolo (não o lockup com texto) -- adendo rodada 11, seção 2: o lockup
+  // é uma imagem bem larga (~3:1) com texto; encolhido pro tamanho de um
+  // emblema, o texto virava uma mancha que lia como "caixa borrada", não
+  // falta de transparência de verdade.
+  const logo = el('img', {class:'home-orbit-logo', src:'/assets/brand/orbe_simbolo.png', alt:'Símbolo ORBE'});
   wrap.appendChild(logo);
   return wrap;
 }
@@ -321,7 +336,7 @@ function homeCard({iconName, iconColor, title, text, ctaLabel, onClick, featured
 function screenHome(){
   const hero = el('div', {class:'home-hero'});
   const heroText = el('div', {class:'home-hero-text'});
-  heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'Seu diagnóstico, com mais inteligência.'}));
+  heroText.appendChild(el('div', {class:'home-hero-eyebrow', text:'Seu diagnóstico, com mais inteligência'}));
   heroText.appendChild(el('h1', {class:'home-hero-title', text:'Bem-vindo à ORBE'}));
   heroText.appendChild(el('div', {class:'home-hero-sub', text:'Sua parceira na jornada da transformação digital.'}));
   heroText.appendChild(el('p', {class:'home-hero-body', text:'Aqui você encontra uma experiência completa para entender onde sua organização está, o que isso significa e como evoluir com base em dados, insights e ação.'}));
@@ -343,7 +358,7 @@ function screenHome(){
     iconName:'people', iconColor:'var(--blue)', title:'Conhecer a ORBE',
     text:'Entenda quem somos, nossa metodologia e como ajudamos organizações a evoluírem na jornada digital.',
     ctaLabel:'Saiba mais →',
-    onClick: () => { state.screen = 'about'; render(); },
+    onClick: goToAbout,
   }));
   cardsGrid.appendChild(homeCard({
     iconName:'chart', iconColor:'var(--yellow)', title:'Diagnóstico de Maturidade Digital',
@@ -355,7 +370,7 @@ function screenHome(){
     iconName:'compass', iconColor:'var(--green)', title:'Já tenho um diagnóstico',
     text:'Se você já possui um diagnóstico DEXi, acesse aqui para visualizar seus resultados, explorar insights e planejar sua evolução.',
     ctaLabel:'Acessar meu diagnóstico →',
-    onClick: () => { state.skipCollection = true; state.uploadError = ''; state.screen = 'upload'; render(); },
+    onClick: goToSkipCollection,
   }));
   entrySection.appendChild(cardsGrid);
 
@@ -366,7 +381,7 @@ function screenHome(){
   const capSection = el('div', {class:'home-cap-section'});
   const capDecor = el('div', {class:'home-cap-decor'});
   capDecor.innerHTML = orbitSvg(200, ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)']);
-  capDecor.appendChild(el('img', {class:'home-cap-logo', src:'/assets/brand/orbe_logo_fundo_branco.png', alt:'Símbolo ORBE'}));
+  capDecor.appendChild(el('img', {class:'home-cap-logo', src:'/assets/brand/orbe_simbolo.png', alt:'Símbolo ORBE'}));
   capSection.appendChild(capDecor);
 
   const capContent = el('div', {class:'home-cap-content'});
@@ -442,7 +457,7 @@ function screenAbout(){
   btnRow.appendChild(el('button', {class:'btn', text:'Começar diagnóstico →', onclick: () => { state.screen = 'intro'; render(); }}));
   c.appendChild(btnRow);
 
-  return homeShell(null, [c]);
+  return homeShell('about', [c]);
 }
 
 // ---------- Etapa 1: coleta conversacional ----------
@@ -883,42 +898,16 @@ function screenUpload(){
 
   const card = el('div', {class:'card'});
 
-  if(!hasFullCollectionData()){
+  // Campo único (adendo rodada 11, seção 5): antes eram duas áreas de
+  // upload separadas (JSON da coleta / resultado do DEXi). O conteúdo dos
+  // dois tipos nunca é ambíguo -- só o JSON da coleta tem a chave
+  // "respostas" -- então dá pra reconhecer automaticamente qual é qual a
+  // partir do próprio conteúdo do arquivo, sem precisar de duas áreas.
+  const needsColeta = !hasFullCollectionData();
+  if(needsColeta){
     card.appendChild(el('label', {text: state.skipCollection
-      ? 'Se você também tiver o JSON da coleta desta avaliação, pode carregar aqui (opcional -- enriquece a leitura no Insights)'
-      : 'Sessão nova — carregue também o JSON da coleta (baixado ao final da Etapa 1)'}));
-    const collZone = el('div', {class:'upload-zone'});
-    collZone.appendChild(el('div', {class:'icon', text:'⇪'}));
-    collZone.appendChild(el('div', {text:'Clique para escolher o JSON da coleta'}));
-    const collInput = el('input', {type:'file', accept:'.json', onchange: (e) => {
-      const f = e.target.files[0];
-      if(!f) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try{
-          const data = JSON.parse(reader.result);
-          if(!data.respostas) throw new Error('arquivo não tem o formato esperado (faltando "respostas")');
-          state.orgName = data.organizacao || state.orgName;
-          state.orgContext = data.contexto_organizacao || state.orgContext;
-          state.answers = Object.assign({}, state.answers, data.respostas);
-          (data.registro_completo || []).forEach(r => { if(r && r.id) state.registro[r.id] = r; });
-          state.collectionSourceLoaded = true;
-          state.uploadError = '';
-          render();
-        } catch(err){
-          state.uploadError = 'Não consegui ler o JSON da coleta: ' + err.message;
-          render();
-        }
-      };
-      reader.readAsText(f);
-    }});
-    collZone.appendChild(collInput);
-    collZone.addEventListener('click', () => collInput.click());
-    card.appendChild(collZone);
-    if(hasFullCollectionData()){
-      card.appendChild(el('div', {class:'file-ok', text: 'Coleta carregada: ' + state.orgName}));
-    }
-    card.appendChild(el('div', {style:'height:18px;'}));
+      ? 'O resultado do DEXi é obrigatório; o JSON da coleta desta avaliação é opcional (enriquece a leitura no Insights) -- envie um de cada vez, na mesma área abaixo'
+      : 'Carregue o resultado do DEXi e, se ainda não tiver enviado nesta sessão, o JSON da coleta (baixado ao final da Etapa 1) -- um de cada vez, na mesma área'}));
   }
 
   const zone = el('div', {class:'upload-zone'});
@@ -939,6 +928,22 @@ function screenUpload(){
     }
     const reader = new FileReader();
     reader.onload = () => {
+      // Só é o JSON da coleta se tiver a chave "respostas" -- qualquer
+      // outro conteúdo (inclusive um .json que seja o próprio resultado
+      // do DEXi) vai para o campo de texto, nunca fica ambíguo.
+      let data = null;
+      try{ data = JSON.parse(reader.result); } catch(err){ /* não é JSON -- segue como texto do DEXi */ }
+      if(data && data.respostas){
+        state.orgName = data.organizacao || state.orgName;
+        state.orgContext = data.contexto_organizacao || state.orgContext;
+        state.answers = Object.assign({}, state.answers, data.respostas);
+        (data.registro_completo || []).forEach(r => { if(r && r.id) state.registro[r.id] = r; });
+        state.collectionSourceLoaded = true;
+        state.uploadError = '';
+        okMsg.textContent = 'Coleta carregada: ' + state.orgName;
+        render();
+        return;
+      }
       state.dexiText = reader.result;
       okMsg.textContent = 'Arquivo carregado: ' + f.name;
       textarea.value = reader.result;
@@ -950,6 +955,12 @@ function screenUpload(){
   const okMsg = el('div', {class:'file-ok'});
   card.appendChild(zone);
   card.appendChild(okMsg);
+  // Confirmação persistente (sobrevive ao render() disparado pelo próprio
+  // upload, diferente de escrever só em okMsg -- a tela inteira é recriada
+  // do zero a cada render, então texto solto em okMsg não sobrevive).
+  if(state.collectionSourceLoaded){
+    card.appendChild(el('div', {class:'file-ok', text: 'Coleta carregada: ' + state.orgName}));
+  }
 
   card.appendChild(el('label', {text:'Ou cole o texto do relatório aqui', style:'margin-top:18px;'}));
   const textarea = el('textarea', {placeholder:'Cole aqui o resultado do DEXi (classificação final, dimensões, atributos)...', style:'min-height:160px;'});
