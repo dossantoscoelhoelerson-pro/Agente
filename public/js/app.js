@@ -918,6 +918,42 @@ function arrayBufferToBase64(buf){
   return btoa(binary);
 }
 
+// Lê um .dxi preenchido (o próprio arquivo que a organização rodou no DEXi,
+// não o PDF) e extrai a resposta de cada um dos 34 atributos básicos direto
+// do <OPTION>índice</OPTION> de cada <ATTRIBUTE> folha (sem filhos <ATTRIBUTE>),
+// resolvendo o índice na própria <SCALE> daquele atributo -- leitura
+// determinística do arquivo, nunca um cálculo ou uma estimativa. Os níveis
+// agregados (grupos, capacidades, nível final) continuam vindo só do PDF do
+// relatório oficial, via ensurePanel(): neste arquivo "de aplicação" eles
+// ainda estão como "*" (não avaliados), já que o DEXi roda a agregação, não
+// a ORBE. Retorna null se o texto não for um .dxi bem formado.
+function parseDxiAnswers(xmlText){
+  let doc;
+  try{
+    doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  } catch(err){ return null; }
+  if(!doc || doc.getElementsByTagName('parsererror').length) return null;
+  const root = doc.documentElement;
+  if(!root || root.tagName !== 'DEXi') return null;
+  const respostas = {};
+  Array.from(doc.getElementsByTagName('ATTRIBUTE')).forEach((attrEl) => {
+    const children = Array.from(attrEl.children);
+    if(children.some((c) => c.tagName === 'ATTRIBUTE')) return; // só atributos-folha
+    const nameEl = children.find((c) => c.tagName === 'NAME');
+    const optionEl = children.find((c) => c.tagName === 'OPTION');
+    if(!nameEl || !optionEl) return;
+    const optTxt = (optionEl.textContent || '').trim();
+    if(!/^\d+$/.test(optTxt)) return; // "*" = não preenchido
+    const scaleEl = children.find((c) => c.tagName === 'SCALE');
+    if(!scaleEl) return;
+    const valueNames = Array.from(scaleEl.getElementsByTagName('SCALEVALUE'))
+      .map((sv) => { const n = Array.from(sv.children).find((c) => c.tagName === 'NAME'); return n ? n.textContent.trim() : null; });
+    const idx = parseInt(optTxt, 10);
+    if(valueNames[idx]) respostas[nameEl.textContent.trim()] = valueNames[idx];
+  });
+  return respostas;
+}
+
 // O DEXi exporta o resultado em PDF -- extrai o texto no backend (o
 // navegador não lê PDF nativamente) e usa esse texto como se fosse o
 // conteúdo colado/carregado normalmente.
@@ -948,7 +984,7 @@ function screenUpload(){
   // no DEXi/Resultado) não se aplicam a essa entrada direta.
   if(!state.skipCollection) c.appendChild(stepsNav(2));
   c.appendChild(el('h1', {text: state.skipCollection ? 'Acesse seu diagnóstico.' : 'Carregue o resultado do DEXi.'}));
-  c.appendChild(el('p', {class:'lede', text:'Cole o texto do relatório, ou carregue um arquivo .txt/.json/.csv/.pdf com o resultado -- inclusive o PDF exportado direto pelo DEXi.'}));
+  c.appendChild(el('p', {class:'lede', text:'Cole o texto do relatório, ou carregue um arquivo .txt/.json/.csv/.pdf/.dxi com o resultado -- inclusive o PDF exportado direto pelo DEXi ou o próprio arquivo .dxi preenchido.'}));
 
   // Etapa 1 é pulada nesse caminho -- é onde o nome da organização normalmente
   // seria coletado, então precisa de um campo próprio aqui.
@@ -977,8 +1013,8 @@ function screenUpload(){
 
   const zone = el('div', {class:'upload-zone'});
   zone.appendChild(el('div', {class:'icon'}, [icon('upload', {size:28, color:'var(--ink-soft)'})]));
-  zone.appendChild(el('div', {text:'Clique para escolher um arquivo (.txt, .json, .csv, .pdf)'}));
-  const fileInput = el('input', {type:'file', accept:'.txt,.json,.csv,.pdf', onchange: (e)=>{
+  zone.appendChild(el('div', {text:'Clique para escolher um arquivo (.txt, .json, .csv, .pdf, .dxi)'}));
+  const fileInput = el('input', {type:'file', accept:'.txt,.json,.csv,.pdf,.dxi', onchange: (e)=>{
     const f = e.target.files[0];
     if(!f) return;
     const isPdf = f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf';
@@ -1006,6 +1042,25 @@ function screenUpload(){
         state.collectionSourceLoaded = true;
         state.uploadError = '';
         okMsg.textContent = 'Coleta carregada: ' + state.orgName;
+        render();
+        return;
+      }
+      // .dxi preenchido (o arquivo que a organização rodou no DEXi, não o
+      // PDF do relatório): extrai direto do <OPTION> de cada atributo-folha
+      // as respostas dos 34 atributos básicos -- sem isso, quem importa só
+      // o resultado oficial (caminho 3 da Home) nunca tinha state.answers
+      // preenchido, e Panorama/árvore ficavam sempre "não respondido" (bug
+      // real, reportado com um .dxi + PDF de um caso real).
+      const dxiAnswers = parseDxiAnswers(reader.result);
+      if(dxiAnswers && Object.keys(dxiAnswers).length){
+        state.answers = Object.assign({}, state.answers, dxiAnswers);
+        state.collectionSourceLoaded = true;
+        state.uploadError = '';
+        // Não sobrescreve um dexiText já carregado do PDF: o nível final e
+        // os grupos agregados (ensurePanel) só existem no relatório
+        // oficial rodado pelo DEXi, nunca neste arquivo de aplicação.
+        if(!state.dexiText) state.dexiText = reader.result;
+        okMsg.textContent = 'Respostas carregadas do .dxi: ' + Object.keys(dxiAnswers).length + ' de ' + ATTRS.length + ' atributos.';
         render();
         return;
       }
