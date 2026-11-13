@@ -1058,8 +1058,13 @@ function screenUpload(){
         state.uploadError = '';
         // Não sobrescreve um dexiText já carregado do PDF: o nível final e
         // os grupos agregados (ensurePanel) só existem no relatório
-        // oficial rodado pelo DEXi, nunca neste arquivo de aplicação.
-        if(!state.dexiText) state.dexiText = reader.result;
+        // oficial rodado pelo DEXi, nunca neste arquivo de aplicação. Espelha
+        // no textarea pelo mesmo motivo do ramo de texto puro logo abaixo --
+        // o botão "Ver relatório →" lê sempre textarea.value, nunca
+        // state.dexiText diretamente; sem isso, subir só o .dxi (sem PDF)
+        // deixava o textarea vazio e o botão reclamava "carregue um arquivo",
+        // mesmo com as 34 respostas já carregadas (bug real, reportado).
+        if(!state.dexiText){ state.dexiText = reader.result; textarea.value = reader.result; }
         okMsg.textContent = 'Respostas carregadas do .dxi: ' + Object.keys(dxiAnswers).length + ' de ' + ATTRS.length + ' atributos.';
         render();
         return;
